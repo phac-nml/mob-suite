@@ -219,7 +219,7 @@ def main():
 
 
 
-    string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(file_id,stats['num_seq'],stats['size'],stats['gc_content'],
+    string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(file_id,stats['num_seq'],stats['size'],stats['gc_content'],
                                                                                rep_types,rep_acs,mob_types,
                                                                                mob_acs,mpf_type,mpf_acs,
                                                                                orit_types,orit_acs,predicted_mobility,

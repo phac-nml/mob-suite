@@ -67,6 +67,7 @@ def write_clusters(file,cluster_assignments,header):
 
 
 def build_cluster_db(distance_matrix_file,distances):
+    print(distances)
     data = pd.read_csv(distance_matrix_file, sep='\t', header=0,
                        index_col=0)
     distance_matrix = data.as_matrix()
@@ -76,6 +77,7 @@ def build_cluster_db(distance_matrix_file,distances):
     clust_assignments = dict()
 
     for dist in distances:
+        print(str(dist))   
         index = 0
         clusters = fcluster(Z, dist, criterion='distance')
         for id in data.columns.values:
@@ -113,13 +115,14 @@ def add_new_record(fasta_file,ref_mashdb,mash_results_file,ref_cluster_file,dist
     mashObj.mashsketch(fasta_file, output_path=fasta_file, sketch_ind=True, num_threads=1, kmer_size=21, sketch_size=1000)
     mashfile_handle = open(mash_results_file,'w')
 
-    mashObj.run_mash(ref_mashdb, fasta_file+'.msh', mashfile_handle,num_threads)
+    mashObj.run_mash(ref_mashdb, fasta_file+'.msh', mashfile_handle,table=False,num_threads=num_threads)
     mashfile_handle.close()
 
     mashfile_handle = open(mash_results_file, 'r')
     query_mash_distances = dict()
 
     for line in mashfile_handle:
+        print(line)    
         row = line.split('\t')
         query_id = row[1]
         ref_id = row[0].split('|')[0]
@@ -198,7 +201,7 @@ def update_existing(input_fasta,tmp_dir,ref_mash_db,tmp_cluster_file,header,tmp_
         seq = sequences[id]
         tmp_fasta = os.path.join(tmp_dir,id + '_tmp.fasta')
         tmp_mash = os.path.join(tmp_dir,id + '_tmp.txt')
-        clust_assignments = add_new_record(tmp_fasta, ref_mash_db ,tmp_mash, tmp_cluster_file,(0.1, 0.05, 0.0001),num_threads)
+        clust_assignments = add_new_record(tmp_fasta, ref_mash_db ,tmp_mash, tmp_cluster_file,(0.05, 0.0001),num_threads)
         writeClusterAssignments(tmp_cluster_file , header, clust_assignments)
         with open(tmp_ref_fasta_file , "a") as fh:
             fh.write("\n>{}\n{}\n".format(id,seq))
@@ -233,7 +236,7 @@ def main():
         print('Error you have not entered a valid mode of build or update, you entered: {}'.format(mode))
         sys.exit()
 
-    header = ('id', 0.1, 0.05, 0.0001)
+    header = ('id', 0.05, 0.0001)
     tmp_cluster_file = os.path.join(tmp_dir, 'clusters_tmp.txt')
     tmp_ref_fasta_file = os.path.join(tmp_dir, 'references_tmp.fasta')
     update_fasta = os.path.join(tmp_dir, 'references_updated.fasta')
@@ -252,7 +255,7 @@ def main():
         mashfile_handle = open(distance_matrix_file,'w')
 
         mashObj.run_mash(input_fasta+'.msh', input_fasta+'.msh', mashfile_handle,table=True,num_threads=num_threads)
-        clust_assignments = build_cluster_db(distance_matrix_file, (0.1, 0.05, 0.0001))
+        clust_assignments = build_cluster_db(distance_matrix_file, (0.05, 0.0001))
         writeClusterAssignments(tmp_cluster_file, header, clust_assignments)
         clust_dict = selectCluster(clust_assignments, 1)
         shutil.copy(input_fasta, tmp_ref_fasta_file)
