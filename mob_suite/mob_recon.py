@@ -533,7 +533,7 @@ def main():
                     "rep_type(s)\trep_type_accession(s)\t"\
                     "relaxase_type(s)\trelaxase_type_accession(s)\t"\
                     "mpf_type\tmpf_type_accession(s)\t"\
-                    "orit_type(s)\torit_accession(s)\tPredictedMobility"\
+                    "orit_type(s)\torit_accession(s)\tPredictedMobility\t"\
                     "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\n"
         for file in plasmid_files:
             mobtyper_results = mobtyper_results + run_mob_typer(file,out_dir,str(num_threads))
