@@ -22,8 +22,18 @@ from utils import \
     mob_blast, \
     getRepliconContigs, \
     fix_fasta_header, \
-    getMashBestHit,\
+    getMashBestHit, \
     calcFastaStats
+
+LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+
+
+def init_console_logger(lvl):
+    logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
+    report_lvl = logging_levels[lvl]
+
+    logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
+
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
@@ -31,9 +41,13 @@ def parse_args():
     parser.add_argument('--outdir', type=str, required=True, help='Output Directory to put results')
     parser.add_argument('--infile', type=str, required=True, help='Input assembly fasta file to process')
     parser.add_argument('--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
-    parser.add_argument('--evalue', type=str, required=False, help='Minimum evalue threshold for blast', default=0.00001)
+    parser.add_argument('--evalue', type=str, required=False, help='Minimum evalue threshold for blast',
+                        default=0.00001)
     parser.add_argument('--min_ident', type=str, required=False, help='Minimum sequence identity', default=80)
-    parser.add_argument('--min_cov', type=str, required=False, help='Minimum percentage coverage of assembly contig by the plasmid reference database to be considered', default=65)
+    parser.add_argument('--debug', required=False, help='Show debug information', action='store_true')
+    parser.add_argument('--min_cov', type=str, required=False,
+                        help='Minimum percentage coverage of assembly contig by the plasmid reference database to be considered',
+                        default=65)
     parser.add_argument('--keep_tmp', type=str, required=False,
                         help='Do not delete temporary file directory', default=False)
     parser.add_argument('--plasmid_mash_db', type=str, required=False,
@@ -61,17 +75,16 @@ def determine_mpf_type(hits):
         type = hits[hit]
         if not type in types:
             types[type] = 0
-        types[type]+=1
+        types[type] += 1
 
     return max(types, key=lambda i: types[i])
 
 
-
-
 def main():
-    logging.info('Running Mob-typer v. {}'.format('0.1'))
     args = parse_args()
-
+    if args.debug:
+        init_console_logger(3)
+    logging.info('Running Mob-typer v. {}'.format('0.1'))
     if not args.outdir:
         logging.info('Error, no output directory specified, please specify one')
         sys.exit()
@@ -87,10 +100,10 @@ def main():
     if not os.path.isdir(args.outdir):
         os.mkdir(args.outdir, 0755)
 
-    if not isinstance(args.num_threads,int):
+    if not isinstance(args.num_threads, int):
         logging.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
 
-    #Script arguments
+    # Script arguments
     input_fasta = args.infile
     input_fasta = args.infile
     out_dir = args.outdir
@@ -101,7 +114,6 @@ def main():
     mpf_ref = args.plasmid_mpf
     orit_ref = args.plasmid_orit
     mash_db = args.plasmid_mash_db
-
 
     tmp_dir = os.path.join(out_dir, '__tmp')
     file_id = os.path.basename(input_fasta)
@@ -114,57 +126,60 @@ def main():
     report_file = os.path.join(out_dir, 'mobtyper_' + file_id + '_report.txt')
     mash_file = os.path.join(tmp_dir, 'mash_' + file_id + '.txt')
 
-
-
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir, 0755)
 
     fix_fasta_header(input_fasta, fixed_fasta)
 
-
-    #run individual marker blasts
+    # run individual marker blasts
     logging.info('Running replicon blast on {}'.format(replicon_ref))
-    replicon_contigs = getRepliconContigs(replicon_blast(replicon_ref, fixed_fasta, 85, 85, args.evalue, tmp_dir,replicon_blast_results,num_threads=num_threads))
+    replicon_contigs = getRepliconContigs(
+        replicon_blast(replicon_ref, fixed_fasta, 85, 85, args.evalue, tmp_dir, replicon_blast_results,
+                       num_threads=num_threads))
     found_replicons = dict()
     for contig_id in replicon_contigs:
         for hit in replicon_contigs[contig_id]:
             acs, type = hit.split('|')
             found_replicons[acs] = type
 
-    #print(found_replicons)
+    # print(found_replicons)
 
     logging.info('Running relaxase blast on {}'.format(mob_ref))
-    mob_contigs = getRepliconContigs(mob_blast(mob_ref, fixed_fasta, 85, 85, args.evalue, tmp_dir,mob_blast_results,num_threads=num_threads ))
+    mob_contigs = getRepliconContigs(
+        mob_blast(mob_ref, fixed_fasta, 85, 85, args.evalue, tmp_dir, mob_blast_results, num_threads=num_threads))
     found_mob = dict()
     for contig_id in mob_contigs:
         for hit in mob_contigs[contig_id]:
-            acs,type = hit.split('|')
+            acs, type = hit.split('|')
             found_mob[acs] = type
 
-    #print (found_mob)
+    # print (found_mob)
 
     logging.info('Running mpf blast on {}'.format(mob_ref))
-    mpf_contigs = getRepliconContigs(mob_blast(mpf_ref, fixed_fasta, 85, 85, args.evalue, tmp_dir, mpf_blast_results,num_threads=num_threads))
+    mpf_contigs = getRepliconContigs(
+        mob_blast(mpf_ref, fixed_fasta, 85, 85, args.evalue, tmp_dir, mpf_blast_results, num_threads=num_threads))
     found_mpf = dict()
     for contig_id in mpf_contigs:
         for hit in mpf_contigs[contig_id]:
             acs, type = hit.split('|')
             found_mpf[acs] = type
 
-    #print(found_mpf)
+    # print(found_mpf)
 
     logging.info('Running orit blast on {}'.format(replicon_ref))
-    orit_contigs = getRepliconContigs(replicon_blast(orit_ref, fixed_fasta, 90, 90, args.evalue, tmp_dir,orit_blast_results,num_threads=num_threads))
+    orit_contigs = getRepliconContigs(
+        replicon_blast(orit_ref, fixed_fasta, 90, 90, args.evalue, tmp_dir, orit_blast_results,
+                       num_threads=num_threads))
     found_orit = dict()
     for contig_id in orit_contigs:
         for hit in orit_contigs[contig_id]:
             acs, type = hit.split('|')
             found_orit[acs] = type
 
-    #print(found_orit)
+    # print(found_orit)
 
 
-    #Get closest neighbor by mash distance
+    # Get closest neighbor by mash distance
     m = mash()
     mash_distances = dict()
     mashfile_handle = open(mash_file, 'w')
@@ -172,14 +187,13 @@ def main():
     mash_results = m.read_mash(mash_file)
     mash_top_hit = getMashBestHit(mash_results)
 
-
     results_fh = open(report_file, 'w')
-    results_fh.write("file_id\tnum_contigs\ttotal_length\tgc\t"\
-                    "rep_type(s)\trep_type_accession(s)\t"\
-                    "relaxase_type(s)\trelaxase_type_accession(s)\t"\
-                    "mpf_type\tmpf_type_accession(s)\t"\
-                    "orit_type(s)\torit_accession(s)\tPredictedMobility\t"\
-                    "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\n")
+    results_fh.write("file_id\tnum_contigs\ttotal_length\tgc\t" \
+                     "rep_type(s)\trep_type_accession(s)\t" \
+                     "relaxase_type(s)\trelaxase_type_accession(s)\t" \
+                     "mpf_type\tmpf_type_accession(s)\t" \
+                     "orit_type(s)\torit_accession(s)\tPredictedMobility\t" \
+                     "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\n")
 
     if len(found_replicons) > 0:
         rep_types = ",".join(found_replicons.values())
@@ -217,20 +231,20 @@ def main():
     if mob_acs != '-' and mpf_acs != '-':
         predicted_mobility = 'Conjugative'
 
-
-
-    string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(file_id,stats['num_seq'],stats['size'],stats['gc_content'],
-                                                                               rep_types,rep_acs,mob_types,
-                                                                               mob_acs,mpf_type,mpf_acs,
-                                                                               orit_types,orit_acs,predicted_mobility,
-                                                                               mash_top_hit['top_hit'],mash_top_hit['mash_hit_score'],mash_top_hit['clustid'])
+    string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(file_id, stats['num_seq'],
+                                                                                     stats['size'], stats['gc_content'],
+                                                                                     rep_types, rep_acs, mob_types,
+                                                                                     mob_acs, mpf_type, mpf_acs,
+                                                                                     orit_types, orit_acs,
+                                                                                     predicted_mobility,
+                                                                                     mash_top_hit['top_hit'],
+                                                                                     mash_top_hit['mash_hit_score'],
+                                                                                     mash_top_hit['clustid'])
     results_fh.write(string)
     print(string)
 
     if not keep_tmp:
         shutil.rmtree(tmp_dir)
-
-
 
 
 # call main function
