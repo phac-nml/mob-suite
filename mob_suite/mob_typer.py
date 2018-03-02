@@ -178,7 +178,7 @@ def main():
                     "rep_type(s)\trep_type_accession(s)\t"\
                     "relaxase_type(s)\trelaxase_type_accession(s)\t"\
                     "mpf_type\tmpf_type_accession(s)\t"\
-                    "orit_type(s)\torit_accession(s)\tPredictedMobility"\
+                    "orit_type(s)\torit_accession(s)\tPredictedMobility\t"\
                     "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\n")
 
     if len(found_replicons) > 0:
