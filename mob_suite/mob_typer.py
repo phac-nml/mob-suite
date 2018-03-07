@@ -48,8 +48,7 @@ def parse_args():
     parser.add_argument('--min_cov', type=str, required=False,
                         help='Minimum percentage coverage of assembly contig by the plasmid reference database to be considered',
                         default=65)
-    parser.add_argument('--keep_tmp', type=str, required=False,
-                        help='Do not delete temporary file directory', default=False)
+    parser.add_argument('--keep_tmp', required=False,help='Do not delete temporary file directory', action='store_true')
     parser.add_argument('--plasmid_mash_db', type=str, required=False,
                         help='Companion Mash database of reference database',
                         default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
