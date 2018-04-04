@@ -2,6 +2,7 @@ from Bio import SeqIO
 from Bio.SeqUtils import GC
 from blast import BlastRunner
 from blast import BlastReader
+from subprocess import Popen, PIPE
 import os
 
 def fixStart(blast_df):
@@ -125,6 +126,7 @@ def replicon_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blas
 
 
 def mob_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_results_file,overlap=5,num_threads=1):
+    num_threads=1
     blast_runner = BlastRunner(input_fasta, tmp_dir)
     blast_runner.makeblastdb(ref_db, 'nucl')
     blast_runner.run_tblastn(query_fasta_path=input_fasta, blast_task='megablast', db_path=ref_db,
@@ -146,7 +148,7 @@ def mob_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_res
         blast_df = filter_overlaping_records(blast_df, overlap, 'sseqid', 'sstart', 'send', 'bitscore')
         prev_size = size
         size = str(len(blast_df))
-
+    #print(blast_df)
     return blast_df
 
 
@@ -209,6 +211,21 @@ def fix_fasta_header(in_fasta, out_fasta):
                 record.seq) + "\n")
     handle.close()
     fh.close()
+
+
+def db_status_check(file):
+    if not os.path.isfile(file):
+        mob_init_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_init.py')
+        p = Popen(['python', mob_init_path],
+                  stdout=PIPE,
+                  stderr=PIPE)
+        p.wait()
+        stdout = p.stdout.read()
+        stderr = p.stderr.read()
+
+
+
+
 
 
 def getMashBestHit(mash_results):

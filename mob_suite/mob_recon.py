@@ -24,7 +24,8 @@ from utils import \
     repetitive_blast, \
     getRepliconContigs, \
     fix_fasta_header, \
-    getMashBestHit
+    getMashBestHit, \
+    db_status_check
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
@@ -75,6 +76,7 @@ def parse_args():
     return parser.parse_args()
 
 
+
 def init_console_logger(lvl):
     logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
     report_lvl = logging_levels[lvl]
@@ -117,8 +119,6 @@ def run_mob_typer(fasta_path, outdir, num_threads=1):
     p.wait()
     stdout = p.stdout.read()
     stderr = p.stderr.read()
-    print(stderr)
-
     return stdout
 
 
@@ -221,6 +221,8 @@ def circularize(input_fasta, output_prefix):
 
 def main():
     args = parse_args()
+    db_status_check(os.path.join(os.path.dirname(os.path.realpath(__file__)),'databases/status.txt'))
+
     if args.debug:
         init_console_logger(3)
     logging.info('Running plasmid detector v. {}'.format('0.1'))
@@ -233,6 +235,10 @@ def main():
     logging.info('Processing fasta file {}'.format(args.infile))
     logging.info('Analysis directory {}'.format(args.outdir))
 
+
+
+
+
     if not os.path.isdir(args.outdir):
         os.mkdir(args.outdir, 0755)
     plasmid_files = dict()
@@ -244,7 +250,7 @@ def main():
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
     chromosome_file = os.path.join(out_dir, 'chromosome.fasta')
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')
-    mob_blast_results = os.path.join(tmp_dir, 'mob_blast_results.txt')
+    mob_blast_results = os.path.join(tmp_dir, 'mobrecon_blast_results.txt')
     repetitive_blast_results = os.path.join(tmp_dir, 'repetitive_blast_results.txt')
     contig_blast_results = os.path.join(tmp_dir, 'contig_blast_results.txt')
     min_ident = args.min_ident
@@ -371,8 +377,8 @@ def main():
                 if not clust_id in seq_clusters:
                     seq_clusters["Novel_" + str(clust_id)] = dict()
                     if not contig_id in pcl_clusters:
-                    	pcl_clusters[contig_id] = dict()
-                    	
+                        pcl_clusters[contig_id] = dict()
+
                     pcl_clusters[contig_id]["Novel_" + str(clust_id) ] = 0
                 seq_clusters["Novel_" + str(clust_id)][contig_id] = contig_seqs[contig_id]
             clust_id += 1
@@ -386,8 +392,8 @@ def main():
                 if not clust_id in seq_clusters:
                     seq_clusters["Novel_" + str(clust_id)] = dict()
                     if not contig_id in pcl_clusters:
-                    	pcl_clusters[contig_id] = dict()
-                    	
+                        pcl_clusters[contig_id] = dict()
+
                     pcl_clusters[contig_id]["Novel_" + str(clust_id)] = dict()
                 seq_clusters["Novel_" + str(clust_id)][contig_id] = contig_seqs[contig_id]
             clust_id += 1

@@ -67,7 +67,6 @@ def write_clusters(file,cluster_assignments,header):
 
 
 def build_cluster_db(distance_matrix_file,distances):
-    print(distances)
     data = pd.read_csv(distance_matrix_file, sep='\t', header=0,
                        index_col=0)
     distance_matrix = data.as_matrix()
@@ -77,7 +76,6 @@ def build_cluster_db(distance_matrix_file,distances):
     clust_assignments = dict()
 
     for dist in distances:
-        print(str(dist))   
         index = 0
         clusters = fcluster(Z, dist, criterion='distance')
         for id in data.columns.values:
@@ -122,10 +120,13 @@ def add_new_record(fasta_file,ref_mashdb,mash_results_file,ref_cluster_file,dist
     query_mash_distances = dict()
 
     for line in mashfile_handle:
-        print(line)    
         row = line.split('\t')
         query_id = row[1]
         ref_id = row[0].split('|')[0]
+
+        if not query_id in query_mash_distances:
+            query_mash_distances[query_id]  = dict()
+
         distance = float(row[2])
 
         if distance > max_thresh:
@@ -136,7 +137,11 @@ def add_new_record(fasta_file,ref_mashdb,mash_results_file,ref_cluster_file,dist
         query_mash_distances[query_id][ref_id] = distance
 
 
+
     for query_id in query_mash_distances:
+
+        if len(query_mash_distances[query_id]) == 0:
+            query_mash_distances[query_id]['None'] = 1
 
         min_distance = min(query_mash_distances[query_id].values())
         min_dist_key = min(query_mash_distances[query_id], key=query_mash_distances[query_id].get)
@@ -160,7 +165,7 @@ def add_new_record(fasta_file,ref_mashdb,mash_results_file,ref_cluster_file,dist
                     continue
                 clusters[i] = cluster_pointers[i]
                 cluster_pointers[i] += 1
-            ref_clusters[query_id] = clusters
+        ref_clusters[query_id] = clusters
 
     return ref_clusters
 
@@ -200,6 +205,9 @@ def update_existing(input_fasta,tmp_dir,ref_mash_db,tmp_cluster_file,header,tmp_
     for id in sequences:
         seq = sequences[id]
         tmp_fasta = os.path.join(tmp_dir,id + '_tmp.fasta')
+        with open(tmp_fasta , "w") as fh:
+            fh.write("\n>{}\n{}\n".format(id,seq))
+            fh.close()
         tmp_mash = os.path.join(tmp_dir,id + '_tmp.txt')
         clust_assignments = add_new_record(tmp_fasta, ref_mash_db ,tmp_mash, tmp_cluster_file,(0.05, 0.0001),num_threads)
         writeClusterAssignments(tmp_cluster_file , header, clust_assignments)
@@ -240,30 +248,44 @@ def main():
     tmp_cluster_file = os.path.join(tmp_dir, 'clusters_tmp.txt')
     tmp_ref_fasta_file = os.path.join(tmp_dir, 'references_tmp.fasta')
     update_fasta = os.path.join(tmp_dir, 'references_updated.fasta')
+    out_cluster_file = os.path.join(out_dir, 'clusters.txt')
+    out_fasta_file = os.path.join(out_dir, 'new_clusters.fasta')
 
     if mode == 'update':
+        if args.ref_cluster_file is None:
+            print('Error you need to specify a cluster assignment file in order to use the update mode')
+            sys.exit(-1)
+        if args.ref_fasta_file is None:
+            print('Error you need to specify a reference fasta file in order to use the update mode')
+            sys.exit(-1)
+        if args.ref_cluster_file is None:
+            print('Error you need to specify a reference mash sketch file in order to use the update mode')
+            sys.exit(-1)
+
         ref_fasta = args.ref_fasta_file
         ref_cluster_file = args.ref_cluster_file
         ref_mash_db = args.ref_mash_db
         shutil.copy(ref_cluster_file, tmp_cluster_file)
         shutil.copy(ref_fasta, tmp_ref_fasta_file)
         update_existing(input_fasta, tmp_dir, ref_mash_db, tmp_cluster_file, header, tmp_ref_fasta_file, update_fasta)
+        shutil.copy(tmp_cluster_file, out_cluster_file)
+        shutil.copy(update_fasta, out_fasta_file)
+        shutil.rmtree(tmp_dir)
+
     else:
         mashObj = mash()
         mashObj.mashsketch(input_fasta,input_fasta+".msh",num_threads=num_threads)
         distance_matrix_file = os.path.join(tmp_dir,'mash_dist_matrix.txt')
         mashfile_handle = open(distance_matrix_file,'w')
-
         mashObj.run_mash(input_fasta+'.msh', input_fasta+'.msh', mashfile_handle,table=True,num_threads=num_threads)
         clust_assignments = build_cluster_db(distance_matrix_file, (0.05, 0.0001))
         writeClusterAssignments(tmp_cluster_file, header, clust_assignments)
         clust_dict = selectCluster(clust_assignments, 1)
         shutil.copy(input_fasta, tmp_ref_fasta_file)
         updateFastaFile(tmp_ref_fasta_file ,update_fasta, clust_dict)
-
-
-
-
+        shutil.copy(tmp_cluster_file, out_cluster_file)
+        shutil.copy(update_fasta, out_fasta_file)
+        shutil.rmtree(tmp_dir)
 
 
 

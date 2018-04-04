@@ -23,7 +23,8 @@ from utils import \
     getRepliconContigs, \
     fix_fasta_header, \
     getMashBestHit, \
-    calcFastaStats
+    calcFastaStats, \
+    db_status_check
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
@@ -81,6 +82,7 @@ def determine_mpf_type(hits):
 
 def main():
     args = parse_args()
+    db_status_check(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases/status.txt'))
     if args.debug:
         init_console_logger(3)
     logging.info('Running Mob-typer v. {}'.format('0.1'))
@@ -106,7 +108,7 @@ def main():
     input_fasta = args.infile
     input_fasta = args.infile
     out_dir = args.outdir
-    num_threads = args.num_threads
+    num_threads = int(args.num_threads)
     evalue = args.evalue
     keep_tmp = args.keep_tmp
     mob_ref = args.plasmid_mob
@@ -119,9 +121,17 @@ def main():
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
     replicon_ref = args.plasmid_replicons
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')
-    mob_blast_results = os.path.join(tmp_dir, 'mob_blast_results.txt')
+    mob_blast_results = os.path.join(tmp_dir, 'mobtyper_blast_results.txt')
     mpf_blast_results = os.path.join(tmp_dir, 'mpf_blast_results.txt')
     orit_blast_results = os.path.join(tmp_dir, 'orit_blast_results.txt')
+    if os.path.isfile(mob_blast_results):
+    	os.remove(mob_blast_results)
+    if os.path.isfile(mpf_blast_results):
+    	os.remove(mpf_blast_results)
+    if os.path.isfile(orit_blast_results):
+    	os.remove(orit_blast_results)    
+    if os.path.isfile(replicon_blast_results):
+    	os.remove(replicon_blast_results)     	
     report_file = os.path.join(out_dir, 'mobtyper_' + file_id + '_report.txt')
     mash_file = os.path.join(tmp_dir, 'mash_' + file_id + '.txt')
 
@@ -144,8 +154,9 @@ def main():
     # print(found_replicons)
 
     logging.info('Running relaxase blast on {}'.format(mob_ref))
+
     mob_contigs = getRepliconContigs(
-        mob_blast(mob_ref, fixed_fasta, 85, 85, args.evalue, tmp_dir, mob_blast_results, num_threads=num_threads))
+        mob_blast(mob_ref, fixed_fasta, 80, 80, args.evalue, tmp_dir, mob_blast_results, num_threads=num_threads))
     found_mob = dict()
     for contig_id in mob_contigs:
         for hit in mob_contigs[contig_id]:

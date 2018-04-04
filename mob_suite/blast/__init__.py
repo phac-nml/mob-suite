@@ -48,7 +48,8 @@ class BlastRunner:
 
 
     def run_tblastn(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1):
-
+        #tblastn with more than 1 thread will throw a segmentation fault with the size of the queries so this has been limited to 1
+        #thread for now but will resolve later
         p = Popen(['tblastn',
                    '-query', query_fasta_path,
                    '-num_threads','{}'.format(num_threads),
