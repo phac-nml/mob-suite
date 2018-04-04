@@ -71,7 +71,7 @@ Use this tool only to update the plasmid databases or build a new one and should
 
 ```
 ### Add a sequence to an existing database
-% mob_cluster.py --mode update --infile plasmid.fasta --outdir output_directory
+% mob_cluster --infile update_sequences.fasta --ref_fasta_file original.fasta --ref_mash_db original.msh --ref_cluster_file original_clusters.txt 
 ```
 
 ```
