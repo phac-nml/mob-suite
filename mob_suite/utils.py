@@ -3,6 +3,7 @@ from Bio.SeqUtils import GC
 from blast import BlastRunner
 from blast import BlastReader
 import os
+from subprocess import Popen, PIPE
 
 def fixStart(blast_df):
     for index, row in blast_df.iterrows():
@@ -35,6 +36,22 @@ def write_fasta_dict(seqs, fasta_file):
         for id in seqs:
             handle.write(">{}\n{}\n".format(id, seqs[id]))
     handle.close()
+
+def verify_init(logging):
+    mob_init_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_init.py')
+    status_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases/status.txt')
+    if not os.path.isfile(status_file):
+        logging.info('MOB-databases need to be initialized, this will take some time')
+        p = Popen(['python', mob_init_path],
+                  stdout=PIPE,
+                  stderr=PIPE)
+        p.wait()
+        stdout = p.stdout.read()
+        stderr = p.stderr.read()
+        logging.info("".format(stderr))
+        return stdout
+
+
 
 
 def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_start_col,contig_end_col,bitscore_col):

@@ -58,7 +58,6 @@ class mash:
         return fh.readlines()
 
     def mashsketch(self, input_fasta, output_path, sketch_ind=True, num_threads=1, kmer_size=21, sketch_size=1000):
-
         if output_path == '':
             os.path.dirname(input_fasta)
         p = Popen(['mash', "sketch",
@@ -72,7 +71,6 @@ class mash:
         p.wait()
         stdout = p.stdout.read()
         stderr = p.stderr.read()
-
 
 
 
