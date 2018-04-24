@@ -23,8 +23,7 @@ from utils import \
     getRepliconContigs, \
     fix_fasta_header, \
     getMashBestHit, \
-    calcFastaStats, \
-    db_status_check
+    calcFastaStats
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
@@ -82,7 +81,6 @@ def determine_mpf_type(hits):
 
 def main():
     args = parse_args()
-    db_status_check(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases/status.txt'))
     if args.debug:
         init_console_logger(3)
     logging.info('Running Mob-typer v. {}'.format('0.1'))
@@ -143,7 +141,7 @@ def main():
     # run individual marker blasts
     logging.info('Running replicon blast on {}'.format(replicon_ref))
     replicon_contigs = getRepliconContigs(
-        replicon_blast(replicon_ref, fixed_fasta, 85, 85, args.evalue, tmp_dir, replicon_blast_results,
+        replicon_blast(replicon_ref, fixed_fasta, 80, 80, args.evalue, tmp_dir, replicon_blast_results,
                        num_threads=num_threads))
     found_replicons = dict()
     for contig_id in replicon_contigs:

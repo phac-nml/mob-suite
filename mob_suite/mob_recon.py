@@ -24,8 +24,7 @@ from utils import \
     repetitive_blast, \
     getRepliconContigs, \
     fix_fasta_header, \
-    getMashBestHit, \
-    db_status_check
+    getMashBestHit
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
@@ -76,7 +75,6 @@ def parse_args():
     return parser.parse_args()
 
 
-
 def init_console_logger(lvl):
     logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
     report_lvl = logging_levels[lvl]
@@ -119,6 +117,8 @@ def run_mob_typer(fasta_path, outdir, num_threads=1):
     p.wait()
     stdout = p.stdout.read()
     stderr = p.stderr.read()
+    print(stderr)
+
     return stdout
 
 
@@ -221,8 +221,6 @@ def circularize(input_fasta, output_prefix):
 
 def main():
     args = parse_args()
-    db_status_check(os.path.join(os.path.dirname(os.path.realpath(__file__)),'databases/status.txt'))
-
     if args.debug:
         init_console_logger(3)
     logging.info('Running plasmid detector v. {}'.format('0.1'))
@@ -234,10 +232,6 @@ def main():
         sys.exit()
     logging.info('Processing fasta file {}'.format(args.infile))
     logging.info('Analysis directory {}'.format(args.outdir))
-
-
-
-
 
     if not os.path.isdir(args.outdir):
         os.mkdir(args.outdir, 0755)
@@ -377,8 +371,8 @@ def main():
                 if not clust_id in seq_clusters:
                     seq_clusters["Novel_" + str(clust_id)] = dict()
                     if not contig_id in pcl_clusters:
-                        pcl_clusters[contig_id] = dict()
-
+                    	pcl_clusters[contig_id] = dict()
+                    	
                     pcl_clusters[contig_id]["Novel_" + str(clust_id) ] = 0
                 seq_clusters["Novel_" + str(clust_id)][contig_id] = contig_seqs[contig_id]
             clust_id += 1
@@ -392,8 +386,8 @@ def main():
                 if not clust_id in seq_clusters:
                     seq_clusters["Novel_" + str(clust_id)] = dict()
                     if not contig_id in pcl_clusters:
-                        pcl_clusters[contig_id] = dict()
-
+                    	pcl_clusters[contig_id] = dict()
+                    	
                     pcl_clusters[contig_id]["Novel_" + str(clust_id)] = dict()
                 seq_clusters["Novel_" + str(clust_id)][contig_id] = contig_seqs[contig_id]
             clust_id += 1
@@ -506,6 +500,40 @@ def main():
                     del (filter_list[contig_id])
                 continue
 
+
+        new_clust_file = None
+        if os.path.isfile(cluster_file):
+            if float(mash_top_hit['mash_hit_score']) < 0.05:
+                cluster = mash_top_hit['clustid']
+                new_clust_file = os.path.join(out_dir, 'plasmid_' + cluster + ".fasta")
+
+            else:
+                cluster = 'novel_' + str(counter)
+                new_clust_file = os.path.join(out_dir, 'plasmid_' + cluster + ".fasta")
+                counter += 1
+
+            if os.path.isfile(new_clust_file):
+                temp_fh = open(cluster_file, 'r')
+
+                data = temp_fh.read()
+
+                temp_fh.close()
+                temp_fh = open(new_clust_file, 'a')
+                temp_fh.write(data)
+                temp_fh.close()
+                mash_file = os.path.join(tmp_dir, 'clust_' + str(cluster) + '.txt')
+                mashfile_handle = open(mash_file, 'w')
+                m.run_mash(mash_db, cluster_file, mashfile_handle)
+                mash_results = m.read_mash(mash_file)
+                mash_top_hit = getMashBestHit(mash_results)
+
+            else:
+                os.rename(cluster_file, new_clust_file)
+
+        if new_clust_file is not None:
+            plasmid_files[new_clust_file] = ''
+
+
         for contig_id in clusters:
             found_replicon_string = ''
             found_replicon_id_string = ''
@@ -553,40 +581,6 @@ def main():
                                                                                        mash_top_hit['top_hit'],
                                                                                        mash_top_hit['mash_hit_score'],
                                                                                        rep_dna_info))
-
-        new_clust_file = None
-        if os.path.isfile(cluster_file):
-            if float(mash_top_hit['mash_hit_score']) < 0.05:
-                cluster = mash_top_hit['clustid']
-                new_clust_file = os.path.join(out_dir, 'plasmid_' + cluster + ".fasta")
-
-            else:
-                cluster = 'novel_' + str(counter)
-                new_clust_file = os.path.join(out_dir, 'plasmid_' + cluster + ".fasta")
-                counter += 1
-
-            if os.path.isfile(new_clust_file):
-                temp_fh = open(cluster_file, 'r')
-
-                data = temp_fh.read()
-
-                temp_fh.close()
-                temp_fh = open(new_clust_file, 'a')
-                temp_fh.write(data)
-                temp_fh.close()
-                mash_file = os.path.join(tmp_dir, 'clust_' + str(cluster) + '.txt')
-                mashfile_handle = open(mash_file, 'w')
-                m.run_mash(mash_db, cluster_file, mashfile_handle)
-                mash_results = m.read_mash(mash_file)
-                mash_top_hit = getMashBestHit(mash_results)
-
-            else:
-                os.rename(cluster_file, new_clust_file)
-
-        if new_clust_file is not None:
-            plasmid_files[new_clust_file] = ''
-
-
     chr_contigs = dict()
 
     for contig_id in contig_seqs:
