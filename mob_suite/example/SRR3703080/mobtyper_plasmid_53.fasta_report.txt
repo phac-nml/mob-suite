@@ -1,0 +1,2 @@
+file_id	num_contigs	total_length	gc	rep_type(s)	rep_type_accession(s)	relaxase_type(s)	relaxase_type_accession(s)	mpf_type	mpf_type_accession(s)	orit_type(s)	orit_accession(s)	PredictedMobility	mash_nearest_neighbor	mash_neighbor_distance	mash_neighbor_cluster
+plasmid_53.fasta	1	37698	41.1772507825	IncX1	KC853434_00019	MOBP	NC_019096_00001	MPF_T	NC_023277_00163,NC_017624_00009,NC_019138_00026,NC_019067_00043,NC_010860_00022	-	-	Conjugative	CP016518	0	53

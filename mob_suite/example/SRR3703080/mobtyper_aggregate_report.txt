@@ -1,0 +1,4 @@
+file_id	num_contigs	total_length	gc	rep_type(s)	rep_type_accession(s)	relaxase_type(s)	relaxase_type_accession(s)	mpf_type	mpf_type_accession(s)	orit_type(s)	orit_accession(s)	PredictedMobility	mash_nearest_neighbor	mash_neighbor_distance	mash_neighbor_cluster
+plasmid_476.fasta	1	91194	49.8618330153	IncI1,IncI1	KY865323_00122,CP011336_00018	MOBP	NC_019097	MPF_I	NC_019097_00085,NC_019111_00038,NC_022267_00057,NC_019097_00075,NC_022267_00069,NC_019097_00056,NZ_CM001473_00069,NC_015965_00072,NC_023290_00086	MOBP	JN253636	Conjugative	CP016520	0.000508006	476
+plasmid_23.fasta	1	6647	48.5331728599	ColRNAI	AJ627566	MOBP	NC_019076_00002	-	-	MOBP	MF083142	Mobilizable	CP016519	9.55247e-05	23
+plasmid_53.fasta	1	37698	41.1772507825	IncX1	KC853434_00019	MOBP	NC_019096_00001	MPF_T	NC_023277_00163,NC_017624_00009,NC_019138_00026,NC_019067_00043,NC_010860_00022	-	-	Conjugative	CP016518	0	53

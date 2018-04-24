@@ -1,0 +1,2 @@
+file_id	num_contigs	total_length	gc	rep_type(s)	rep_type_accession(s)	relaxase_type(s)	relaxase_type_accession(s)	mpf_type	mpf_type_accession(s)	orit_type(s)	orit_accession(s)	PredictedMobility	mash_nearest_neighbor	mash_neighbor_distance	mash_neighbor_cluster
+plasmid_23.fasta	1	6647	48.5331728599	ColRNAI	AJ627566	MOBP	NC_019076_00002	-	-	MOBP	MF083142	Mobilizable	CP016519	9.55247e-05	23
