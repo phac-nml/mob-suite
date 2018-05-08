@@ -38,7 +38,8 @@ setup(
         'pandas>=0.18.1',
         'tables>=3.3.0',
         'pandas==0.22.0',
-        'biopython>=1.70'
+        'biopython>=1.70',
+        'pycurl>=7.43.0'
         
     ],
 
