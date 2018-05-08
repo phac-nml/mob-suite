@@ -30,8 +30,8 @@ Provides in silico predictions of the replicon family, relaxase type, mate-pair 
 Currently, the only installation method available is by installing through pip but there are plans to package it for bioconda
 ```
 % git clone https://github.com/jrober84/mob-suite
-% cd mob-suite
-% pip install setup.py
+% pip install mob-suite/
+
 
 ```
 ## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and predict mobility

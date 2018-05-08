@@ -22,7 +22,7 @@ exec(open('mob_suite/version.py').read())
 
 setup(
     name='mob_suite',
-    version=__version__,
+    version='1.0',
     packages=find_packages(exclude=['tests']),
     url='https://github.com/jrober84/mob_suite',
     license='GPLv3',
@@ -32,18 +32,13 @@ setup(
     keywords='Plasmids finding typing reconstruction',
     classifiers=classifiers,
     package_dir={'mob_suite':'mob_suite'},
-    package_data={'mob_suite': ['databases/*.msh',
-                            'databases/*.fas',
-                            'databases/*.faa',
-                            'databases/*.nhr',
-                            'databases/*.nin',
-                            'databases/*.nsq',
-                            ]},
+
     install_requires=[
         'numpy>=1.11.1',
         'pandas>=0.18.1',
         'tables>=3.3.0',
         'pandas==0.22.0',
+        'biopython>=1.70'
         
     ],
 

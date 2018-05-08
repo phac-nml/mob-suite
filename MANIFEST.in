@@ -3,4 +3,4 @@ include README.rst
 include MANIFEST.in
 include setup.py
 
-recursive-include mob_suite/databases/ *
+
