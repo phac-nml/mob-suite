@@ -58,37 +58,41 @@ def extract(fname,outdir):
             f_out.close()
             os.remove(fname)
 
+def main():
+    logging = init_console_logger(2)
+    logging.info('Initilizating databases...this will take some time')
 
-logging = init_console_logger(2)
-logging.info('Initilizating databases...this will take some time')
+    #Find available threads and use the maximum number available for mash sketch but cap it at 32
+    num_threads = multiprocessing.cpu_count()
+    if num_threads > 32:
+        num_threads = 32
 
-#Find available threads and use the maximum number available for mash sketch but cap it at 32
-num_threads = multiprocessing.cpu_count()
-if num_threads > 32:
-    num_threads = 32
+    database_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)),'databases/')
+    zip_file = os.path.join(database_directory,'data.zip')
+    plasmid_database_fasta_file = os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas')
+    repetitive_fasta_file = os.path.join(database_directory,'repetitive.dna.fas')
+    mash_db_file =  os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas.msh')
+    download_to_file('https://ndownloader.figshare.com/articles/5841882?private_link=a4c92dd84f17b2cefea6',zip_file)
+    extract(zip_file,database_directory)
+    os.remove(zip_file)
+    files = [f for f in listdir(database_directory) if isfile(join(database_directory, f))]
+    for file in files:
 
-database_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)),'databases/')
-zip_file = os.path.join(database_directory,'data.zip')
-plasmid_database_fasta_file = os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas')
-repetitive_fasta_file = os.path.join(database_directory,'repetitive.dna.fas')
-mash_db_file =  os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas.msh')
-download_to_file('https://ndownloader.figshare.com/articles/5841882?private_link=a4c92dd84f17b2cefea6',zip_file)
-extract(zip_file,database_directory)
-os.remove(zip_file)
-files = [f for f in listdir(database_directory) if isfile(join(database_directory, f))]
-for file in files:
+        if file.endswith('gz'):
+            extract(os.path.join(database_directory,file), database_directory)
 
-    if file.endswith('gz'):
-        extract(os.path.join(database_directory,file), database_directory)
+    #Initilize blast and mash daatabases
+    blast_runner = BlastRunner(repetitive_fasta_file, database_directory)
+    blast_runner.makeblastdb(repetitive_fasta_file, 'nucl')
+    blast_runner = BlastRunner(plasmid_database_fasta_file, database_directory)
+    blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl')
+    mObj = mash()
+    mObj.mashsketch(plasmid_database_fasta_file,mash_db_file,num_threads=num_threads)
+    status_file = os.path.join(database_directory,'status.txt')
+    with gzip.open(status_file, 'w') as f:
+        f.write("Download date: {}".format(datetime.datetime.today().strftime('%Y-%m-%d')))
+    f.close()
 
-#Initilize blast and mash daatabases
-blast_runner = BlastRunner(repetitive_fasta_file, database_directory)
-blast_runner.makeblastdb(repetitive_fasta_file, 'nucl')
-blast_runner = BlastRunner(plasmid_database_fasta_file, database_directory)
-blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl')
-mObj = mash()
-mObj.mashsketch(plasmid_database_fasta_file,mash_db_file,num_threads=num_threads)
-status_file = os.path.join(database_directory,'status.txt')
-with gzip.open(status_file, 'w') as f:
-    f.write("Download date: {}".format(datetime.datetime.today().strftime('%Y-%m-%d')))
-f.close()
+# call main function
+if __name__ == '__main__':
+    main()
