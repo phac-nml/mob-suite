@@ -31,7 +31,7 @@ Currently, the only installation method available is by installing through pip b
 ```
 % git clone https://github.com/jrober84/mob-suite
 % cd mob-suite
-% pip install setup.py
+% python install setup.py
 
 ```
 ## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and predict mobility
