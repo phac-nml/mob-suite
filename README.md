@@ -6,6 +6,8 @@ bacteria to new niches through horizontal transmission of novel traits to differ
 backgrounds. The MOB-suite is designed to be a modular set of tools for the typing and
 reconstruction of plasmid sequences from WGS assemblies.
 
+The MOB-suite depends on a series of databases which are too large to be hosted in git-hub. They can be downloaded or updated by running mob_init or if running any of the tools for the first time, the databases will download and initialize automatically. However, they are quite large so the first run will take a long time depending on your connection and speed of your computer.
+
 ### MOB-cluster
 This tool creates plasmid similarity groups using fast genomic distance estimation using MASH.  Plasmids are grouped into clusters using single-linkage clustering and the cluster codes provided by the tool provide an approximation of operational taxonomic units OTU’s 
 
