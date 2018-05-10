@@ -30,9 +30,9 @@ Provides in silico predictions of the replicon family, relaxase type, mate-pair 
 The MOB-suite uses the minimus2 pipeline from Circlator but there are some hardcoded links which need to be created in order for the tool to work correctly.
 After installing circlator and amos run the following as root. 
 ```
-% which show-coords
-using the path above
-% ln -s conda-show-coords path /usr/local/bin/show-coords
+% which show-coords 
+using the path above ash "conda-show-coords-path"
+% ln -s conda-show-coords-path /usr/local/bin/show-coords
 
 ```
 
