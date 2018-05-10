@@ -31,7 +31,7 @@ The MOB-suite uses the minimus2 pipeline from Circlator but there are some hardc
 After installing circlator and amos run the following as root. 
 ```
 % which show-coords 
-using the path above ash "conda-show-coords-path"
+using the path above as "conda-show-coords-path"
 % ln -s conda-show-coords-path /usr/local/bin/show-coords
 
 ```
