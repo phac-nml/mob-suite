@@ -1,19 +1,17 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
-from collections import OrderedDict
 import logging
 import os
 import shutil
 import sys
 from argparse import (ArgumentParser, FileType)
-
-from blast import BlastRunner
-from blast import BlastReader
-from wrappers import circlator
-from wrappers import mash
-from classes.mcl import mcl
-from utils import \
+from mob_suite.version import __version__
+from mob_suite.blast import BlastRunner
+from mob_suite.blast import BlastReader
+from mob_suite.wrappers import circlator
+from mob_suite.wrappers import mash
+from mob_suite.classes.mcl import mcl
+from mob_suite.utils import \
     fixStart, \
     read_fasta_dict, \
     write_fasta_dict, \
@@ -23,7 +21,8 @@ from utils import \
     getRepliconContigs, \
     fix_fasta_header, \
     getMashBestHit, \
-    calcFastaStats
+    calcFastaStats, \
+    verify_init
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
@@ -83,7 +82,7 @@ def main():
     args = parse_args()
     if args.debug:
         init_console_logger(3)
-    logging.info('Running Mob-typer v. {}'.format('0.1'))
+    logging.info('Running Mob-typer v. {}'.format(__version__))
     if not args.outdir:
         logging.info('Error, no output directory specified, please specify one')
         sys.exit()
@@ -97,11 +96,12 @@ def main():
         sys.exit()
 
     if not os.path.isdir(args.outdir):
-        os.mkdir(args.outdir, 0755)
+        os.mkdir(args.outdir, 0o755)
 
     if not isinstance(args.num_threads, int):
         logging.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
 
+    verify_init(logging)
     # Script arguments
     input_fasta = args.infile
     input_fasta = args.infile
@@ -134,7 +134,7 @@ def main():
     mash_file = os.path.join(tmp_dir, 'mash_' + file_id + '.txt')
 
     if not os.path.isdir(tmp_dir):
-        os.mkdir(tmp_dir, 0755)
+        os.mkdir(tmp_dir, 0o755)
 
     fix_fasta_header(input_fasta, fixed_fasta)
 
@@ -204,29 +204,29 @@ def main():
                      "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\n")
 
     if len(found_replicons) > 0:
-        rep_types = ",".join(found_replicons.values())
-        rep_acs = ",".join(found_replicons.keys())
+        rep_types = ",".join(list(found_replicons.values()))
+        rep_acs = ",".join(list(found_replicons.keys()))
     else:
         rep_types = "-"
         rep_acs = "-"
 
     if len(found_mob) > 0:
-        mob_types = ",".join(found_mob.values())
-        mob_acs = ",".join(found_mob.keys())
+        mob_types = ",".join(list(found_mob.values()))
+        mob_acs = ",".join(list(found_mob.keys()))
     else:
         mob_types = "-"
         mob_acs = "-"
 
     if len(found_mpf) > 0:
         mpf_type = determine_mpf_type(found_mpf)
-        mpf_acs = ",".join(found_mpf.keys())
+        mpf_acs = ",".join(list(found_mpf.keys()))
     else:
         mpf_type = "-"
         mpf_acs = "-"
 
     if len(found_orit) > 0:
-        orit_types = ",".join(found_orit.values())
-        orit_acs = ",".join(found_orit.keys())
+        orit_types = ",".join(list(found_orit.values()))
+        orit_acs = ",".join(list(found_orit.keys()))
     else:
         orit_types = "-"
         orit_acs = "-"
@@ -249,7 +249,6 @@ def main():
                                                                                      mash_top_hit['mash_hit_score'],
                                                                                      mash_top_hit['clustid'])
     results_fh.write(string)
-    print(string)
 
     if not keep_tmp:
         shutil.rmtree(tmp_dir)

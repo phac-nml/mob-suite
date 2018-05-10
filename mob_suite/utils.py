@@ -1,7 +1,7 @@
 from Bio import SeqIO
 from Bio.SeqUtils import GC
-from blast import BlastRunner
-from blast import BlastReader
+from mob_suite.blast import BlastRunner
+from mob_suite.blast import BlastReader
 import os
 from subprocess import Popen, PIPE
 

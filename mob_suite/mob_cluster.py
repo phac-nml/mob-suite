@@ -3,16 +3,16 @@ import os
 import shutil
 import sys
 from argparse import (ArgumentParser)
-
+from mob_suite.version import __version__
 import pandas as pd
 import scipy
 import scipy.cluster.hierarchy as sch
 from Bio import SeqIO
 from scipy.cluster.hierarchy import fcluster
 
-from utils import \
+from mob_suite.utils import \
     read_fasta_dict
-from wrappers import mash
+from mob_suite.wrappers import mash
 
 
 def parse_args():
@@ -77,7 +77,7 @@ def build_cluster_db(distance_matrix_file,distances):
     clust_assignments = dict()
 
     for dist in distances:
-        print(str(dist))   
+        print((str(dist)))   
         index = 0
         clusters = fcluster(Z, dist, criterion='distance')
         for id in data.columns.values:
@@ -212,7 +212,7 @@ def update_existing(input_fasta,tmp_dir,ref_mash_db,tmp_cluster_file,header,tmp_
 
 def main():
     args = parse_args()
-    logging.info('Running Mob-Suite Clustering toolkit v. {}'.format('0.1'))
+    logging.info('Running Mob-Suite Clustering toolkit v. {}'.format(__version__))
     logging.info('Processing fasta file {}'.format(args.infile))
     logging.info('Analysis directory {}'.format(args.outdir))
 
@@ -224,16 +224,16 @@ def main():
     out_dir = args.outdir
     num_threads = args.num_threads
     if not os.path.isdir(out_dir):
-        os.mkdir(out_dir, 0755)
+        os.mkdir(out_dir, 0o755)
     tmp_dir = os.path.join(out_dir, '__tmp')
     if not os.path.isdir(tmp_dir):
-        os.mkdir(tmp_dir, 0755)
+        os.mkdir(tmp_dir, 0o755)
 
     mode = str(args.mode).lower()
 
     if mode not in ('update','build'):
         logging.info('Error you have not entered a valid mode of build or update, you entered: {}'.format(mode))
-        print('Error you have not entered a valid mode of build or update, you entered: {}'.format(mode))
+        print(('Error you have not entered a valid mode of build or update, you entered: {}'.format(mode)))
         sys.exit()
 
     header = ('id', 0.05, 0.0001)

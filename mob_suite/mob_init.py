@@ -1,14 +1,8 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
-import os
-import pycurl
-import tarfile
-import zipfile
-import gzip
-from blast import BlastRunner
-from wrappers import mash
-import multiprocessing
+from mob_suite.version import __version__
+import os, pycurl, tarfile, zipfile, gzip, multiprocessing
+from mob_suite.blast import BlastRunner
+from mob_suite.wrappers import mash
 from os import listdir
 from os.path import isfile, join
 import shutil

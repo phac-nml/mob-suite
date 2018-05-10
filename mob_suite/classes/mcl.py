@@ -51,9 +51,9 @@ class mcl:
 
         p.wait()
         stdout = p.stdout.read()
-        print stdout
+        print(stdout)
         stderr = p.stderr.read()
-        print stderr
+        print(stderr)
 
     def run_mcl(self,mci_outfile,tab_outfile,cluster_outfile,inflation,num_threads):
         p = Popen(['mcl',

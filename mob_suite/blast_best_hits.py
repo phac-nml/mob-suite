@@ -1,10 +1,7 @@
 #!/usr/bin/env python
-from __future__ import print_function
-import logging
-import os
-import sys
+import logging, os, sys
 from argparse import (ArgumentParser, FileType)
-from blast import BlastReader
+from mob_suite.blast import BlastReader
 
 
 def parse_args():
@@ -122,7 +119,7 @@ def main():
         logging.info('Error, no output directory specified, please specify one')
         sys.exit()
     if not os.path.isdir(args.outdir):
-        os.mkdir(args.outdir, 0755)
+        os.mkdir(args.outdir, 0o755)
 
     blast_file = args.infile
     base_file_name = os.path.splitext(os.path.basename(blast_file))[0]

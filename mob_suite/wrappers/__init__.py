@@ -1,7 +1,5 @@
 from subprocess import Popen, PIPE, check_call
-import os
-import sys
-import logging
+import os, sys, logging
 
 
 class circlator:

@@ -10,7 +10,7 @@ Intended Audience :: Science/Research
 Topic :: Scientific/Engineering
 Topic :: Scientific/Engineering :: Bio-Informatics
 Programming Language :: Python
-Programming Language :: Python :: 2.7
+Programming Language :: Python :: 3.6
 Programming Language :: Python :: Implementation :: CPython
 Operating System :: POSIX :: Linux
 """.strip().split('\n')
@@ -24,7 +24,7 @@ setup(
     name='mob_suite',
     version='1.0',
     packages=find_packages(exclude=['tests']),
-    url='https://github.com/jrober84/mob_suite',
+    url='https://github.com/phac-nml/mob-suite',
     license='GPLv3',
     author='James Robertson',
     author_email='james.robertson@canada.com',

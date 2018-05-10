@@ -61,7 +61,7 @@ class mge_predict:
                     continue
                 scores[match_id] = self.seq_scores[contig_id][match_id]
 
-            self.seq_scores[contig_id] = OrderedDict(sorted(scores.items(), key=itemgetter(1), reverse=True))
+            self.seq_scores[contig_id] = OrderedDict(sorted(list(scores.items()), key=itemgetter(1), reverse=True))
             top_match = -1
             scores = dict()
             for match_id in self.seq_scores[contig_id]:
@@ -70,7 +70,7 @@ class mge_predict:
                 if self.seq_scores[contig_id][match_id] / top_match * 100 < 90:
                     continue
                 scores[match_id] = self.seq_scores[contig_id][match_id]
-            self.seq_scores[contig_id] = OrderedDict(sorted(scores.items(), key=itemgetter(1), reverse=True))
+            self.seq_scores[contig_id] = OrderedDict(sorted(list(scores.items()), key=itemgetter(1), reverse=True))
 
 
         temp = dict()

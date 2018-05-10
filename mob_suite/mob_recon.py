@@ -1,20 +1,15 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
+from mob_suite.version import __version__
 from collections import OrderedDict
-import logging
-import os
-import shutil
-import sys
-import operator
+import logging, os, shutil, sys, operator
 from subprocess import Popen, PIPE
 from argparse import (ArgumentParser, FileType)
-from blast import BlastRunner
-from blast import BlastReader
-from wrappers import circlator
-from wrappers import mash
-from classes.mcl import mcl
-from utils import \
+from mob_suite.blast import BlastRunner
+from mob_suite.blast import BlastReader
+from mob_suite.wrappers import circlator
+from mob_suite.wrappers import mash
+from mob_suite.classes.mcl import mcl
+from mob_suite.utils import \
     fixStart, \
     read_fasta_dict, \
     write_fasta_dict, \
@@ -24,7 +19,8 @@ from utils import \
     repetitive_blast, \
     getRepliconContigs, \
     fix_fasta_header, \
-    getMashBestHit
+    getMashBestHit, \
+    verify_init
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
@@ -109,7 +105,6 @@ def run_mob_typer(fasta_path, outdir, num_threads=1):
     p = Popen(['python', mob_typer_path,
                '--infile', fasta_path,
                '--outdir', outdir,
-               '--debug',
                '--keep_tmp',
                '--num_threads', str(num_threads)],
               stdout=PIPE,
@@ -117,7 +112,7 @@ def run_mob_typer(fasta_path, outdir, num_threads=1):
     p.wait()
     stdout = p.stdout.read()
     stderr = p.stderr.read()
-    print(stderr)
+
 
     return stdout
 
@@ -198,7 +193,7 @@ def contig_blast_group(blast_results_file, overlap_threshold):
         hits[pID]['score'] += score
         hits[pID]['covered_bases'] += score
 
-    sorted_d = OrderedDict(sorted(cluster_scores.iteritems(), key=lambda x: x[1], reverse=True))
+    sorted_d = OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
 
     for clust_id in sorted_d:
         score = sorted_d[clust_id]
@@ -223,7 +218,7 @@ def main():
     args = parse_args()
     if args.debug:
         init_console_logger(3)
-    logging.info('Running plasmid detector v. {}'.format('0.1'))
+    logging.info('Running plasmid detector v. {}'.format(__version__))
     if not args.outdir:
         logging.info('Error, no output directory specified, please specify one')
         sys.exit()
@@ -234,7 +229,9 @@ def main():
     logging.info('Analysis directory {}'.format(args.outdir))
 
     if not os.path.isdir(args.outdir):
-        os.mkdir(args.outdir, 0755)
+        os.mkdir(args.outdir, 0o755)
+
+    verify_init(logging)
     plasmid_files = dict()
     input_fasta = args.infile
     out_dir = args.outdir
@@ -281,7 +278,7 @@ def main():
     logging.info('Creating tmp working directory {}'.format(tmp_dir))
 
     if not os.path.isdir(tmp_dir):
-        os.mkdir(tmp_dir, 0755)
+        os.mkdir(tmp_dir, 0o755)
 
     logging.info('Writing cleaned header input fasta file from {} to {}'.format(input_fasta, fixed_fasta))
     fix_fasta_header(input_fasta, fixed_fasta)
@@ -341,11 +338,11 @@ def main():
     seq_clusters = dict()
     cluster_bitscores = dict()
     for seqid in pcl_clusters:
-        cluster_id = pcl_clusters[seqid].keys()[0]
+        cluster_id = list(pcl_clusters[seqid].keys())[0]
         bitscore = pcl_clusters[seqid][cluster_id]
         cluster_bitscores[cluster_id] = bitscore
 
-    sorted_cluster_bitscores = sorted(cluster_bitscores.items(), key=operator.itemgetter(1))
+    sorted_cluster_bitscores = sorted(list(cluster_bitscores.items()), key=operator.itemgetter(1))
     sorted_cluster_bitscores.reverse()
     contigs_assigned = dict()
     for cluster_id, bitscore in sorted_cluster_bitscores:
@@ -402,7 +399,7 @@ def main():
         for hit_id in replicon_contigs[contig_id]:
             id, rep_type = hit_id.split('|')
 
-            cluster = pcl_clusters[contig_id].keys()[0]
+            cluster = list(pcl_clusters[contig_id].keys())[0]
             if not cluster in replicon_clusters:
                 replicon_clusters[cluster] = 0
             replicon_clusters[cluster] += 1
@@ -552,8 +549,8 @@ def main():
                     rep_ids[rep_type] = ''
                     rep_hit_ids[id] = ''
 
-                found_replicon_string = ','.join(rep_ids.keys())
-                found_replicon_id_string = ','.join(rep_hit_ids.keys())
+                found_replicon_string = ','.join(list(rep_ids.keys()))
+                found_replicon_id_string = ','.join(list(rep_hit_ids.keys()))
 
             if contig_id in mob_contigs:
                 mob_ids = dict()
@@ -564,8 +561,8 @@ def main():
                     mob_ids[mob_type] = ''
                     mob_hit_ids[id] = ''
 
-                found_mob_string = ','.join(mob_ids.keys())
-                found_mob_id_string = ','.join(mob_hit_ids.keys())
+                found_mob_string = ','.join(list(mob_ids.keys()))
+                found_mob_id_string = ','.join(list(mob_hit_ids.keys()))
 
             rep_dna_info = "\t\t\t\t"
             if contig_id in repetitive_dna:
@@ -598,8 +595,7 @@ def main():
                                                                                        '', '', rep_dna_info))
     results_fh.close()
     write_fasta_dict(chr_contigs, chromosome_file)
-    if not keep_tmp:
-        shutil.rmtree(tmp_dir)
+
 
     if args.run_typer:
         mobtyper_results = "file_id\tnum_contigs\ttotal_length\tgc\t" \
@@ -609,12 +605,13 @@ def main():
                            "orit_type(s)\torit_accession(s)\tPredictedMobility\t" \
                            "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\n"
         for file in plasmid_files:
-            #out_dir = os.path.splitext(file)[0]
-            #print (out_dir)
-            mobtyper_results = mobtyper_results + run_mob_typer(file, out_dir, str(num_threads))
+            mobtyper_results = mobtyper_results + "{}".format(run_mob_typer(file, out_dir, str(num_threads)))
         fh = open(mobtyper_results_file, 'w')
         fh.write(mobtyper_results)
         fh.close()
+
+    if not keep_tmp:
+        shutil.rmtree(tmp_dir)
 
 
 # call main function
