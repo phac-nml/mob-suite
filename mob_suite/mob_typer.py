@@ -253,6 +253,8 @@ def main():
     if not keep_tmp:
         shutil.rmtree(tmp_dir)
 
+    print("{}".format(string))
+
 
 # call main function
 if __name__ == '__main__':

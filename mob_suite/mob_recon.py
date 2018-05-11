@@ -114,7 +114,8 @@ def run_mob_typer(fasta_path, outdir, num_threads=1):
     stderr = p.stderr.read()
 
 
-    return stdout
+
+    return stdout.decode("utf-8")
 
 
 def contig_blast(input_fasta, plasmid_db, min_ident, min_cov, evalue, min_length, tmp_dir, blast_results_file,
