@@ -67,7 +67,6 @@ def write_clusters(file,cluster_assignments,header):
 
 
 def build_cluster_db(distance_matrix_file,distances):
-    print(distances)
     data = pd.read_csv(distance_matrix_file, sep='\t', header=0,
                        index_col=0)
     distance_matrix = data.as_matrix()
@@ -77,7 +76,6 @@ def build_cluster_db(distance_matrix_file,distances):
     clust_assignments = dict()
 
     for dist in distances:
-        print((str(dist)))   
         index = 0
         clusters = fcluster(Z, dist, criterion='distance')
         for id in data.columns.values:
@@ -122,7 +120,6 @@ def add_new_record(fasta_file,ref_mashdb,mash_results_file,ref_cluster_file,dist
     query_mash_distances = dict()
 
     for line in mashfile_handle:
-        print(line)    
         row = line.split('\t')
         query_id = row[1]
         ref_id = row[0].split('|')[0]
@@ -237,9 +234,9 @@ def main():
         sys.exit()
 
     header = ('id', 0.05, 0.0001)
-    tmp_cluster_file = os.path.join(tmp_dir, 'clusters_tmp.txt')
+    tmp_cluster_file = os.path.join(out_dir, 'clusters.txt')
     tmp_ref_fasta_file = os.path.join(tmp_dir, 'references_tmp.fasta')
-    update_fasta = os.path.join(tmp_dir, 'references_updated.fasta')
+    update_fasta = os.path.join(out_dir, 'references_updated.fasta')
 
     if mode == 'update':
         ref_fasta = args.ref_fasta_file
