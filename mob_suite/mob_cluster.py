@@ -189,7 +189,7 @@ def updateFastaFile(in_fasta_file,out_fasta_file,cluster_assignments):
 def selectCluster(clust_assignments,column):
     out = dict()
     for id in clust_assignments:
-    	row = str(id).split('|')
+        row = str(id).split('|')
         out[row[0]] = clust_assignments[id][column]
     return out
 
