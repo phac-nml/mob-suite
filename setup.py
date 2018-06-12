@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 from distutils.core import setup
 from setuptools import find_packages
@@ -50,6 +51,7 @@ setup(
             'mob_recon=mob_suite.mob_recon:main',
             'mob_cluster=mob_suite.mob_cluster:main',
             'mob_typer=mob_suite.mob_typer:main',
+            'mob_typer=mob_suite.blast_best_hits:main',
         ],
     },
 )

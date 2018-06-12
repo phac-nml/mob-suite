@@ -17,7 +17,10 @@ This tool reconstructs individual plasmid sequences from draft genome assemblies
 ### MOB-typer
 Provides in silico predictions of the replicon family, relaxase type, mate-pair formation type and predicted transferability of the plasmid
 
-## Installation ## 
+## Installation ##
+
+## Requires
+Python v. 3.5 +
 
 ## Dependancies
 ```

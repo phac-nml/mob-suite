@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from mob_suite.version import __version__
-import os, pycurl, tarfile, zipfile, gzip, multiprocessing
+import os, pycurl, tarfile, zipfile, gzip, multiprocessing, sys
 from mob_suite.blast import BlastRunner
 from mob_suite.wrappers import mash
 from os import listdir
@@ -66,7 +66,13 @@ def main():
     plasmid_database_fasta_file = os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas')
     repetitive_fasta_file = os.path.join(database_directory,'repetitive.dna.fas')
     mash_db_file =  os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas.msh')
+    logging.info('Downloading databases...this will take some time')
     download_to_file('https://ndownloader.figshare.com/articles/5841882?private_link=a4c92dd84f17b2cefea6',zip_file)
+    if (not os.path.isfile(zip_file)):
+        logging.error('Downloading databases failed, please check your internet connection and retry')
+        sys.exit(-1)
+    else:
+        logging.info('Downloading databases successful, now building databases')
     extract(zip_file,database_directory)
     os.remove(zip_file)
     files = [f for f in listdir(database_directory) if isfile(join(database_directory, f))]
@@ -76,14 +82,17 @@ def main():
             extract(os.path.join(database_directory,file), database_directory)
 
     #Initilize blast and mash daatabases
+    logging.info('Building repetive mask database')
     blast_runner = BlastRunner(repetitive_fasta_file, database_directory)
     blast_runner.makeblastdb(repetitive_fasta_file, 'nucl')
+    logging.info('Building complete plasmid database')
     blast_runner = BlastRunner(plasmid_database_fasta_file, database_directory)
     blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl')
+    logging.info('Sketching complete plasmid database')
     mObj = mash()
     mObj.mashsketch(plasmid_database_fasta_file,mash_db_file,num_threads=num_threads)
     status_file = os.path.join(database_directory,'status.txt')
-    with gzip.open(status_file, 'w') as f:
+    with open(status_file, 'w') as f:
         f.write("Download date: {}".format(datetime.datetime.today().strftime('%Y-%m-%d')))
     f.close()
 

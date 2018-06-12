@@ -4,6 +4,26 @@ from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 import os
 from subprocess import Popen, PIPE
+import shutil,sys
+
+
+def check_dependencies(logging):
+    external_programs = ['blastn', 'makeblastdb', 'tblastn', 'circlator']
+    missing = 0
+    for program in external_programs:
+        path = shutil.which(program)
+        if path is None:
+            missing += 1
+            logging.error("ERROR: Missing program: {}".format(program,))
+        else:
+            logging.info("SUCCESS: Found program {} at {}".format(program,path))
+    if missing > 0 :
+        logging.error("Error, you are missing needed programs for mob-suite, please install them and retry")
+        sys.out(-1)
+
+
+
+
 
 def fixStart(blast_df):
     for index, row in blast_df.iterrows():
