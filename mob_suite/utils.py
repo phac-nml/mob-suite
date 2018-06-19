@@ -19,7 +19,7 @@ def check_dependencies(logging):
             logging.info("SUCCESS: Found program {} at {}".format(program,path))
     if missing > 0 :
         logging.error("Error, you are missing needed programs for mob-suite, please install them and retry")
-        sys.out(-1)
+        sys.exit(-1)
 
 
 
