@@ -23,12 +23,12 @@ exec(open('mob_suite/version.py').read())
 
 setup(
     name='mob_suite',
-    version='1.4.1',
+    version='1.4.3',
     packages=find_packages(exclude=['tests']),
     url='https://github.com/phac-nml/mob-suite',
     license='GPLv3',
     author='James Robertson',
-    author_email='james.robertson@canada.com',
+    author_email='james.robertson@canada.ca',
     description=('mob_suite is a set of tools for finding, typing and reconstruction of plasmids from draft and complete genome assemblies.'),
     keywords='Plasmids finding typing reconstruction',
     classifiers=classifiers,
@@ -51,7 +51,7 @@ setup(
             'mob_recon=mob_suite.mob_recon:main',
             'mob_cluster=mob_suite.mob_cluster:main',
             'mob_typer=mob_suite.mob_typer:main',
-            'mob_typer=mob_suite.blast_best_hits:main',
+            'best_blast_hits=mob_suite.blast_best_hits:main',
         ],
     },
 )
