@@ -23,7 +23,7 @@ exec(open('mob_suite/version.py').read())
 
 setup(
     name='mob_suite',
-    version='1.4.3',
+    version='1.4.4',
     packages=find_packages(exclude=['tests']),
     url='https://github.com/phac-nml/mob-suite',
     license='GPLv3',
