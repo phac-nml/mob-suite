@@ -9,22 +9,31 @@ import scipy
 import scipy.cluster.hierarchy as sch
 from Bio import SeqIO
 from scipy.cluster.hierarchy import fcluster
-
+from mob_suite.blast import BlastRunner
 from mob_suite.utils import \
     read_fasta_dict
 from mob_suite.wrappers import mash
 
+LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+
+def init_console_logger(lvl):
+    logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
+    report_lvl = logging_levels[lvl]
+
+    logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
+    return logging
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
     parser = ArgumentParser(description='Mob-Suite: Generate and update existing plasmid clusters')
-    parser.add_argument('--mode', type=str, required=True, help='Build: Create a new database from scratch, Update: Update an existing database with one or more sequences')
-    parser.add_argument('--outdir', type=str, required=True, help='Output Directory to put results')
-    parser.add_argument('--infile', type=str, required=True, help='Input fasta file of one or more closed plasmids to process')
+    parser.add_argument('-m','--mode', type=str, required=True, help='Build: Create a new database from scratch, Update: Update an existing database with one or more sequences')
+    parser.add_argument('-o','--outdir', type=str, required=True, help='Output Directory to put results')
+    parser.add_argument('-i','--infile', type=str, required=True, help='Input fasta file of one or more closed plasmids to process')
     parser.add_argument('--ref_cluster_file', type=str, required=False, help='Reference mob-cluster file')
     parser.add_argument('--ref_fasta_file', type=str, required=False, help='Reference mob-cluster fasta file')
     parser.add_argument('--ref_mash_db', type=str, required=False, help='Reference mob-cluster mash sketch file')
     parser.add_argument('--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
+    parser.add_argument('-w','--overwrite',  required=False, help='Overwrite the MOB-suite databases with results', action='store_true')
     return parser.parse_args()
 
 def read_cluster_assignments(file):
@@ -112,8 +121,7 @@ def add_new_record(fasta_file,ref_mashdb,mash_results_file,ref_cluster_file,dist
     mashObj = mash()
     mashObj.mashsketch(fasta_file, output_path=fasta_file, sketch_ind=True, num_threads=1, kmer_size=21, sketch_size=1000)
     mashfile_handle = open(mash_results_file,'w')
-
-    mashObj.run_mash(ref_mashdb, fasta_file+'.msh', mashfile_handle,table=False,num_threads=num_threads)
+    mashObj.run_mash(ref_mashdb, fasta_file + '.msh', mashfile_handle,table=False,num_threads=num_threads)
     mashfile_handle.close()
 
     mashfile_handle = open(mash_results_file, 'r')
@@ -138,7 +146,6 @@ def add_new_record(fasta_file,ref_mashdb,mash_results_file,ref_cluster_file,dist
         min_distance = min(query_mash_distances[query_id].values())
         min_dist_key = min(query_mash_distances[query_id], key=query_mash_distances[query_id].get)
         clusters = list()
-
         if float(min_distance) > float(max_thresh):
             for i in range(0,len(distances_thresholds)):
                 clusters.append(cluster_pointers[i])
@@ -157,7 +164,7 @@ def add_new_record(fasta_file,ref_mashdb,mash_results_file,ref_cluster_file,dist
                     continue
                 clusters[i] = cluster_pointers[i]
                 cluster_pointers[i] += 1
-            ref_clusters[query_id] = clusters
+        ref_clusters[query_id] = clusters
 
     return ref_clusters
 
@@ -197,25 +204,31 @@ def update_existing(input_fasta,tmp_dir,ref_mash_db,tmp_cluster_file,header,tmp_
     for id in sequences:
         seq = sequences[id]
         tmp_fasta = os.path.join(tmp_dir,id + '_tmp.fasta')
+        with open(tmp_fasta , "w") as fh:
+            fh.write("\n>{}\n{}\n".format(id,seq))
+            fh.close()
         tmp_mash = os.path.join(tmp_dir,id + '_tmp.txt')
         clust_assignments = add_new_record(tmp_fasta, ref_mash_db ,tmp_mash, tmp_cluster_file,(0.05, 0.0001),num_threads)
+
         writeClusterAssignments(tmp_cluster_file , header, clust_assignments)
         with open(tmp_ref_fasta_file , "a") as fh:
             fh.write("\n>{}\n{}\n".format(id,seq))
             fh.close()
 
     clust_dict = selectCluster(clust_assignments, 1)
+
     updateFastaFile(tmp_ref_fasta_file ,update_fasta, clust_dict)
 
 def main():
     args = parse_args()
+    logging = init_console_logger(3)
     logging.info('Running Mob-Suite Clustering toolkit v. {}'.format(__version__))
     logging.info('Processing fasta file {}'.format(args.infile))
     logging.info('Analysis directory {}'.format(args.outdir))
 
     input_fasta = args.infile
     if not os.path.isfile(input_fasta):
-        logging.info('Error, no input fasta specified, please specify one')
+        logging.error('Error, input fasta specified does not exist: {}'.format(input_fasta ))
         sys.exit()
 
     out_dir = args.outdir
@@ -229,7 +242,7 @@ def main():
     mode = str(args.mode).lower()
 
     if mode not in ('update','build'):
-        logging.info('Error you have not entered a valid mode of build or update, you entered: {}'.format(mode))
+        logging.error('Error you have not entered a valid mode of build or update, you entered: {}'.format(mode))
         print(('Error you have not entered a valid mode of build or update, you entered: {}'.format(mode)))
         sys.exit()
 
@@ -239,12 +252,52 @@ def main():
     update_fasta = os.path.join(out_dir, 'references_updated.fasta')
 
     if mode == 'update':
+        if args.ref_cluster_file is None:
+            logging.error('Reference fasta file must be specified, please check help for parameter reference')
+            sys.exit()
+
         ref_fasta = args.ref_fasta_file
+
+        if not os.path.isfile(ref_fasta ):
+            logging.error('Reference fasta file specified does not exist: {}'.format(ref_fasta))
+            sys.exit()
+
+        if args.ref_cluster_file is None:
+            logging.error('Reference cluster file must be specified, please check help for parameter reference')
+            sys.exit()
+
         ref_cluster_file = args.ref_cluster_file
+
+        if not os.path.isfile(ref_cluster_file):
+            logging.error('Reference cluster file specified does not exist: {}'.format(ref_cluster_file))
+            sys.exit()
+
+        if args.ref_mash_db is None:
+            logging.error('Reference mash sketch file must be specified, please check help for parameter reference')
+            sys.exit()
+
         ref_mash_db = args.ref_mash_db
+        if not os.path.isfile(ref_mash_db):
+            logging.error('Reference mash file specified does not exist: {}'.format(ref_mash_db))
+            sys.exit()
+
+        logging.info('Running mob-cluster in update mode with input file: {}'.format(input_fasta))
+        logging.info('Running mob-cluster in update mode with output directory: {}'.format(out_dir))
+        logging.info('Running mob-cluster in update mode on reference fasta file: {}'.format(ref_fasta))
+        logging.info('Reading previous cluster reference assignments from : {}'.format(ref_cluster_file))
+
         shutil.copy(ref_cluster_file, tmp_cluster_file)
         shutil.copy(ref_fasta, tmp_ref_fasta_file)
         update_existing(input_fasta, tmp_dir, ref_mash_db, tmp_cluster_file, header, tmp_ref_fasta_file, update_fasta)
+
+        if args.overwrite:
+            shutil.move(update_fasta,ref_fasta)
+            shutil.move(tmp_cluster_file,ref_cluster_file)
+            mash_db_file = "{}.msh".format(input_fasta)
+            mObj = mash()
+            mObj.mashsketch(input_fasta, mash_db_file, num_threads=num_threads)
+            blast_runner = BlastRunner(ref_fasta, '')
+            blast_runner.makeblastdb(ref_fasta, 'nucl')
     else:
         mashObj = mash()
         mashObj.mashsketch(input_fasta,input_fasta+".msh",num_threads=num_threads)
