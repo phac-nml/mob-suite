@@ -20,7 +20,7 @@ Provides in silico predictions of the replicon family, relaxase type, mate-pair 
 ## Installation ##
 
 ## Requires
-Python v. 3.5 +
+Python v. 3.6 +
 
 ## Dependancies
 ```
