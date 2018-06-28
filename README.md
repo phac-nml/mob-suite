@@ -22,7 +22,13 @@ Provides in silico predictions of the replicon family, relaxase type, mate-pair 
 ## Requires
 Python v. 3.6 +
 
-## Dependancies
+## Dependencies
+
+blast+ v. 3.2.31 +
+circlator
+mash
+
+## Installation
 ```
 % conda config --add channels defaults
 % conda config --add channels conda-forge
@@ -40,7 +46,7 @@ using the path above as "conda-show-coords-path"
 ```
 
 ### Pip
-Currently, the only installation method available is by installing through pip but there are plans to package it for bioconda
+We recommend installing via bioconda but you can install it via pip using the command below
 ```
 % pip install mob_suite
 
