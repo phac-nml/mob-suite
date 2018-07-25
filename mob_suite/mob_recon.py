@@ -306,6 +306,62 @@ def main():
     repetitive_blast_results = os.path.join(tmp_dir, 'repetitive_blast_results.txt')
     contig_blast_results = os.path.join(tmp_dir, 'contig_blast_results.txt')
 
+
+    # Input numeric params
+    min_rep_ident = float(args.min_rep_ident)
+    min_mob_ident = float(args.min_mob_ident)
+    min_con_ident = float(args.min_con_ident)
+    min_rpp_ident = float(args.min_rpp_ident)
+
+    idents = {'min_rep_ident': min_rep_ident, 'min_mob_ident': min_mob_ident, 'min_con_ident': min_con_ident,
+              'min_rpp_ident': min_rpp_ident}
+
+    for param in idents:
+        value = float(idents[param])
+        if value < 60:
+            logging.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
+            sys.exit(-1)
+        if value > 100:
+            logging.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
+            sys.exit(-1)
+
+    min_rep_cov = float(args.min_rep_cov)
+    min_mob_cov = float(args.min_mob_cov)
+    min_con_cov = float(args.min_con_cov)
+    min_rpp_cov = float(args.min_rpp_cov)
+
+    covs = {'min_rep_cov': min_rep_cov, 'min_mob_cov': min_mob_cov, 'min_con_cov': min_con_cov,
+            'min_rpp_cov': min_rpp_cov}
+
+    for param in covs:
+        value = float(covs[param])
+        if value < 60:
+            logging.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
+            sys.exit(-1)
+        if value > 100:
+            logging.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
+            sys.exit(-1)
+
+    min_rep_evalue = float(args.min_rep_evalue)
+    min_mob_evalue = float(args.min_mob_evalue)
+    min_con_evalue = float(args.min_con_evalue)
+    min_rpp_evalue = float(args.min_rpp_evalue)
+
+    evalues = {'min_rep_evalue': min_rep_evalue, 'min_mob_evalue': min_mob_evalue, 'min_con_evalue': min_con_evalue,
+               'min_rpp_evalue': min_rpp_evalue}
+
+    for param in evalues:
+        value = float(evalues[param])
+        if value > 1:
+            logging.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
+            sys.exit(-1)
+
+    min_overlapp = int(args.min_overlap)
+
+    min_length = int(args.min_length)
+
+
+
     # Input numeric params
     min_rep_ident = args.min_rep_ident
     min_mob_ident = args.min_mob_ident

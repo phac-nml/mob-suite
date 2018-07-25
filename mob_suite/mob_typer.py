@@ -181,15 +181,18 @@ def main():
     mash_file = os.path.join(tmp_dir, 'mash_' + file_id + '.txt')
 
     # Input numeric params
-    min_rep_ident = args.min_rep_ident
-    min_mob_ident = args.min_mob_ident
-    min_ori_ident = args.min_ori_ident
-    min_mpf_ident = args.min_mpf_ident
+
+    min_rep_ident = float(args.min_rep_ident)
+    min_mob_ident = float(args.min_mob_ident)
+    min_ori_ident = float(args.min_ori_ident)
+    min_mpf_ident = float(args.min_mpf_ident)
 
     idents = {'min_rep_ident': min_rep_ident, 'min_mob_ident': min_mob_ident, 'min_ori_ident': min_ori_ident}
 
     for param in idents:
-        value = idents[param]
+
+        value = float(idents[param])
+
         if value < 60:
             logging.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
             sys.exit(-1)
@@ -197,17 +200,21 @@ def main():
             logging.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
             sys.exit(-1)
 
-    min_rep_cov = args.min_rep_cov
-    min_mob_cov = args.min_mob_cov
-    min_ori_cov = args.min_ori_cov
-    min_mpf_cov = args.min_mpf_cov
+
+    min_rep_cov = float(args.min_rep_cov)
+    min_mob_cov = float(args.min_mob_cov)
+    min_ori_cov = float(args.min_ori_cov)
+    min_mpf_cov = float(args.min_mpf_cov)
+
 
 
     covs = {'min_rep_cov': min_rep_cov, 'min_mob_cov': min_mob_cov, 'min_con_cov': min_ori_cov,
             'min_rpp_cov': min_ori_cov}
 
     for param in covs:
-        value = covs[param]
+
+        value = float(covs[param])
+
         if value < 60:
             logging.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
             sys.exit(-1)
@@ -215,16 +222,19 @@ def main():
             logging.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
             sys.exit(-1)
 
-    min_rep_evalue = args.min_rep_evalue
-    min_mob_evalue = args.min_mob_evalue
-    min_ori_evalue = args.min_ori_evalue
-    min_mpf_evalue = args.min_mpf_evalue
+
+    min_rep_evalue = float(args.min_rep_evalue)
+    min_mob_evalue = float(args.min_mob_evalue)
+    min_ori_evalue = float(args.min_ori_evalue)
+    min_mpf_evalue = float(args.min_mpf_evalue)
 
 
     evalues = {'min_rep_evalue': min_rep_evalue, 'min_mob_evalue': min_mob_evalue, 'min_con_evalue': min_ori_evalue}
 
     for param in evalues:
-        value = evalues[param]
+
+        value = float(evalues[param])
+
         if value > 1:
             logging.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
             sys.exit(-1)
