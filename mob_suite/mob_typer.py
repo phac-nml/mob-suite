@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import logging
 import os
@@ -22,7 +22,8 @@ from mob_suite.utils import \
     fix_fasta_header, \
     getMashBestHit, \
     calcFastaStats, \
-    verify_init
+    verify_init, \
+    check_dependencies
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
@@ -36,18 +37,66 @@ def init_console_logger(lvl):
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
-    parser = ArgumentParser(description='Mob Typing: Typing and prediction of plasmid mibility')
-    parser.add_argument('--outdir', type=str, required=True, help='Output Directory to put results')
-    parser.add_argument('--infile', type=str, required=True, help='Input assembly fasta file to process')
-    parser.add_argument('--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
-    parser.add_argument('--evalue', type=str, required=False, help='Minimum evalue threshold for blast',
+    parser = ArgumentParser(
+        description="Mob Suite: Typing and reconstruction of plasmids from draft and complete assemblies version: {}".format(
+            __version__))
+
+    parser.add_argument('-o', '--outdir', type=str, required=True, help='Output Directory to put results')
+
+    parser.add_argument('-i', '--infile', type=str, required=True, help='Input assembly fasta file to process')
+
+    parser.add_argument('-n', '--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
+
+    parser.add_argument('--min_rep_evalue', type=str, required=False,
+                        help='Minimum evalue threshold for replicon blastn',
                         default=0.00001)
-    parser.add_argument('--min_ident', type=str, required=False, help='Minimum sequence identity', default=80)
-    parser.add_argument('--debug', required=False, help='Show debug information', action='store_true')
-    parser.add_argument('--min_cov', type=str, required=False,
-                        help='Minimum percentage coverage of assembly contig by the plasmid reference database to be considered',
-                        default=65)
+
+    parser.add_argument('--min_mob_evalue', type=str, required=False,
+                        help='Minimum evalue threshold for relaxase tblastn',
+                        default=0.00001)
+
+    parser.add_argument('--min_con_evalue', type=str, required=False, help='Minimum evalue threshold for contig blastn',
+                        default=0.00001)
+
+    parser.add_argument('--min_ori_evalue', type=str, required=False,
+                        help='Minimum evalue threshold for oriT elements blastn',
+                        default=0.00001)
+    parser.add_argument('--min_mpf_evalue', type=str, required=False,
+                        help='Minimum evalue threshold for mpf elements blastn',
+                        default=0.00001)
+
+    parser.add_argument('--min_rep_ident', type=int, required=False, help='Minimum sequence identity for replicons',
+                        default=80)
+
+    parser.add_argument('--min_mob_ident', type=int, required=False, help='Minimum sequence identity for relaxases',
+                        default=80)
+
+    parser.add_argument('--min_ori_ident', type=int, required=False,
+                        help='Minimum sequence identity for oriT elements', default=90)
+    parser.add_argument('--min_mpf_ident', type=int, required=False,
+                        help='Minimum sequence identity for mpf elements', default=80)
+
+    parser.add_argument('--min_rep_cov', type=int, required=False,
+                        help='Minimum percentage coverage of replicon query by input assembly',
+                        default=80)
+
+    parser.add_argument('--min_mob_cov', type=int, required=False,
+                        help='Minimum percentage coverage of relaxase query by input assembly',
+                        default=80)
+
+    parser.add_argument('--min_ori_cov', type=int, required=False,
+                        help='Minimum percentage coverage of oriT',
+                        default=90)
+    parser.add_argument('--min_mpf_cov', type=int, required=False,
+                        help='Minimum percentage coverage of mpf',
+                        default=80)
+
+    parser.add_argument('--min_overlap', type=int, required=False,
+                        help='Minimum overlap of fragments',
+                        default=10)
+
     parser.add_argument('--keep_tmp', required=False,help='Do not delete temporary file directory', action='store_true')
+    parser.add_argument('--debug', required=False, help='Show debug information', action='store_true')
     parser.add_argument('--plasmid_mash_db', type=str, required=False,
                         help='Companion Mash database of reference database',
                         default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -104,10 +153,8 @@ def main():
     verify_init(logging)
     # Script arguments
     input_fasta = args.infile
-    input_fasta = args.infile
     out_dir = args.outdir
     num_threads = int(args.num_threads)
-    evalue = args.evalue
     keep_tmp = args.keep_tmp
     mob_ref = args.plasmid_mob
     mpf_ref = args.plasmid_mpf
@@ -133,6 +180,66 @@ def main():
     report_file = os.path.join(out_dir, 'mobtyper_' + file_id + '_report.txt')
     mash_file = os.path.join(tmp_dir, 'mash_' + file_id + '.txt')
 
+    # Input numeric params
+    min_rep_ident = float(args.min_rep_ident)
+    min_mob_ident = float(args.min_mob_ident)
+    min_ori_ident = float(args.min_ori_ident)
+    min_mpf_ident = float(args.min_mpf_ident)
+
+    idents = {'min_rep_ident': min_rep_ident, 'min_mob_ident': min_mob_ident, 'min_ori_ident': min_ori_ident}
+
+    for param in idents:
+        value = float(idents[param])
+        if value < 60:
+            logging.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
+            sys.exit(-1)
+        if value > 100:
+            logging.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
+            sys.exit(-1)
+
+    min_rep_cov = float(args.min_rep_cov)
+    min_mob_cov = float(args.min_mob_cov)
+    min_ori_cov = float(args.min_ori_cov)
+    min_mpf_cov = float(args.min_mpf_cov)
+
+
+    covs = {'min_rep_cov': min_rep_cov, 'min_mob_cov': min_mob_cov, 'min_con_cov': min_ori_cov,
+            'min_rpp_cov': min_ori_cov}
+
+    for param in covs:
+        value = float(covs[param])
+        if value < 60:
+            logging.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
+            sys.exit(-1)
+        if value > 100:
+            logging.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
+            sys.exit(-1)
+
+    min_rep_evalue = float(args.min_rep_evalue)
+    min_mob_evalue = float(args.min_mob_evalue)
+    min_ori_evalue = float(args.min_ori_evalue)
+    min_mpf_evalue = float(args.min_mpf_evalue)
+
+
+    evalues = {'min_rep_evalue': min_rep_evalue, 'min_mob_evalue': min_mob_evalue, 'min_con_evalue': min_ori_evalue}
+
+    for param in evalues:
+        value = float(evalues[param])
+        if value > 1:
+            logging.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
+            sys.exit(-1)
+
+
+    check_dependencies(logging)
+
+    needed_dbs = [replicon_ref, mob_ref, mash_db, mpf_ref]
+
+    for db in needed_dbs:
+        if (not os.path.isfile(db)):
+            logging.error('Error needed database missing "{}"'.format(db))
+            sys.exit(-1)
+
+
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir, 0o755)
 
@@ -141,7 +248,7 @@ def main():
     # run individual marker blasts
     logging.info('Running replicon blast on {}'.format(replicon_ref))
     replicon_contigs = getRepliconContigs(
-        replicon_blast(replicon_ref, fixed_fasta, 80, 80, args.evalue, tmp_dir, replicon_blast_results,
+        replicon_blast(replicon_ref, fixed_fasta, min_rep_ident, min_rep_cov, min_rep_evalue, tmp_dir, replicon_blast_results,
                        num_threads=num_threads))
     found_replicons = dict()
     for contig_id in replicon_contigs:
@@ -149,12 +256,11 @@ def main():
             acs, type = hit.split('|')
             found_replicons[acs] = type
 
-    # print(found_replicons)
 
     logging.info('Running relaxase blast on {}'.format(mob_ref))
 
     mob_contigs = getRepliconContigs(
-        mob_blast(mob_ref, fixed_fasta, 80, 80, args.evalue, tmp_dir, mob_blast_results, num_threads=num_threads))
+        mob_blast(mob_ref, fixed_fasta, min_mob_ident, min_mob_cov, min_mob_evalue, tmp_dir, mob_blast_results, num_threads=num_threads))
     found_mob = dict()
     for contig_id in mob_contigs:
         for hit in mob_contigs[contig_id]:
@@ -165,7 +271,7 @@ def main():
 
     logging.info('Running mpf blast on {}'.format(mob_ref))
     mpf_contigs = getRepliconContigs(
-        mob_blast(mpf_ref, fixed_fasta, 85, 85, args.evalue, tmp_dir, mpf_blast_results, num_threads=num_threads))
+        mob_blast(mpf_ref, fixed_fasta, min_mpf_ident, min_mpf_cov, min_mpf_evalue, tmp_dir, mpf_blast_results, num_threads=num_threads))
     found_mpf = dict()
     for contig_id in mpf_contigs:
         for hit in mpf_contigs[contig_id]:
@@ -176,15 +282,13 @@ def main():
 
     logging.info('Running orit blast on {}'.format(replicon_ref))
     orit_contigs = getRepliconContigs(
-        replicon_blast(orit_ref, fixed_fasta, 90, 90, args.evalue, tmp_dir, orit_blast_results,
+        replicon_blast(orit_ref, fixed_fasta, min_ori_ident, min_ori_cov, min_ori_evalue, tmp_dir, orit_blast_results,
                        num_threads=num_threads))
     found_orit = dict()
     for contig_id in orit_contigs:
         for hit in orit_contigs[contig_id]:
             acs, type = hit.split('|')
             found_orit[acs] = type
-
-    # print(found_orit)
 
 
     # Get closest neighbor by mash distance
