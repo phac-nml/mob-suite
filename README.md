@@ -24,7 +24,7 @@ Python v. 3.6 +
 
 ## Dependencies
 
-blast+ v. 3.2.31 +
+blast+ v. 2.3.0 +
 circlator
 mash
 
@@ -48,7 +48,7 @@ using the path above as "conda-show-coords-path"
 ### Pip
 We recommend installing via bioconda but you can install it via pip using the command below
 ```
-% pip install mob_suite
+% pip3 install mob_suite
 
 
 ```
@@ -58,7 +58,7 @@ You can perform plasmid typing using a fasta formated file containing a single p
 
 ```
 # Basic Mode
-% mob_typer.py --infile assembly.fasta --outdir my_out_dir
+% mob_typer --infile assembly.fasta --outdir my_out_dir
 
 # Look for a file called mobtyper_(input_file)_report.txt
 % cat my_out_dir/mobtyper_(input_file)_report.txt
@@ -70,13 +70,13 @@ unicycler is used, then the circularity information can be parsed directly from 
 
 ```
 ### Basic Mode
-% mob_recon.py --infile assembly.fasta --outdir my_out_dir
+% mob_recon --infile assembly.fasta --outdir my_out_dir
 ```
 
 ```
 ### Full Mode
 # In this mode, MOB-typer will be run on each identified plasmid grouping and will produce a summary report
-% mob_recon.py --infile assembly.fasta --outdir my_out_dir --run_typer
+% mob_recon --infile assembly.fasta --outdir my_out_dir --run_typer
 ```
 
 ## Using MOB-cluster
@@ -84,7 +84,7 @@ Use this tool only to update the plasmid databases or build a new one and should
 
 ```
 ### Build a new database
-% mob_cluster.py --mode build --infile plasmid.fasta --outdir output_directory
+% mob_cluster --mode build --infile plasmid.fasta --outdir output_directory
 ```
 
 ```
@@ -96,7 +96,7 @@ Use this tool only to update the plasmid databases or build a new one and should
 ### Test new plasmid database with MOB-recon
 % makeblastdb -in path_to_plasmid_testing_db -dbtype nucl
 % mash sketch -i path_to_plasmid_testing_db   <---- produces mash sketch file with format "path_to_plasmid_testing_db.msh"
-% mob_recon.py --infile assembly.fasta --outdir my_out_dir --run_typer --plasmid_mash_db path_to_mash_testing_db --plasmid_db path_to_plasmid_testing_db
+% mob_recon --infile assembly.fasta --outdir my_out_dir --run_typer --plasmid_mash_db path_to_mash_testing_db --plasmid_db path_to_plasmid_testing_db
 ```
 
 
