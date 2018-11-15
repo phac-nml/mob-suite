@@ -4,6 +4,26 @@ from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 import os
 from subprocess import Popen, PIPE
+import shutil,sys
+
+
+def check_dependencies(logging):
+    external_programs = ['blastn', 'makeblastdb', 'tblastn', 'circlator']
+    missing = 0
+    for program in external_programs:
+        path = shutil.which(program)
+        if path is None:
+            missing += 1
+            logging.error("ERROR: Missing program: {}".format(program,))
+        else:
+            logging.info("SUCCESS: Found program {} at {}".format(program,path))
+    if missing > 0 :
+        logging.error("Error, you are missing needed programs for mob-suite, please install them and retry")
+        sys.exit(-1)
+
+
+
+
 
 def fixStart(blast_df):
     for index, row in blast_df.iterrows():
@@ -171,7 +191,7 @@ def mob_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_res
 
 def repetitive_blast(input_fasta, ref_db, min_ident, min_cov, evalue, min_length, tmp_dir, blast_results_file,num_threads=1):
     blast_runner = BlastRunner(input_fasta, tmp_dir)
-    blast_runner.makeblastdb(ref_db, 'nucl')
+    #blast_runner.makeblastdb(ref_db, 'nucl')
     blast_runner.run_blast(query_fasta_path=input_fasta, blast_task='megablast', db_path=ref_db,
                            db_type='nucl', min_cov=min_cov, min_ident=min_ident, evalue=evalue,
                            blast_outfile=blast_results_file,

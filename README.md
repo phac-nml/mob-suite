@@ -17,19 +17,39 @@ This tool reconstructs individual plasmid sequences from draft genome assemblies
 ### MOB-typer
 Provides in silico predictions of the replicon family, relaxase type, mate-pair formation type and predicted transferability of the plasmid
 
-## Installation ## 
+## Installation ##
 
-## Dependancies
+## Requires
+Python v. 3.6 +
+
+## Dependencies
+
+blast+ v. 3.2.31 +
+circlator
+mash
+
+## Installation
 ```
 % conda config --add channels defaults
 % conda config --add channels conda-forge
 % conda config --add channels bioconda
-% conda install blast amos mash circlator
+% conda install blast amos mash circlator mob_suite
 ```
 
 The MOB-suite uses the minimus2 pipeline from Circlator but there are some hardcoded links which need to be created in order for the tool to work correctly.
 After installing circlator and amos run the following as root. 
 ```
+option 1: from https://github.com/sanger-pathogens/circlator/issues/65
+
+You will need to change ${CONDA_PREFIX}/bin/minimus2 for both SHOWCOORDS and DELTAFILTER
+
+Interestingly the two variables have also been hard coded, but fortunately using the ${CONDA_PREFIX} variable.
+
+Run the following line fixed the code whilst inside the environment.
+
+sed -i 's%/usr/local%${CONDA_PREFIX}%g' ${CONDA_PREFIX}/bin/minimus2
+
+option 2:
 % which show-coords 
 using the path above as "conda-show-coords-path"
 % ln -s conda-show-coords-path /usr/local/bin/show-coords
@@ -37,9 +57,9 @@ using the path above as "conda-show-coords-path"
 ```
 
 ### Pip
-Currently, the only installation method available is by installing through pip but there are plans to package it for bioconda
+We recommend installing via bioconda but you can install it via pip using the command below
 ```
-% pip install mob_suite
+% pip3 install mob_suite
 
 
 ```
@@ -153,6 +173,26 @@ Use this tool only to update the plasmid databases or build a new one and should
 | mash_neighbor_distance | Mash distance from query to match |
 | mash_neighbor_cluster | MOB-cluster type of reference match |
 
+
+# blast report file format
+| field name | description|
+| -----------| -----------|
+| qseqid | query sequence id |
+| sseqid | subject sequence id |
+| qlen | query length |
+| slen | subject length |
+| qstart | match start query |
+| qend | match end query |
+| sstart | match subject start|
+| send | match subject end|
+| length | length of alignment|
+| mismatch | number of mismatches|
+| pident | identity|
+| qcovhsp | query coverage by hsp|
+| qcovs | query coverage by subject|
+| sstrand | strad of hit in subject|
+| evalue | evalue of match|
+| bitscore | bitscore of match |
 
 
 ## Contact
