@@ -3,6 +3,8 @@ import os
 from distutils.core import setup
 from setuptools import find_packages
 
+author='James Robertson, Kyrylo Bessonov'
+
 classifiers = """
 Development Status :: 3 - Alpha
 Environment :: Console
@@ -11,6 +13,7 @@ Intended Audience :: Science/Research
 Topic :: Scientific/Engineering
 Topic :: Scientific/Engineering :: Bio-Informatics
 Programming Language :: Python
+Programming Language :: Python :: 3.5
 Programming Language :: Python :: 3.6
 Programming Language :: Python :: Implementation :: CPython
 Operating System :: POSIX :: Linux
@@ -42,7 +45,11 @@ setup(
         'pandas>=0.22.0',
         'biopython>=1.70',
         'pycurl>=7.43.0',
-        'scipy>=1.1.0'
+        'scipy>=1.1.0',
+        'ete3>=3.0',
+        'lxml>=4.2.*',
+        'mkl_fft>=1.*',
+        'mkl_random>=1.*'
         
     ],
 
@@ -53,6 +60,7 @@ setup(
             'mob_cluster=mob_suite.mob_cluster:main',
             'mob_typer=mob_suite.mob_typer:main',
             'best_blast_hits=mob_suite.blast_best_hits:main',
+            'mob_hostrange=mob_suite.mob_host_range:mob_host_range_main'
         ],
     },
 )

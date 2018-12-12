@@ -1,6 +1,6 @@
 import pandas, re, logging, os
 from argparse import ArgumentParser
-from ete3 import NCBITaxa, Tree, NodeStyle, TreeStyle
+from ete3 import NCBITaxa, TreeStyle
 from collections import Counter,OrderedDict
 
 #default arguments
@@ -32,6 +32,7 @@ OUTDIR = os.getcwd()+"/"
 
 def getHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc, relaxase_name_list, matchtype):
 
+    mob_cluster_id=str(mob_cluster_id) #make sure it is a string
     logging.info("Loading the plasmid reference database ...")
 
     hr_obs_data = loadHostRangeDB() #load reference lookup table
@@ -170,10 +171,6 @@ def getHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc, relaxas
 def writeOutHostRangeResults(convergance_rank = None, \
                     convergance_taxonomy = None, stats_host_range_dict = None, header_flag = None, treeObject=None):
 
-    if header_flag is not None:
-        with open(file=OUTDIR+args.outname+".txt", mode="w") as fp:
-            fp.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format("Replicon(s)", "ClusterID", "Relaxase(s)",\
-                                                       "RelaxaseAccession", "Rank", "HostRange","GenusCountStats"))
 
     if args.replicon_name != None:
         replicons = ",".join(args.replicon_name)
@@ -183,6 +180,11 @@ def writeOutHostRangeResults(convergance_rank = None, \
         relaxases = ",".join(args.relaxase_name)
     else:
         relaxases = args.relaxase_name
+
+    if header_flag is not None:
+        with open(file=OUTDIR + args.outname + ".txt", mode="w") as fp:
+            fp.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format("Replicon(s)", "ClusterID", "Relaxase(s)", \
+                                                           "RelaxaseAccession", "Rank", "HostRange", "GenusCountStats"))
 
     with open(file=OUTDIR+args.outname+".txt", mode="a") as fp:
             fp.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(replicons, args.cluster_id, \
@@ -194,7 +196,18 @@ def writeOutHostRangeResults(convergance_rank = None, \
         fp.write(treeObject.get_ascii(attributes=["rank", "sci_name"]))
     fp.close()
 
-    logging.info("Wrote host range results into {}".format(OUTDIR+args.outname+".txt"))
+    #decompose resulting phylogenetic tree into frequency counts per reach taxonomic rank (hierachy level)
+    strings2file = ["rank\tname\tref_db_hits\n"]
+    with open(file=OUTDIR+args.outname+"_phyloStats.txt", mode="w") as fp:
+        for rank in stats_host_range_dict.keys():
+            names = (Counter(stats_host_range_dict[rank]).keys())
+            values = (Counter(stats_host_range_dict[rank]).values())
+            for couple in zip(names,values):
+               strings2file.append("{}\t{}\t{}\n".format(rank,couple[0],couple[1]))
+        fp.writelines(strings2file)
+        fp.close()
+
+    logging.info("Wrote host range results into {}".format(OUTDIR+args.outname+".txt")) #replicon,relaxase,cluster,host range
     logging.info("Wrote ASCII host range tree into {}".format(OUTDIR + args.outname + "_asci_tree.txt"))
 
 
@@ -293,7 +306,7 @@ def getHostRangeDBSubset(hr_obs_data, search_name, column_name, matchtype):
 
 
 def parse_args():
-    parser = ArgumentParser(description="Mob-suite Host Ranger :-)")
+    parser = ArgumentParser(description="Welcome to mob-suite Host Range module :-)")
     parser.add_argument('--exact_match',action='store_const', const="True", required=False, help='Exact single replicon/relaxase match')
     parser.add_argument('--multi_match', action='store_const', const="True", required=False, help='Exact multi replicon/relaxase match')
     parser.add_argument('--loose_match', action='store_const', const="True", required=False,help='Wildcard loose replicon/relaxase match')
@@ -364,6 +377,4 @@ if __name__ == "__main__":
     #getTaxidsPerRelaxase()
     #IncI2
 
-#TODO
-#1.Include in the mob_typer output rank and host range columns
-#1.What if multiple replicons or clusterids. Aggregate results
+
