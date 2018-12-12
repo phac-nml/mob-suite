@@ -20,6 +20,7 @@ def init_console_logger(lvl):
 
 
 def download_to_file(url,file):
+    logging.info("Downloading database to "+file)
     with open(file, 'wb') as f:
         c = pycurl.Curl()
         # Redirects to https://www.python.org/.
@@ -27,6 +28,7 @@ def download_to_file(url,file):
         # Follow redirect.
         c.setopt(c.FOLLOWLOCATION, True)
         c.setopt(c.WRITEDATA, f)
+        c.setopt(c.NOPROGRESS, False)
         c.perform()
         c.close()
 

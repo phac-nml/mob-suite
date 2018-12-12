@@ -1,0 +1,81 @@
+<tool id="mob_typer" name="MOB-Typer" version="1.4.8">
+  <description>Get the plasmid type and mobility given its sequence</description>
+  <requirements>
+     <requirement type="package" version="1.4.8">mob_suite</requirement>
+  </requirements>   
+  <command detect_errors="exit_code">
+  <![CDATA[
+    ln -s "${input}" "${input.name}";
+    mob_typer  --num_threads \${GALAXY_SLOTS:-4} --infile "${input.name}" 
+   --min_rep_evalue '$adv_param.min_rep_evalue_value'
+   --min_mob_evalue '$adv_param.min_mob_evalue_value'
+   --min_con_evalue '$adv_param.min_con_evalue_value'
+   --min_ori_evalue '$adv_param.min_ori_evalue_value'
+   --min_mpf_evalue '$adv_param.min_mpf_evalue'
+   --min_rep_ident '$adv_param.min_rep_ident'
+   --min_mob_ident '$adv_param.min_mob_ident'
+   --min_ori_ident '$adv_param.min_ori_ident'
+   --min_mpf_ident '$adv_param.min_mpf_ident'
+    --outdir '.';
+  ]]>
+  </command>
+  <inputs>
+    <param name="input" type="data" format="fasta" label="Input" help="FASTA file with contig(s)"/>
+    <section name="adv_param" title="Advanced parameters" expanded="False">
+      <param name="min_rep_evalue_value" type="float" value="0.00001" min="0.00001" max="1" label="Minimum evalue threshold for replicon blastn"/> 
+      <param name="min_mob_evalue_value" type="float" value="0.00001" min="0.00001" max="1" label="Minimum evalue threshold for relaxase tblastn"/> 
+      <param name="min_con_evalue_value" type="float" value="0.00001" min="0.00001" max="1" label="Minimum evalue threshold for contig blastn"/> 
+      <param name="min_ori_evalue_value" type="float" value="0.00001" min="0.00001" max="1" label="Minimum evalue threshold for oriT elements blastn"/>
+      <param name="min_mpf_evalue" type="float" value="0.00001" min="0.00001" max="1" label="Minimum evalue threshold for mpf elements blastn"/>
+      <param name="min_rep_ident" label="Minimum sequence identity for replicons" type="integer"  min="0" max="100" value="80"/>
+      <param name="min_mob_ident" label="Minimum sequence identity for relaxases" type="integer"  min="0" max="100" value="80"/>
+      <param name="min_ori_ident" label="Minimum sequence identity for oriT elements" type="integer"  min="0" max="100" value="90"/>
+      <param name="min_mpf_ident" label="Minimum sequence identity for mpf elements" type="integer"  min="0" max="100" value="80"/>
+    </section>  
+  </inputs>
+  <outputs>
+    <data name="outfile1" label="${tool.name}: Plasmid report on ${input.name}" format="tabular">
+      <discover_datasets pattern=".+_report\.txt" visible="true" format="tabular" assign_primary_output="true"/>
+    </data>  
+  </outputs>
+  <tests>
+    <test>
+        <param name="input" value="plasmid_476.fasta" ftype="fasta"/>
+        <assert_stdout>
+            <has_text text="JN253636"/> 
+         </assert_stdout>
+    </test>
+  </tests>
+  <help>
+
+**Syntax**
+
+This tool provides *in-silico* predictions on plasmid typing including identification of replicon, relaxase and mate-pair formation protein types. MOB-typer also predicts mobility of a plasmid (Conjugative, Mobilizable, Non-mobilizable). Do not include multiple unrelated plasmids in the input FASTA file as they will be treated as a single plasmid.
+
+For more information please visit https://github.com/phac-nml/mob-suite/. 
+
+-----
+
+**Input:**
+
+A FASTA file with a single or multiple contigs (e.g. plasmid.fasta):
+
+
+**Output:**
+
+Tab-delimited report listing identified plasmid(s) and their predicted mobility. Refer to https://github.com/phac-nml/mob-suite#mob-typer-report-file-format for the description of each column.
+
+
+  </help>
+  <citations>
+    <citation type="bibtex">
+  @misc{githubmob-suite,
+  author = {Robertson J, Nash J},
+  title = {MOB-Suite: Software tools for clustering, reconstruction and typing of plasmids from draft assemblies.},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  doi = {10.1099/mgen.0.000206},
+  url = {https://github.com/phac-nml/mob-suite}
+    }</citation>
+  </citations>
+</tool>

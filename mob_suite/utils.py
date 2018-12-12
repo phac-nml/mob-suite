@@ -63,8 +63,8 @@ def verify_init(logging):
     if not os.path.isfile(status_file):
         logging.info('MOB-databases need to be initialized, this will take some time')
         p = Popen(['python', mob_init_path],
-                  stdout=PIPE,
-                  stderr=PIPE)
+                  stdout=PIPE, stderr=PIPE,
+                  shell=False)
         p.wait()
         stdout = p.stdout.read()
         stderr = p.stderr.read()

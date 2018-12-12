@@ -24,6 +24,7 @@ from mob_suite.utils import \
     calcFastaStats, \
     verify_init, \
     check_dependencies
+from mob_suite.mob_host_range import getHostRange, getTaxonomyTree, writeOutHostRangeResults
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
@@ -31,7 +32,6 @@ LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d
 def init_console_logger(lvl):
     logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
     report_lvl = logging_levels[lvl]
-
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
 
 
@@ -113,6 +113,10 @@ def parse_args():
     parser.add_argument('--plasmid_orit', type=str, required=False, help='Fasta of known plasmid oriT dna sequences',
                         default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              'databases/orit.fas'))
+    parser.add_argument('--host_range',  required=False, help='Predict host range', action='store_true',
+                        default=False)
+    parser.add_argument('--host_range_details', required=False, help='Complete host range report', action='store_true',
+                        default=False)
     return parser.parse_args()
 
 
@@ -129,8 +133,11 @@ def determine_mpf_type(hits):
 
 def main():
     args = parse_args()
+
     if args.debug:
         init_console_logger(3)
+    else:
+        init_console_logger(1)
     logging.info('Running Mob-typer v. {}'.format(__version__))
     if not args.outdir:
         logging.info('Error, no output directory specified, please specify one')
@@ -261,11 +268,14 @@ def main():
         replicon_blast(replicon_ref, fixed_fasta, min_rep_ident, min_rep_cov, min_rep_evalue, tmp_dir, replicon_blast_results,
                        num_threads=num_threads))
     found_replicons = dict()
+
     for contig_id in replicon_contigs:
         for hit in replicon_contigs[contig_id]:
             acs, type = hit.split('|')
             found_replicons[acs] = type
 
+    print("These replicons are found")
+    print(list(found_replicons.values()))
 
     logging.info('Running relaxase blast on {}'.format(mob_ref))
 
@@ -276,8 +286,9 @@ def main():
         for hit in mob_contigs[contig_id]:
             acs, type = hit.split('|')
             found_mob[acs] = type
+    print ("These are relaxeses found")
+    print (list(found_mob.values()))
 
-    # print (found_mob)
 
     logging.info('Running mpf blast on {}'.format(mob_ref))
     mpf_contigs = getRepliconContigs(
@@ -309,13 +320,34 @@ def main():
     mash_results = m.read_mash(mash_file)
     mash_top_hit = getMashBestHit(mash_results)
 
+    # GET HOST RANGE
+
+
+    #(host_range_rank, host_range_name) = getHostRange_module_enty_point(list(found_replicons.values()), mash_top_hit['clustid'],
+    #                                                                    None, None)
+    host_range_rank = None; host_range_name = None #init of values
+
+
+    if args.host_range:
+        (host_range_rank, host_range_name, taxids, taxids_df, stats_host_range) = getHostRange(replicon_name_list = list(found_replicons.values()),
+                                                          mob_cluster_id = mash_top_hit['clustid'],
+                                                          relaxase_name_acc = None,
+                                                          relaxase_name_list = None,
+                                                          matchtype = "multi")
+
+    if args.host_range_details:
+        tree = getTaxonomyTree(taxids, taxids_df)
+        writeOutHostRangeResults(convergance_rank=host_range_rank, convergance_taxonomy=host_range_name, \
+                                 stats_host_range_dict=stats_host_range, header_flag=args.header, treeObject=tree)
+
     results_fh = open(report_file, 'w')
     results_fh.write("file_id\tnum_contigs\ttotal_length\tgc\t" \
                      "rep_type(s)\trep_type_accession(s)\t" \
                      "relaxase_type(s)\trelaxase_type_accession(s)\t" \
                      "mpf_type\tmpf_type_accession(s)\t" \
                      "orit_type(s)\torit_accession(s)\tPredictedMobility\t" \
-                     "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\n")
+                     "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\t" \
+                     "host_range_pred\thost_rank_pred\n")
 
     if len(found_replicons) > 0:
         rep_types = ",".join(list(found_replicons.values()))
@@ -353,7 +385,7 @@ def main():
     if mob_acs != '-' and mpf_acs != '-':
         predicted_mobility = 'Conjugative'
 
-    string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(file_id, stats['num_seq'],
+    string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(file_id, stats['num_seq'],
                                                                                      stats['size'], stats['gc_content'],
                                                                                      rep_types, rep_acs, mob_types,
                                                                                      mob_acs, mpf_type, mpf_acs,
@@ -361,7 +393,8 @@ def main():
                                                                                      predicted_mobility,
                                                                                      mash_top_hit['top_hit'],
                                                                                      mash_top_hit['mash_hit_score'],
-                                                                                     mash_top_hit['clustid'])
+                                                                                     mash_top_hit['clustid'],
+                                                                                     host_range_rank,host_range_name)
     results_fh.write(string)
 
     if not keep_tmp:
