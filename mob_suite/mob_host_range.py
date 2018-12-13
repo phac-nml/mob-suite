@@ -341,7 +341,7 @@ def parse_args():
 def getHostRange_module_enty_point(replicon_name,  mob_cluster_id, relaxase_name_acc, relaxase_name):
     global args
 
-def mob_host_range_main():
+def main():
     global args
     args = parse_args()
 
@@ -373,7 +373,7 @@ def mob_host_range_main():
 
 if __name__ == "__main__":
     # setup the application logging
-    mob_host_range_main()
+    main()
     #getTaxidsPerRelaxase()
     #IncI2
 

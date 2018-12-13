@@ -115,7 +115,7 @@ def parse_args():
                                              'databases/orit.fas'))
     parser.add_argument('--host_range',  required=False, help='Predict host range', action='store_true',
                         default=False)
-    parser.add_argument('--host_range_details', required=False, help='Complete host range report', action='store_true',
+    parser.add_argument('--host_range_detailed', required=False, help='Complete host range report with phylogeny stats', action='store_true',
                         default=False)
     return parser.parse_args()
 
@@ -137,8 +137,9 @@ def main():
     if args.debug:
         init_console_logger(3)
     else:
-        init_console_logger(1)
+        init_console_logger(2)
     logging.info('Running Mob-typer v. {}'.format(__version__))
+
     if not args.outdir:
         logging.info('Error, no output directory specified, please specify one')
         sys.exit()
@@ -157,7 +158,9 @@ def main():
     if not isinstance(args.num_threads, int):
         logging.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
 
+
     verify_init(logging)
+
     # Script arguments
     input_fasta = args.infile
     out_dir = args.outdir
@@ -274,8 +277,8 @@ def main():
             acs, type = hit.split('|')
             found_replicons[acs] = type
 
-    print("These replicons are found")
-    print(list(found_replicons.values()))
+    #print("These replicons are found")
+    #print(list(found_replicons.values()))
 
     logging.info('Running relaxase blast on {}'.format(mob_ref))
 
@@ -286,8 +289,8 @@ def main():
         for hit in mob_contigs[contig_id]:
             acs, type = hit.split('|')
             found_mob[acs] = type
-    print ("These are relaxeses found")
-    print (list(found_mob.values()))
+    #print ("These are relaxeses found")
+    #print (list(found_mob.values()))
 
 
     logging.info('Running mpf blast on {}'.format(mob_ref))
@@ -335,7 +338,7 @@ def main():
                                                           relaxase_name_list = None,
                                                           matchtype = "multi")
 
-    if args.host_range_details:
+    if args.host_range_detailed:
         tree = getTaxonomyTree(taxids, taxids_df)
         writeOutHostRangeResults(convergance_rank=host_range_rank, convergance_taxonomy=host_range_name, \
                                  stats_host_range_dict=stats_host_range, header_flag=args.header, treeObject=tree)

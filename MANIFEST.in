@@ -2,5 +2,7 @@ include LICENSE
 include README.rst
 include MANIFEST.in
 include setup.py
+include mob_suite/databases/host_range_plasmidDB.csv
+include mob_suite/tests/TestData/AB040415.fasta
 
 

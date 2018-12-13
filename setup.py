@@ -26,13 +26,16 @@ exec(open('mob_suite/version.py').read())
 
 setup(
     name='mob_suite',
+    include_package_data=True,
     version='1.4.9',
     python_requires='>3.5.2',
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
     packages=find_packages(exclude=['tests']),
     url='https://github.com/phac-nml/mob-suite',
     license='GPLv3',
-    author='James Robertson',
-    author_email='james.robertson@canada.ca',
+    author='James Robertson, Kyrylo Bessonov',
+    author_email='james.robertson@canada.ca;kyrylo.bessonov@canada.ca',
     description=('mob_suite is a set of tools for finding, typing and reconstruction of plasmids from draft and complete genome assemblies.'),
     keywords='Plasmids finding typing reconstruction',
     classifiers=classifiers,
@@ -47,10 +50,7 @@ setup(
         'pycurl>=7.43.0',
         'scipy>=1.1.0',
         'ete3>=3.0',
-        'lxml>=4.2.*',
-        'mkl_fft>=1.*',
-        'mkl_random>=1.*'
-        
+        'pyqt5>=5.0'
     ],
 
     entry_points={
@@ -60,7 +60,8 @@ setup(
             'mob_cluster=mob_suite.mob_cluster:main',
             'mob_typer=mob_suite.mob_typer:main',
             'best_blast_hits=mob_suite.blast_best_hits:main',
-            'mob_hostrange=mob_suite.mob_host_range:mob_host_range_main'
+            'mob_hostrange=mob_suite.mob_host_range:main'
         ],
     },
 )
+
