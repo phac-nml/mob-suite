@@ -2,7 +2,7 @@ from Bio import SeqIO
 from Bio.SeqUtils import GC
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
-import os
+import os, re
 from subprocess import Popen, PIPE
 import shutil,sys
 
@@ -69,11 +69,13 @@ def verify_init(logging):
 
         p.wait()
         stdout = p.stdout.read()
-        stderr = p.stderr.read()
-        if "" == stderr:
-            logging.error("Something went wrong with database download")
-            exit("Database download error")
-        logging.info("".format(stderr))
+        stderr = "".join(p.stderr.read().decode("utf-8"))
+
+
+        if len(re.findall("error",stderr)) != 0:
+            print(stderr)
+            exit("Something went wrong with database download or unpacking.\nTry to manually download database from https://ndownloader.figshare.com/articles/5841882?private_link=a4c92dd84f17b2cefea6\nUnzip archive into MOB-Suite databases directory.")
+
         return stdout
 
 

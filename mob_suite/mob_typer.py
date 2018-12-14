@@ -187,7 +187,7 @@ def main():
     	os.remove(orit_blast_results)    
     if os.path.isfile(replicon_blast_results):
     	os.remove(replicon_blast_results)     	
-    report_file = os.path.join(out_dir, 'mobtyper_' + file_id + '_report.txt')
+    report_file = os.path.join(out_dir, 'mobtyper_' + re.sub("\..*","",file_id) + '_report.txt')
     mash_file = os.path.join(tmp_dir, 'mash_' + file_id + '.txt')
 
     # Input numeric params
@@ -345,8 +345,8 @@ def main():
             relaxase_name_acc=None,
             relaxase_name_list=None,
             matchtype="multi")
-        tree = getTaxonomyTree(taxids, taxids_df)
-        writeOutHostRangeResults(filename = re.sub("\.fasta","",file_id), \
+        tree = getTaxonomyTree(taxids, taxids_df, filename=out_dir+"/"+re.sub("\..*","",file_id))
+        writeOutHostRangeResults(filename = out_dir+"/"+re.sub("\..*","",file_id), \
                                  replicon_name_list = list(found_replicons.values()), \
                                  mob_cluster_id = mash_top_hit['clustid'], \
                                  relaxase_name_acc = None, \
@@ -355,13 +355,22 @@ def main():
                                  stats_host_range_dict=stats_host_range, header_flag=True, treeObject=tree)
 
     results_fh = open(report_file, 'w')
-    results_fh.write("file_id\tnum_contigs\ttotal_length\tgc\t" \
-                     "rep_type(s)\trep_type_accession(s)\t" \
-                     "relaxase_type(s)\trelaxase_type_accession(s)\t" \
-                     "mpf_type\tmpf_type_accession(s)\t" \
-                     "orit_type(s)\torit_accession(s)\tPredictedMobility\t" \
-                     "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\t" \
-                     "host_range_pred\thost_rank_pred\n")
+
+    if host_range_name != None and host_range_rank != None:
+        results_fh.write("file_id\tnum_contigs\ttotal_length\tgc\t" \
+                         "rep_type(s)\trep_type_accession(s)\t" \
+                         "relaxase_type(s)\trelaxase_type_accession(s)\t" \
+                         "mpf_type\tmpf_type_accession(s)\t" \
+                         "orit_type(s)\torit_accession(s)\tPredictedMobility\t" \
+                         "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\t" \
+                         "host_range_pred\thost_rank_pred\n")
+    else:
+        results_fh.write("file_id\tnum_contigs\ttotal_length\tgc\t" \
+                         "rep_type(s)\trep_type_accession(s)\t" \
+                         "relaxase_type(s)\trelaxase_type_accession(s)\t" \
+                         "mpf_type\tmpf_type_accession(s)\t" \
+                         "orit_type(s)\torit_accession(s)\tPredictedMobility\t" \
+                         "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\n")
 
     if len(found_replicons) > 0:
         rep_types = ",".join(list(found_replicons.values()))
@@ -399,16 +408,34 @@ def main():
     if mob_acs != '-' and mpf_acs != '-':
         predicted_mobility = 'Conjugative'
 
-    string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(file_id, stats['num_seq'],
-                                                                                     stats['size'], stats['gc_content'],
-                                                                                     rep_types, rep_acs, mob_types,
-                                                                                     mob_acs, mpf_type, mpf_acs,
-                                                                                     orit_types, orit_acs,
-                                                                                     predicted_mobility,
-                                                                                     mash_top_hit['top_hit'],
-                                                                                     mash_top_hit['mash_hit_score'],
-                                                                                     mash_top_hit['clustid'],
-                                                                                     host_range_rank,host_range_name)
+    if host_range_name != None and host_range_rank != None:
+        string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(file_id, stats['num_seq'],
+                                                                                         stats['size'], stats['gc_content'],
+                                                                                         rep_types, rep_acs, mob_types,
+                                                                                         mob_acs, mpf_type, mpf_acs,
+                                                                                         orit_types, orit_acs,
+                                                                                         predicted_mobility,
+                                                                                         mash_top_hit['top_hit'],
+                                                                                         mash_top_hit['mash_hit_score'],
+                                                                                         mash_top_hit['clustid'],
+                                                                                         host_range_rank,host_range_name)
+    else:
+        string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(file_id,
+                                                                                                   stats['num_seq'],
+                                                                                                   stats['size'],
+                                                                                                   stats['gc_content'],
+                                                                                                   rep_types, rep_acs,
+                                                                                                   mob_types,
+                                                                                                   mob_acs, mpf_type,
+                                                                                                   mpf_acs,
+                                                                                                   orit_types, orit_acs,
+                                                                                                   predicted_mobility,
+                                                                                                   mash_top_hit[
+                                                                                                       'top_hit'],
+                                                                                                   mash_top_hit[
+                                                                                                       'mash_hit_score'],
+                                                                                                   mash_top_hit[
+                                                                                                       'clustid'])
     results_fh.write(string)
 
     if not keep_tmp:

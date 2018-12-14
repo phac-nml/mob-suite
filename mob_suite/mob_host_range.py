@@ -8,8 +8,8 @@ args=ArgumentParser()
 args.multi_match = True
 args.exact_match = None
 args.loose_match = None
-args.render_tree = None
-args.write_newick = None
+args.render_tree = True
+args.write_newick = True
 args.header = False
 args.debug = False
 args.outname = ""
@@ -221,7 +221,7 @@ def writeOutHostRangeResults(   filename = args.outname,\
     logging.info("Wrote ASCII host range tree into {}".format(OUTDIR + filename + "_asci_tree.txt"))
 
 
-def getTaxonomyTree(taxids, ref_taxids_df):
+def getTaxonomyTree(taxids, ref_taxids_df, filename=args.outname):
     ncbi = NCBITaxa()
 
     tree = ncbi.get_topology(taxids)
@@ -275,11 +275,11 @@ def getTaxonomyTree(taxids, ref_taxids_df):
     #exit()
     #tree.show(tree_style=ts)
 
-    if args.render_tree == "render_tree":
-        tree.render(OUTDIR+args.outname+"_phylogeny_tree.png",  dpi=2800, w=2000, tree_style=ts)
+    if args.render_tree == True:
+        tree.render(OUTDIR+filename+"_phylogeny_tree.png",  dpi=2800, w=2000, tree_style=ts)
 
-    if args.write_newick == "write_newick":
-        tree.write(format=2, outfile=OUTDIR+args.outname+"_phylogeny_tree.nwk")
+    if args.write_newick == True:
+        tree.write(format=2, outfile=OUTDIR+filename+"_phylogeny_tree.nwk")
     return(tree)
 
 def loadHostRangeDB():
@@ -324,14 +324,15 @@ def parse_args():
     parser.add_argument('--relaxase_name', action='store', nargs=1, required=False, help='Relaxase name')
     parser.add_argument('--relaxase_accession', action='store', required=False, help='Relaxase accession number')
     parser.add_argument('--cluster_id', action='store', required=False, help='MOB-Suite Cluster ID (e.g. 416)')
-    parser.add_argument('--render_tree',action='store_const', const="render_tree", required=False, help='render taxanomic tree')
-    parser.add_argument('--write_newick', action='store_const', const="write_newick", required=False, help='write a newick tree')
+    parser.add_argument('--render_tree',action='store_true', default=False,  required=False, help='render taxanomic tree')
+    parser.add_argument('--write_newick', action='store_true', required=False, help='write a newick tree')
     parser.add_argument('--header', action='store_const', const="header", required=False, help='Print header in the output')
     parser.add_argument('--outname', action='store', required=True, help='output files name prefix')
     parser.add_argument('--debug', required=False, help='Show debug information', action='store_true')
 
 
     args = parser.parse_args()
+    print(args);exit()
 
     #CASE1: prohibited characters in the name
     #correct file names that come with the prohibited characters like / or \ (e.g. IncA/C2)
@@ -377,7 +378,7 @@ def main():
     (rank, host_range, taxids, taxids_df,stats_host_range) = getHostRange(args.replicon_name, args.cluster_id,
                                       args.relaxase_name, args.relaxase_accession, matchtype)
 
-    tree = getTaxonomyTree(taxids, taxids_df)  # get phylogenetic tree
+    tree = getTaxonomyTree(taxids, taxids_df, args.outname)  # get phylogenetic tree
 
     writeOutHostRangeResults(
                         filename=args.outname,\
