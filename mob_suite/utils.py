@@ -70,7 +70,7 @@ def verify_init(logging):
         p.wait()
         stdout = p.stdout.read()
         stderr = p.stderr.read()
-        if not "" == stderr:
+        if "" == stderr:
             logging.error("Something went wrong with database download")
             exit("Database download error")
         logging.info("".format(stderr))

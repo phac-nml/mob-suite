@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
-import os
+import os, re
 import shutil
 import sys
 from argparse import (ArgumentParser, FileType)
@@ -339,9 +339,20 @@ def main():
                                                           matchtype = "multi")
 
     if args.host_range_detailed:
+        (host_range_rank, host_range_name, taxids, taxids_df, stats_host_range) = getHostRange(
+            replicon_name_list=list(found_replicons.values()),
+            mob_cluster_id=mash_top_hit['clustid'],
+            relaxase_name_acc=None,
+            relaxase_name_list=None,
+            matchtype="multi")
         tree = getTaxonomyTree(taxids, taxids_df)
-        writeOutHostRangeResults(convergance_rank=host_range_rank, convergance_taxonomy=host_range_name, \
-                                 stats_host_range_dict=stats_host_range, header_flag=args.header, treeObject=tree)
+        writeOutHostRangeResults(filename = re.sub("\.fasta","",file_id), \
+                                 replicon_name_list = list(found_replicons.values()), \
+                                 mob_cluster_id = mash_top_hit['clustid'], \
+                                 relaxase_name_acc = None, \
+                                 relaxase_name_list = None, \
+                                 convergance_rank=host_range_rank, convergance_taxonomy=host_range_name, \
+                                 stats_host_range_dict=stats_host_range, header_flag=True, treeObject=tree)
 
     results_fh = open(report_file, 'w')
     results_fh.write("file_id\tnum_contigs\ttotal_length\tgc\t" \

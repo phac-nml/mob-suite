@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from ete3 import NCBITaxa, TreeStyle
 from collections import Counter,OrderedDict
 
-#default arguments
+#default init arguments
 args=ArgumentParser()
 args.multi_match = True
 args.exact_match = None
@@ -12,6 +12,7 @@ args.render_tree = None
 args.write_newick = None
 args.header = False
 args.debug = False
+args.outname = ""
 
 OUTDIR = os.getcwd()+"/"
 
@@ -32,7 +33,9 @@ OUTDIR = os.getcwd()+"/"
 
 def getHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc, relaxase_name_list, matchtype):
 
-    mob_cluster_id=str(mob_cluster_id) #make sure it is a string
+    if mob_cluster_id != None:
+        mob_cluster_id=str(mob_cluster_id) #make sure it is a string
+
     logging.info("Loading the plasmid reference database ...")
 
     hr_obs_data = loadHostRangeDB() #load reference lookup table
@@ -168,37 +171,43 @@ def getHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc, relaxas
 
 
 
-def writeOutHostRangeResults(convergance_rank = None, \
-                    convergance_taxonomy = None, stats_host_range_dict = None, header_flag = None, treeObject=None):
+def writeOutHostRangeResults(   filename = args.outname,\
+                                replicon_name_list = None, \
+                                mob_cluster_id = None, \
+                                relaxase_name_acc = None, \
+                                relaxase_name_list = None, \
+                                convergance_rank = None, \
+                                convergance_taxonomy = None, stats_host_range_dict = None,\
+                                header_flag = None, treeObject=None):
 
 
-    if args.replicon_name != None:
-        replicons = ",".join(args.replicon_name)
+    if replicon_name_list != None:
+        replicons = ",".join(replicon_name_list)
     else:
-        replicons = args.replicon_name
-    if args.relaxase_name != None:
-        relaxases = ",".join(args.relaxase_name)
+        replicons = replicon_name_list
+    if relaxase_name_list  != None:
+        relaxases = ",".join(relaxase_name_list )
     else:
-        relaxases = args.relaxase_name
+        relaxases = relaxase_name_list
 
     if header_flag is not None:
-        with open(file=OUTDIR + args.outname + ".txt", mode="w") as fp:
+        with open(file=OUTDIR + filename + "_hostrange_report.txt", mode="w") as fp:
             fp.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format("Replicon(s)", "ClusterID", "Relaxase(s)", \
                                                            "RelaxaseAccession", "Rank", "HostRange", "GenusCountStats"))
 
-    with open(file=OUTDIR+args.outname+".txt", mode="a") as fp:
-            fp.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(replicons, args.cluster_id, \
-                                                           relaxases, args.relaxase_accession, convergance_rank, \
+    with open(file=OUTDIR+filename+"_hostrange_report.txt", mode="a") as fp:
+            fp.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(replicons, mob_cluster_id, \
+                                                           relaxases, relaxase_name_acc, convergance_rank, \
                                                            convergance_taxonomy,dict(Counter(stats_host_range_dict["genus"]))))
     fp.close()
 
-    with open(file=OUTDIR + args.outname + "_asci_tree.txt", mode="w") as fp:
+    with open(file=OUTDIR + filename + "_asci_tree.txt", mode="w") as fp:
         fp.write(treeObject.get_ascii(attributes=["rank", "sci_name"]))
     fp.close()
 
     #decompose resulting phylogenetic tree into frequency counts per reach taxonomic rank (hierachy level)
     strings2file = ["rank\tname\tref_db_hits\n"]
-    with open(file=OUTDIR+args.outname+"_phyloStats.txt", mode="w") as fp:
+    with open(file=OUTDIR+filename+"_phyloStats.txt", mode="w") as fp:
         for rank in stats_host_range_dict.keys():
             names = (Counter(stats_host_range_dict[rank]).keys())
             values = (Counter(stats_host_range_dict[rank]).values())
@@ -207,8 +216,9 @@ def writeOutHostRangeResults(convergance_rank = None, \
         fp.writelines(strings2file)
         fp.close()
 
-    logging.info("Wrote host range results into {}".format(OUTDIR+args.outname+".txt")) #replicon,relaxase,cluster,host range
-    logging.info("Wrote ASCII host range tree into {}".format(OUTDIR + args.outname + "_asci_tree.txt"))
+    logging.info("Wrote host range report results into {}".format(OUTDIR+filename+"_hostrange_report.txt")) #replicon,relaxase,cluster,host range
+    logging.info("Wrote phylogeny stats into {}".format(OUTDIR + filename + "_phyloStats.txt"))
+    logging.info("Wrote ASCII host range tree into {}".format(OUTDIR + filename + "_asci_tree.txt"))
 
 
 def getTaxonomyTree(taxids, ref_taxids_df):
@@ -363,17 +373,25 @@ def main():
     logging.info("INPUT: Replicon=" + str(args.replicon_name) + " and MOB-SuiteClusterID=" + str(args.cluster_id) + ";")
 
     logging.info("Started to run the main taxonomy query function per feature")
+
     (rank, host_range, taxids, taxids_df,stats_host_range) = getHostRange(args.replicon_name, args.cluster_id,
                                       args.relaxase_name, args.relaxase_accession, matchtype)
 
     tree = getTaxonomyTree(taxids, taxids_df)  # get phylogenetic tree
 
-    writeOutHostRangeResults(convergance_rank = rank, convergance_taxonomy = host_range, \
+    writeOutHostRangeResults(
+                        filename=args.outname,\
+                        replicon_name_list = args.replicon_name, \
+                        mob_cluster_id = args.cluster_id, \
+                        relaxase_name_acc = args.relaxase_accession, \
+                        relaxase_name_list = args.relaxase_name,\
+                        convergance_rank = rank, convergance_taxonomy = host_range, \
                         stats_host_range_dict = stats_host_range, header_flag = args.header, treeObject=tree)
 
 if __name__ == "__main__":
     # setup the application logging
     main()
+    logging.info("Run completed")
     #getTaxidsPerRelaxase()
     #IncI2
 
