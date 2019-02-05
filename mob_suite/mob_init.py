@@ -67,7 +67,7 @@ def main():
     repetitive_fasta_file = os.path.join(database_directory,'repetitive.dna.fas')
     mash_db_file =  os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas.msh')
     logging.info('Downloading databases...this will take some time')
-    download_to_file('https://ndownloader.figshare.com/articles/5841882?private_link=a4c92dd84f17b2cefea6',zip_file)
+    download_to_file('https://ndownloader.figshare.com/articles/5841882/versions/1', zip_file)
     if (not os.path.isfile(zip_file)):
         logging.error('Downloading databases failed, please check your internet connection and retry')
         sys.exit(-1)
