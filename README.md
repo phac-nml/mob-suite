@@ -7,7 +7,7 @@ backgrounds. The MOB-suite is designed to be a modular set of tools for the typi
 reconstruction of plasmid sequences from WGS assemblies.
 
 The MOB-suite depends on a series of databases which are too large to be hosted in git-hub. They can be downloaded or updated by running mob_init or if running any of the tools for the first time, the databases will download and initialize automatically. However, they are quite large so the first run will take a long time depending on your connection and speed of your computer.
-The databases can be downloaded from figshare here: https://ndownloader.figshare.com/articles/5841882?private_link=a4c92dd84f17b2cefea6
+The databases can be downloaded from figshare here: https://ndownloader.figshare.com/articles/5841882/versions/1
 
 ### MOB-init
 On first run of MOB-typer or MOB-recon, MOB-init should run to download the databases from figshare, sketch the databases and setup the blast databases. However, it can be run manually if the databases need to be re-initialized.
