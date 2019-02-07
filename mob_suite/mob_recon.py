@@ -113,7 +113,7 @@ def parse_args():
     parser.add_argument('--plasmid_mob', type=str, required=False, help='Fasta of plasmid relaxases',
                         default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              'databases/mob.proteins.faa'))
-    parser.add_argument('--database_dir',
+    parser.add_argument('-d', '--database_directory',
                         default=default_database_dir,
                         required=False,
                         help='Directory you want to use for your databases. If the databases are not already '
@@ -166,7 +166,7 @@ def run_mob_typer(fasta_path, outdir, num_threads=1, database_dir=None):
                    '--infile', fasta_path,
                    '--outdir', outdir,
                    '--keep_tmp',
-                   '--database_dir', database_dir,
+                   '--database_directory', database_dir,
                    '--num_threads', str(num_threads)],
                   stdout=PIPE,
                   stderr=PIPE)
@@ -301,7 +301,7 @@ def main():
         os.mkdir(args.outdir, 0o755)
 
     # Check that the needed databases have been initialized
-    database_dir = os.path.abspath(args.database_dir)
+    database_dir = os.path.abspath(args.database_directory)
     verify_init(logging, database_dir)
     status_file = os.path.join(database_dir, 'status.txt')
 

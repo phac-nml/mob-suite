@@ -114,7 +114,7 @@ def parse_args():
     parser.add_argument('--plasmid_orit', type=str, required=False, help='Fasta of known plasmid oriT dna sequences',
                         default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              'databases/orit.fas'))
-    parser.add_argument('--database_dir',
+    parser.add_argument('-d', '--database_directory',
                         default=default_database_dir,
                         required=False,
                         help='Directory you want to use for your databases. If the databases are not already '
@@ -160,7 +160,7 @@ def main():
     if not isinstance(args.num_threads, int):
         logging.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
 
-    database_dir = os.path.abspath(args.database_dir)
+    database_dir = os.path.abspath(args.database_directory)
     verify_init(logging, database_dir)
     # Script arguments
     input_fasta = args.infile
