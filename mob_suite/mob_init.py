@@ -32,7 +32,6 @@ def download_to_file(url,file):
         c.close()
 
 def extract(fname,outdir):
-    print(fname, outdir)
     if (fname.endswith("tar.gz")):
         tar = tarfile.open(fname, "r:gz")
         tar.extractall()
