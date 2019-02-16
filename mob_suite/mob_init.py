@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from mob_suite.version import __version__
 import os, pycurl, tarfile, zipfile, gzip, multiprocessing, sys
-import argparse
 from mob_suite.blast import BlastRunner
 from mob_suite.wrappers import mash
 from os import listdir
@@ -54,12 +53,6 @@ def extract(fname,outdir):
             os.remove(fname)
 
 def main():
-    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--database_directory',
-                        default=default_database_dir,
-                        help='Directory to download databases to. Defaults to {}'.format(default_database_dir))
-    args = parser.parse_args()
     logging = init_console_logger(2)
     logging.info('Initilizating databases...this will take some time')
 
@@ -68,10 +61,7 @@ def main():
     if num_threads > 32:
         num_threads = 32
 
-    # For some reason absolute paths don't work - enforce absolute path.
-    database_directory = os.path.abspath(args.database_directory)
-    if not os.path.exists(database_directory):
-        os.makedirs(database_directory)
+    database_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)),'databases/')
     zip_file = os.path.join(database_directory,'data.zip')
     plasmid_database_fasta_file = os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas')
     repetitive_fasta_file = os.path.join(database_directory,'repetitive.dna.fas')

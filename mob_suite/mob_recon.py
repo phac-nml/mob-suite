@@ -28,7 +28,6 @@ LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
-    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     parser = ArgumentParser(
         description="Mob Suite: Typing and reconstruction of plasmids from draft and complete assemblies version: {}".format(
             __version__))
@@ -113,11 +112,6 @@ def parse_args():
     parser.add_argument('--plasmid_mob', type=str, required=False, help='Fasta of plasmid relaxases',
                         default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              'databases/mob.proteins.faa'))
-    parser.add_argument('-d', '--database_directory',
-                        default=default_database_dir,
-                        required=False,
-                        help='Directory you want to use for your databases. If the databases are not already '
-                             'downloaded, they will be downloaded automatically. Defaults to {}'.format(default_database_dir))
 
     return parser.parse_args()
 
@@ -151,25 +145,15 @@ def mcl_predict(blast_results_file, min_ident, min_cov, evalue, min_length, tmp_
     return mcl_clusters
 
 
-def run_mob_typer(fasta_path, outdir, num_threads=1, database_dir=None):
+def run_mob_typer(fasta_path, outdir, num_threads=1):
     mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
-    if database_dir is None:
-        p = Popen(['python', mob_typer_path,
-                   '--infile', fasta_path,
-                   '--outdir', outdir,
-                   '--keep_tmp',
-                   '--num_threads', str(num_threads)],
-                  stdout=PIPE,
-                  stderr=PIPE)
-    else:
-        p = Popen(['python', mob_typer_path,
-                   '--infile', fasta_path,
-                   '--outdir', outdir,
-                   '--keep_tmp',
-                   '--database_directory', database_dir,
-                   '--num_threads', str(num_threads)],
-                  stdout=PIPE,
-                  stderr=PIPE)
+    p = Popen(['python', mob_typer_path,
+               '--infile', fasta_path,
+               '--outdir', outdir,
+               '--keep_tmp',
+               '--num_threads', str(num_threads)],
+              stdout=PIPE,
+              stderr=PIPE)
     p.wait()
     stdout = p.stdout.read()
     stderr = p.stderr.read()
@@ -301,9 +285,8 @@ def main():
         os.mkdir(args.outdir, 0o755)
 
     # Check that the needed databases have been initialized
-    database_dir = os.path.abspath(args.database_directory)
-    verify_init(logging, database_dir)
-    status_file = os.path.join(database_dir, 'status.txt')
+    verify_init(logging)
+    status_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases/status.txt')
 
 
     if not os.path.isfile(status_file):
@@ -433,20 +416,11 @@ def main():
     min_length = args.min_length
 
     # Input Databases
-    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
-    if database_dir == default_database_dir:
-        plasmid_ref_db = args.plasmid_db
-        replicon_ref = args.plasmid_replicons
-        mob_ref = args.plasmid_mob
-        mash_db = args.plasmid_mash_db
-        repetitive_mask_file = args.repetitive_mask
-    else:
-        plasmid_ref_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas')
-        replicon_ref = os.path.join(database_dir, 'rep.dna.fas')
-        mob_ref = os.path.join(database_dir, 'mob.proteins.faa')
-        mash_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas.msh')
-        repetitive_mask_file = os.path.join(database_dir, 'repetitive.dna.fas')
-
+    plasmid_ref_db = args.plasmid_db
+    replicon_ref = args.plasmid_replicons
+    mob_ref = args.plasmid_mob
+    mash_db = args.plasmid_mash_db
+    repetitive_mask_file = args.repetitive_mask
 
     check_dependencies(logging)
 
@@ -789,7 +763,7 @@ def main():
                            "orit_type(s)\torit_accession(s)\tPredictedMobility\t" \
                            "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\n"
         for file in plasmid_files:
-            mobtyper_results = mobtyper_results + "{}".format(run_mob_typer(file, out_dir, str(num_threads), database_dir=database_dir))
+            mobtyper_results = mobtyper_results + "{}".format(run_mob_typer(file, out_dir, str(num_threads)))
         fh = open(mobtyper_results_file, 'w')
         fh.write(mobtyper_results)
         fh.close()

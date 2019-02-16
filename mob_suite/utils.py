@@ -57,13 +57,12 @@ def write_fasta_dict(seqs, fasta_file):
             handle.write(">{}\n{}\n".format(id, seqs[id]))
     handle.close()
 
-
-def verify_init(logging, database_dir):
+def verify_init(logging):
     mob_init_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_init.py')
-    status_file = os.path.join(database_dir, 'status.txt')
+    status_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases/status.txt')
     if not os.path.isfile(status_file):
         logging.info('MOB-databases need to be initialized, this will take some time')
-        p = Popen(['python', mob_init_path, '-d', database_dir],
+        p = Popen(['python', mob_init_path],
                   stdout=PIPE,
                   stderr=PIPE)
         p.wait()
