@@ -352,7 +352,7 @@ def main():
                                  relaxase_name_acc = None, \
                                  relaxase_name_list = None, \
                                  convergance_rank=host_range_rank, convergance_taxonomy=host_range_name, \
-                                 stats_host_range_dict=stats_host_range, header_flag=True, treeObject=tree)
+                                 stats_host_range_dict=stats_host_range, no_header_flag=False, treeObject=tree)
 
     results_fh = open(report_file, 'w')
 
