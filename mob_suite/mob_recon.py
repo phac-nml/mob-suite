@@ -4,6 +4,7 @@ from collections import OrderedDict
 import logging, os, shutil, sys, operator
 from subprocess import Popen, PIPE
 from argparse import (ArgumentParser, FileType)
+import mob_suite.mob_init
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 from mob_suite.wrappers import circlator
@@ -290,8 +291,8 @@ def main():
 
 
     if not os.path.isfile(status_file):
-        logging.error('Error needed databases have not been initialize please run mob_init and try again')
-        sys.exit(-1)
+        logging.info('Warning! Needed databases have not been initialize please run mob_init and try again')
+        mob_suite.mob_init.main()
 
     plasmid_files = dict()
     input_fasta = args.infile

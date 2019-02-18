@@ -6,6 +6,7 @@ import shutil
 import sys
 from argparse import (ArgumentParser, FileType)
 from mob_suite.version import __version__
+import mob_suite.mob_init
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 from mob_suite.wrappers import circlator
@@ -246,8 +247,8 @@ def main():
 
     for db in needed_dbs:
         if (not os.path.isfile(db)):
-            logging.error('Error needed database missing "{}"'.format(db))
-            sys.exit(-1)
+            logging.info('Warning! Needed database missing "{}"'.format(db))
+            mob_suite.mob_init.main()
 
 
     if not os.path.isdir(tmp_dir):
