@@ -127,7 +127,7 @@ class BlastReader:
         self.blast_outfile = blast_outfile
         try:
 
-            self.df = pd.read_table(self.blast_outfile, header=None)
+            self.df = pd.read_csv(self.blast_outfile, header=None, delimiter='\t')
             self.df.columns = BLAST_TABLE_COLS
 
             logging.debug(self.df.head())
