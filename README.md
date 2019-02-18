@@ -37,6 +37,7 @@ circlator
 mash
 
 ## Installation
+We recommend MOB-Suite installation as a conda package due to large number of dependencies. The package is available through bioconda channel.
 ```
 % conda config --add channels defaults
 % conda config --add channels conda-forge
@@ -69,8 +70,16 @@ We recommend installing via bioconda but you can install it via pip using the co
 ```
 % pip3 install mob_suite
 
+```
+### Setuptools
+Clone this repository and install via setuptools. 
 
 ```
+% git clone https://github.com/phac-nml/mob-suite.git
+% cd mob-suite
+% python setup.py install
+```
+
 ## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and predict mobility
 
 You can perform plasmid typing using a fasta formated file containing a single plasmid represented by one or more contigs. Do not include multiple unrelated plasmids in the file as they will be treated as a single plasmid.
