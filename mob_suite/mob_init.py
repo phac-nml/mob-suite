@@ -4,6 +4,7 @@ import os, pycurl, tarfile, zipfile, gzip, multiprocessing, sys
 import argparse
 import hashlib
 import json
+import functools
 from mob_suite.blast import BlastRunner
 from mob_suite.wrappers import mash
 import shutil
@@ -65,7 +66,15 @@ def check_hash(filepath, hashsum):
     return h == hashsum
 
 
-def download_to_file(url,file):
+def download_to_file(url, file):
+    """
+    Downloads a file from a URL using curl.
+
+    :param url:  Source URL from which the file is downloaded
+    :param file: The destination file
+    :return: None
+    """
+
     with open(file, 'wb') as f:
         c = pycurl.Curl()
         # Redirects to https://www.python.org/.
@@ -108,21 +117,25 @@ def main():
 
     args = arguments()
 
+    # For some reason absolute paths don't work - enforce absolute path.
+    database_directory = os.path.abspath(args.database_directory)
+
+    # Helper function to simplify adding database_directory to everything
+    prepend_db_dir = functools.partial(os.path.join, database_directory)
+
     logging = init_console_logger(2)
     logging.info('Initializing databases...this will take some time')
 
-    #Find available threads and use the maximum number available for mash sketch but cap it at 32
+    # Find available threads and use the maximum number available for mash sketch but cap it at 32
     num_threads = min(multiprocessing.cpu_count(), 32)
 
-    # For some reason absolute paths don't work - enforce absolute path.
-    database_directory = os.path.abspath(args.database_directory)
     if not os.path.exists(database_directory):
         os.makedirs(database_directory)
 
-    zip_file = os.path.join(database_directory,'data.zip')
-    plasmid_database_fasta_file = os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas')
-    repetitive_fasta_file = os.path.join(database_directory,'repetitive.dna.fas')
-    mash_db_file =  os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas.msh')
+    zip_file = prepend_db_dir('data.zip')
+    plasmid_database_fasta_file = prepend_db_dir('ncbi_plasmid_full_seqs.fas')
+    repetitive_fasta_file = prepend_db_dir('repetitive.dna.fas')
+    mash_db_file =  prepend_db_dir('ncbi_plasmid_full_seqs.fas.msh')
 
     logging.info('Downloading databases...this will take some time')
 
@@ -143,7 +156,7 @@ def main():
 
     extract(zip_file, database_directory)
 
-    files = [os.path.join(database_directory, f)
+    files = [prepend_db_dir(f)
              for f in os.listdir(database_directory)
              if f.endswith('.gz')]
 
@@ -162,9 +175,11 @@ def main():
 
     logging.info('Sketching complete plasmid database')
     mObj = mash()
-    mObj.mashsketch(plasmid_database_fasta_file,mash_db_file,num_threads=num_threads)
+    mObj.mashsketch(plasmid_database_fasta_file,
+                    mash_db_file,
+                    num_threads=num_threads)
 
-    status_file = os.path.join(database_directory,'status.txt')
+    status_file = prepend_db_dir('status.txt')
 
     with open(status_file, 'w') as f:
         download_date = datetime.datetime.today().strftime('%Y-%m-%d')
