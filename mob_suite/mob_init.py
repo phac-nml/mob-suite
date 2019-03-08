@@ -4,13 +4,26 @@ import os, pycurl, tarfile, zipfile, gzip, multiprocessing, sys
 import argparse
 from mob_suite.blast import BlastRunner
 from mob_suite.wrappers import mash
-from os import listdir
-from os.path import isfile, join
 import shutil
 import datetime
 import logging
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+
+
+def arguments():
+
+    default_database_dir = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), 'databases')
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-d', '--database_directory',
+                        default=default_database_dir,
+                        help='Directory to download databases to. Defaults to {}'.format(
+                            default_database_dir))
+
+    return parser.parse_args()
 
 def init_console_logger(lvl):
     logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
@@ -54,24 +67,20 @@ def extract(fname,outdir):
             os.remove(fname)
 
 def main():
-    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--database_directory',
-                        default=default_database_dir,
-                        help='Directory to download databases to. Defaults to {}'.format(default_database_dir))
-    args = parser.parse_args()
+
+    args = arguments()
+
     logging = init_console_logger(2)
-    logging.info('Initilizating databases...this will take some time')
+    logging.info('Initializing databases...this will take some time')
 
     #Find available threads and use the maximum number available for mash sketch but cap it at 32
-    num_threads = multiprocessing.cpu_count()
-    if num_threads > 32:
-        num_threads = 32
+    num_threads = min(multiprocessing.cpu_count(), 32)
 
     # For some reason absolute paths don't work - enforce absolute path.
     database_directory = os.path.abspath(args.database_directory)
     if not os.path.exists(database_directory):
         os.makedirs(database_directory)
+
     zip_file = os.path.join(database_directory,'data.zip')
     plasmid_database_fasta_file = os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas')
     repetitive_fasta_file = os.path.join(database_directory,'repetitive.dna.fas')
@@ -83,8 +92,10 @@ def main():
                   'https://ndownloader.figshare.com/articles/5841882/versions/1']
 
     for db_mirror in db_mirrors:
+
         logging.info('Trying mirror {}'.format(db_mirror))
         download_to_file(db_mirror, zip_file)
+
         if os.path.exists(zip_file) and os.path.getsize(zip_file) > 50000:
             break   #do not try other mirror
 
@@ -95,26 +106,34 @@ def main():
         logging.info('Downloading databases successful, now building databases')
     extract(zip_file,database_directory)
     os.remove(zip_file)
-    files = [f for f in listdir(database_directory) if isfile(join(database_directory, f))]
+
+    files = [os.path.join(database_directory, f)
+             for f in os.listdir(database_directory)
+             if f.endswith('.gz')]
+
     for file in files:
 
-        if file.endswith('gz'):
-            extract(os.path.join(database_directory,file), database_directory)
+        extract(os.path.join(database_directory,file), database_directory)
 
-    #Initilize blast and mash daatabases
+    #Initialize blast and mash databases
     logging.info('Building repetive mask database')
     blast_runner = BlastRunner(repetitive_fasta_file, database_directory)
     blast_runner.makeblastdb(repetitive_fasta_file, 'nucl')
+
     logging.info('Building complete plasmid database')
     blast_runner = BlastRunner(plasmid_database_fasta_file, database_directory)
     blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl')
+
     logging.info('Sketching complete plasmid database')
     mObj = mash()
     mObj.mashsketch(plasmid_database_fasta_file,mash_db_file,num_threads=num_threads)
+
     status_file = os.path.join(database_directory,'status.txt')
+
     with open(status_file, 'w') as f:
-        f.write("Download date: {}".format(datetime.datetime.today().strftime('%Y-%m-%d')))
-    f.close()
+        download_date = datetime.datetime.today().strftime('%Y-%m-%d')
+
+        f.write("Download date: {}".format(download_date))
 
 # call main function
 if __name__ == '__main__':
