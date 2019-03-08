@@ -2,6 +2,8 @@
 from mob_suite.version import __version__
 import os, pycurl, tarfile, zipfile, gzip, multiprocessing, sys
 import argparse
+import hashlib
+import json
 from mob_suite.blast import BlastRunner
 from mob_suite.wrappers import mash
 import shutil
@@ -10,6 +12,10 @@ import logging
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
+config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.json')
+
+with open(config_path, 'r') as configfile:
+    config = json.load(configfile)
 
 def arguments():
 
@@ -31,6 +37,19 @@ def init_console_logger(lvl):
 
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
     return logging
+
+
+def check_hash(filepath, hashsum):
+
+    with open(filepath, 'rb') as f:
+
+        sha = hashlib.sha256()
+        contents = f.read()
+        sha.update(contents)
+
+    h = sha.hexdigest()
+
+    return h == hashsum
 
 
 def download_to_file(url,file):
@@ -88,15 +107,13 @@ def main():
     logging.info('Downloading databases...this will take some time')
 
 
-    db_mirrors = ['https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download',
-                  'https://ndownloader.figshare.com/articles/5841882/versions/1']
 
-    for db_mirror in db_mirrors:
+    for db_mirror in config['db_mirrors']:
 
         logging.info('Trying mirror {}'.format(db_mirror))
         download_to_file(db_mirror, zip_file)
 
-        if os.path.exists(zip_file) and os.path.getsize(zip_file) > 50000:
+        if check_hash(zip_file, config['db_hash']):
             break   #do not try other mirror
 
     if (not os.path.isfile(zip_file)):
@@ -104,7 +121,8 @@ def main():
         sys.exit(-1)
     else:
         logging.info('Downloading databases successful, now building databases')
-    extract(zip_file,database_directory)
+
+    extract(zip_file, database_directory)
     os.remove(zip_file)
 
     files = [os.path.join(database_directory, f)
@@ -113,10 +131,10 @@ def main():
 
     for file in files:
 
-        extract(os.path.join(database_directory,file), database_directory)
+        extract(file, database_directory)
 
     #Initialize blast and mash databases
-    logging.info('Building repetive mask database')
+    logging.info('Building repetitive mask database')
     blast_runner = BlastRunner(repetitive_fasta_file, database_directory)
     blast_runner.makeblastdb(repetitive_fasta_file, 'nucl')
 
