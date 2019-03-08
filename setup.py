@@ -36,6 +36,8 @@ setup(
     classifiers=classifiers,
     package_dir={'mob_suite':'mob_suite'},
 
+    package_data={'mob_suite': ['config.json']},
+
     install_requires=[
         'numpy>=1.11.1',
         'pandas>=0.18.1',
