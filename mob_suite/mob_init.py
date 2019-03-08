@@ -40,15 +40,28 @@ def init_console_logger(lvl):
 
 
 def check_hash(filepath, hashsum):
+    """
+    Calculate the SHA256 of the given file and compare it to the known good
+    value. Returns True if the hashes match, and False if the file is missing or
+    the hashes do not match.
 
-    with open(filepath, 'rb') as f:
+    :param filepath: Path to the file
+    :param hashsum:  Expected SHA256 hash
+    :return: True if the hashes match, False otherwise
+    """
 
-        sha = hashlib.sha256()
-        contents = f.read()
-        sha.update(contents)
+    try:
+        with open(filepath, 'rb') as f:
+
+            sha = hashlib.sha256()
+            contents = f.read()
+            sha.update(contents)
+
+    except FileNotFoundError:
+
+        return False
 
     h = sha.hexdigest()
-
     return h == hashsum
 
 
@@ -116,11 +129,13 @@ def main():
         if check_hash(zip_file, config['db_hash']):
             break   #do not try other mirror
 
-    if (not os.path.isfile(zip_file)):
+    else:
+
         logging.error('Downloading databases failed, please check your internet connection and retry')
         sys.exit(-1)
-    else:
-        logging.info('Downloading databases successful, now building databases')
+
+
+    logging.info('Downloading databases successful, now building databases')
 
     extract(zip_file, database_directory)
     os.remove(zip_file)
