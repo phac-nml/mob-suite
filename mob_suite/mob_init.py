@@ -12,9 +12,6 @@ import datetime
 
 from mob_suite.utils import default_database_dir, init_console_logger
 
-log_level = 0
-logger = init_console_logger(log_level)
-
 config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.json')
 
 with open(config_path, 'r') as configfile:
@@ -35,9 +32,6 @@ def arguments():
                         help='Set the verbosity level. Can by used multiple times')
 
     args = parser.parse_args()
-
-    global log_level
-    log_level = args.verbose
 
     return args
 
@@ -118,6 +112,9 @@ def extract(fname, outdir):
 def main():
 
     args = arguments()
+
+    global logger
+    logger = init_console_logger(args.verbose)
 
     # For some reason absolute paths don't work - enforce absolute path.
     database_directory = os.path.abspath(args.database_directory)
