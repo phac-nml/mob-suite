@@ -9,9 +9,11 @@ from mob_suite.blast import BlastRunner
 from mob_suite.wrappers import mash
 import shutil
 import datetime
-import logging
 
-LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+from mob_suite.utils import default_database_dir, init_console_logger
+
+log_level = 0
+logger = init_console_logger(log_level)
 
 config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.json')
 
@@ -20,9 +22,6 @@ with open(config_path, 'r') as configfile:
 
 def arguments():
 
-    default_database_dir = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), 'databases')
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-d', '--database_directory',
@@ -30,14 +29,17 @@ def arguments():
                         help='Directory to download databases to. Defaults to {}'.format(
                             default_database_dir))
 
-    return parser.parse_args()
+    parser.add_argument('-v', '--verbose',
+                        default=0,
+                        action='count',
+                        help='Set the verbosity level. Can by used multiple times')
 
-def init_console_logger(lvl):
-    logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
-    report_lvl = logging_levels[lvl]
+    args = parser.parse_args()
 
-    logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
-    return logging
+    global log_level
+    log_level = args.verbose
+
+    return args
 
 
 def check_hash(filepath, hashsum):
@@ -96,7 +98,7 @@ def extract(fname, outdir):
     :return: None
     """
 
-    logging.info(f'Decompressing {fname}')
+    logger.info(f'Decompressing {fname}')
 
     if fname.endswith(".zip"):
 
@@ -123,8 +125,7 @@ def main():
     # Helper function to simplify adding database_directory to everything
     prepend_db_dir = functools.partial(os.path.join, database_directory)
 
-    logging = init_console_logger(2)
-    logging.info('Initializing databases...this will take some time')
+    logger.info('Initializing databases...this will take some time')
 
     # Find available threads and use the maximum number available for mash sketch but cap it at 32
     num_threads = min(multiprocessing.cpu_count(), 32)
@@ -137,11 +138,11 @@ def main():
     repetitive_fasta_file = prepend_db_dir('repetitive.dna.fas')
     mash_db_file =  prepend_db_dir('ncbi_plasmid_full_seqs.fas.msh')
 
-    logging.info('Downloading databases...this will take some time')
+    logger.info('Downloading databases...this will take some time')
 
     for db_mirror in config['db_mirrors']:
 
-        logging.info('Trying mirror {}'.format(db_mirror))
+        logger.info('Trying mirror {}'.format(db_mirror))
         download_to_file(db_mirror, zip_file)
 
         if check_hash(zip_file, config['db_hash']):
@@ -149,10 +150,10 @@ def main():
 
     else:  # no break
 
-        logging.error('Downloading databases failed, please check your internet connection and retry')
+        logger.error('Downloading databases failed, please check your internet connection and retry')
         sys.exit(-1)
 
-    logging.info('Downloading databases successful, now building databases')
+    logger.info('Downloading databases successful, now building databases')
 
     extract(zip_file, database_directory)
 
@@ -165,15 +166,15 @@ def main():
         extract(file, database_directory)
 
     #Initialize blast and mash databases
-    logging.info('Building repetitive mask database')
+    logger.info('Building repetitive mask database')
     blast_runner = BlastRunner(repetitive_fasta_file, database_directory)
     blast_runner.makeblastdb(repetitive_fasta_file, 'nucl')
 
-    logging.info('Building complete plasmid database')
+    logger.info('Building complete plasmid database')
     blast_runner = BlastRunner(plasmid_database_fasta_file, database_directory)
     blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl')
 
-    logging.info('Sketching complete plasmid database')
+    logger.info('Sketching complete plasmid database')
     mObj = mash()
     mObj.mashsketch(plasmid_database_fasta_file,
                     mash_db_file,
@@ -185,6 +186,7 @@ def main():
         download_date = datetime.datetime.today().strftime('%Y-%m-%d')
 
         f.write("Download date: {}".format(download_date))
+
 
 # call main function
 if __name__ == '__main__':
