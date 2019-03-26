@@ -31,9 +31,55 @@ OUTDIR = os.getcwd()+"/"
 #     return log
 
 #LOG = createLogger()
+def getLiteratureBasedHostRange():
+    print("Get literature-based host range ... ")
+    # Read literature-based database file
+    # Make HR prediction based on the literature evidence on replicon and mob-suite clusters
+    # If replicon is not know or mash dist to nearest reference seq is > 0.05 ... do not do any prediction (no idea yet of what could be done extra)
+    # Indicate if the plasmid is broad or narrow range class
+    #report_table = pandas.DataFrame()
+    plasmid_lit_db = pandas.read_csv(os.path.dirname(os.path.abspath(__file__))+"/databases/host_range_literature_plasmidDB.csv",sep=",",encoding = "ISO-8859-1")
+
+    print(plasmid_lit_db["Replicon"].index)
+    idx = [i for i in range(0, plasmid_lit_db.shape[0]) if plasmid_lit_db.iloc[i,:]["Replicon"] == "IncF"]
+    literature_knowledge = plasmid_lit_db.iloc[idx,:]
+
+
+
+    #data type conversion
+    #literature_knowledge["TransferRate"] = pandas.to_numeric(literature_knowledge["TransferRate"])
+
+
+
+
+    literature_knowledge.loc[:,"TransferRate"] = literature_knowledge["TransferRate"].astype(float)
+    literature_knowledge.loc[:,"PMID"] = literature_knowledge["PMID"].astype(int)
+    print(literature_knowledge.loc[:,"PMID"])
+    print(literature_knowledge.dtypes)
+    #exit()
+
+    #["Replicon","Plasmid_Name","HostRangeClass","Species","TransferRate"]
+    report_table=pandas.DataFrame.from_dict({"Replicon":literature_knowledge["Replicon"][0],
+                                             "Plasmids":",".join(literature_knowledge["Plasmid_Name"]),
+                                             "HostRangeClass":literature_knowledge["HostRangeClass"][0],
+                                             "ReportedSpecies":",".join(set(literature_knowledge["Species"])),
+                                             "MinTransferRateRange": [min([i for i in literature_knowledge["TransferRate"] if i >= 0])],
+                                             "MaxTransferRateRange": [max([i for i in literature_knowledge["TransferRate"] if i >= 0])],
+                                             "PMID":",".join([str(i) for i in literature_knowledge.loc[:,"PMID"]])})
+    pandas.options.display.float_format = '{:.1E}'.format
+    print(report_table)
+
+
+    exit()
+
+
+def getTransferRatePrediction():
+    print("Plasmid transfer rate prediction module ...")
+    # based on sequence similarity to the experimentally characterized plasmids try to make a transfer rate prediction average
+
 
 #the main function to process
-def getHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc, relaxase_name_list, matchtype):
+def getRefSeqHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc, relaxase_name_list, matchtype):
 
     if args.debug:
         print(replicon_name_list,mob_cluster_id,relaxase_name_acc,relaxase_name_list,matchtype) #DEBUG
@@ -63,7 +109,7 @@ def getHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc, relaxas
         #merge with cluster_id results too
         ref_taxids_df = pandas.concat([ref_taxids_df, \
                                        getHostRangeDBSubset(hr_obs_data, mob_cluster_id,
-                                                            "Ref_culster_id.at.dist-0.05", matchtype)])
+                                                            "Ref_cluster_id", matchtype)])
         logging.debug("Extracted total records (clusterid): {}".format(ref_taxids_df.shape[0]))
 
     elif replicon_name_list != None and mob_cluster_id == None and relaxase_name_acc != None:
@@ -91,7 +137,7 @@ def getHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc, relaxas
         ref_taxids_df = getHostRangeDBSubset(hr_obs_data, relaxase_name_acc, "Ref_relaxase_type(s)", matchtype)
     elif replicon_name_list == None and mob_cluster_id != None and relaxase_name_acc == None:
         print("MOBClusterID: {}".format(mob_cluster_id))
-        ref_taxids_df = getHostRangeDBSubset(hr_obs_data, mob_cluster_id, "Ref_culster_id.at.dist-0.05", matchtype)
+        ref_taxids_df = getHostRangeDBSubset(hr_obs_data, mob_cluster_id, "Ref_cluster_id", matchtype)
     elif relaxase_name_list != None:
         print("Relaxase Accession: {}".format(args.relaxase_accession))
         ref_taxids_df = getHostRangeDBSubset(hr_obs_data, args.relaxase_accession, "Ref_relaxase_type_accession(s)", matchtype)
@@ -395,10 +441,17 @@ def main():
 
     logging.info("Started to run the main taxonomy query function per feature")
 
-    (rank, host_range, taxids, taxids_df, stats_host_range) = getHostRange(args.replicon_name, args.cluster_id,
-                                      args.relaxase_name, args.relaxase_accession, matchtype)
+    #get literature based host range
+    getLiteratureBasedHostRange()
+    exit("Done test")
 
-    tree = getTaxonomyTree(taxids, taxids_df, args.outname)  # get phylogenetic tree
+    #hostrange based on MOB-Suite  RefSeq database
+    (rank, host_range, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(args.replicon_name, args.cluster_id,
+                                      args.relaxase_name, args.relaxase_accession, matchtype)
+    tree = getTaxonomyTree(taxids, taxids_df, args.outname)  # render phylo tree
+
+    getLiteratureBasedHostRange()
+    getTransferRatePrediction()
 
     writeOutHostRangeResults(
                         filename=args.outname,\
