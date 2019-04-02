@@ -24,7 +24,7 @@ from mob_suite.utils import \
     calcFastaStats, \
     verify_init, \
     check_dependencies
-from mob_suite.mob_host_range import getHostRange, getTaxonomyTree, writeOutHostRangeResults
+from mob_suite.mob_host_range import getRefSeqHostRange, getTaxonomyTree, getLiteratureBasedHostRange, writeOutHostRangeResults
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
@@ -332,27 +332,30 @@ def main():
 
 
     if args.host_range:
-        (host_range_rank, host_range_name, taxids, taxids_df, stats_host_range) = getHostRange(replicon_name_list = list(found_replicons.values()),
+        (host_range_rank, host_range_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(replicon_name_list = list(found_replicons.values()),
                                                           mob_cluster_id = mash_top_hit['clustid'],
                                                           relaxase_name_acc = None,
                                                           relaxase_name_list = None,
                                                           matchtype = "multi")
 
     if args.host_range_detailed:
-        (host_range_rank, host_range_name, taxids, taxids_df, stats_host_range) = getHostRange(
+        (host_range_rank, host_range_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
             replicon_name_list=list(found_replicons.values()),
             mob_cluster_id=mash_top_hit['clustid'],
             relaxase_name_acc=None,
             relaxase_name_list=None,
             matchtype="multi")
-        tree = getTaxonomyTree(taxids, taxids_df, filename=out_dir+"/"+re.sub("\..*","",file_id))
-        writeOutHostRangeResults(filename = out_dir+"/"+re.sub("\..*","",file_id), \
-                                 replicon_name_list = list(found_replicons.values()), \
-                                 mob_cluster_id = mash_top_hit['clustid'], \
-                                 relaxase_name_acc = None, \
-                                 relaxase_name_list = None, \
-                                 convergance_rank=host_range_rank, convergance_taxonomy=host_range_name, \
-                                 stats_host_range_dict=stats_host_range, no_header_flag=False, treeObject=tree)
+        tree = getTaxonomyTree(taxids, filename=out_dir+"/"+re.sub("\..*","",file_id))
+        lit_hr_report = getLiteratureBasedHostRange()
+        writeOutHostRangeResults(filename_prefix = out_dir+"/"+re.sub("\..*","",file_id),
+                                 replicon_name_list = list(found_replicons.values()),
+                                 mob_cluster_id = mash_top_hit['clustid'],
+                                 relaxase_name_acc = None,
+                                 relaxase_name_list = None,
+                                 convergance_rank=host_range_rank, convergance_taxonomy=host_range_name,
+                                 stats_host_range_dict=stats_host_range,
+                                 literature_hr_report=lit_hr_report,
+                                 no_header_flag=False, treeObject=tree)
 
     results_fh = open(report_file, 'w')
 
