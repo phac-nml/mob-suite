@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
-import os, re
+import os, re, pandas, collections
 import shutil
 import sys
 from argparse import (ArgumentParser, FileType)
@@ -24,7 +24,9 @@ from mob_suite.utils import \
     calcFastaStats, \
     verify_init, \
     check_dependencies
-from mob_suite.mob_host_range import getRefSeqHostRange, getTaxonomyTree, getLiteratureBasedHostRange, writeOutHostRangeResults
+from mob_suite.mob_host_range import getTaxonomyTree, getLiteratureBasedHostRange, loadliteratureplasmidDB, \
+    writeOutHostRangeResults,getRefSeqHostRange,loadHostRangeDB,collapseLiteratureReport
+
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
@@ -328,52 +330,56 @@ def main():
 
     #(host_range_rank, host_range_name) = getHostRange_module_enty_point(list(found_replicons.values()), mash_top_hit['clustid'],
     #                                                                    None, None)
-    host_range_rank = None; host_range_name = None #init of values
 
+    #host_range_refseq_rank = None; host_range_refseq_name = None #init of values
 
+    host_range_literature_report_collapsed_df = pandas.DataFrame()
     if args.host_range:
-        (host_range_rank, host_range_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(replicon_name_list = list(found_replicons.values()),
+        (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(replicon_name_list = list(found_replicons.values()),
                                                           mob_cluster_id = mash_top_hit['clustid'],
-                                                          relaxase_name_acc = None,
+                                                          relaxase_name_acc_list = None,
                                                           relaxase_name_list = None,
-                                                          matchtype = "multi")
+                                                          matchtype = "multi", hr_obs_data = loadHostRangeDB())
+        #print(found_replicons.values(), host_range_rank, host_range_name); exit("Break Point")
+        host_range_literature_report_df = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
+                                                                      plasmid_lit_db = loadliteratureplasmidDB(),
+                                                                      input_seq = args.infile)
+        host_range_literature_report_collapsed_df = collapseLiteratureReport(host_range_literature_report_df)
+        host_range_literature_report_collapsed_df.to_csv("host_range_literature_report_collapsed_df.txt",sep="\t",index=False, mode="w")
 
-    if args.host_range_detailed:
-        (host_range_rank, host_range_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
+        #print(host_range_literature_report_collapsed_df)
+
+    elif args.host_range_detailed:
+        (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
             replicon_name_list=list(found_replicons.values()),
             mob_cluster_id=mash_top_hit['clustid'],
-            relaxase_name_acc=None,
+            relaxase_name_acc_list=None,
             relaxase_name_list=None,
-            matchtype="multi")
-        tree = getTaxonomyTree(taxids, filename=out_dir+"/"+re.sub("\..*","",file_id))
-        lit_hr_report = getLiteratureBasedHostRange()
-        writeOutHostRangeResults(filename_prefix = out_dir+"/"+re.sub("\..*","",file_id),
+            matchtype="multi",hr_obs_data = loadHostRangeDB())
+
+        tree = getTaxonomyTree(taxids, filename=args.outdir)
+        host_range_literature_report_df = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
+                                                                      plasmid_lit_db = loadliteratureplasmidDB(),
+                                                                      input_seq = args.infile)
+        host_range_literature_report_collapsed_df = collapseLiteratureReport(host_range_literature_report_df)
+
+        writeOutHostRangeResults(filename_prefix = args.outdir,
                                  replicon_name_list = list(found_replicons.values()),
                                  mob_cluster_id = mash_top_hit['clustid'],
                                  relaxase_name_acc = None,
                                  relaxase_name_list = None,
-                                 convergance_rank=host_range_rank, convergance_taxonomy=host_range_name,
+                                 convergance_rank=host_range_refseq_rank, convergance_taxonomy=host_range_refseq_name,
                                  stats_host_range_dict=stats_host_range,
-                                 literature_hr_report=lit_hr_report,
+                                 literature_hr_report=host_range_literature_report_df,
                                  no_header_flag=False, treeObject=tree)
-
-    results_fh = open(report_file, 'w')
-
-    if host_range_name != None and host_range_rank != None:
-        results_fh.write("file_id\tnum_contigs\ttotal_length\tgc\t" \
-                         "rep_type(s)\trep_type_accession(s)\t" \
-                         "relaxase_type(s)\trelaxase_type_accession(s)\t" \
-                         "mpf_type\tmpf_type_accession(s)\t" \
-                         "orit_type(s)\torit_accession(s)\tPredictedMobility\t" \
-                         "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\t" \
-                         "host_range_pred\thost_rank_pred\n")
     else:
-        results_fh.write("file_id\tnum_contigs\ttotal_length\tgc\t" \
-                         "rep_type(s)\trep_type_accession(s)\t" \
-                         "relaxase_type(s)\trelaxase_type_accession(s)\t" \
-                         "mpf_type\tmpf_type_accession(s)\t" \
-                         "orit_type(s)\torit_accession(s)\tPredictedMobility\t" \
-                         "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\n")
+        host_range_refseq_rank=None; host_range_refseq_name=None
+
+
+    #results_fh = open(report_file, 'w')
+
+
+
 
     if len(found_replicons) > 0:
         rep_types = ",".join(list(found_replicons.values()))
@@ -411,40 +417,52 @@ def main():
     if mob_acs != '-' and mpf_acs != '-':
         predicted_mobility = 'Conjugative'
 
-    if host_range_name != None and host_range_rank != None:
-        string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(file_id, stats['num_seq'],
-                                                                                         stats['size'], stats['gc_content'],
-                                                                                         rep_types, rep_acs, mob_types,
-                                                                                         mob_acs, mpf_type, mpf_acs,
-                                                                                         orit_types, orit_acs,
-                                                                                         predicted_mobility,
-                                                                                         mash_top_hit['top_hit'],
-                                                                                         mash_top_hit['mash_hit_score'],
-                                                                                         mash_top_hit['clustid'],
-                                                                                         host_range_rank,host_range_name)
-    else:
-        string = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(file_id,
-                                                                                                   stats['num_seq'],
-                                                                                                   stats['size'],
-                                                                                                   stats['gc_content'],
-                                                                                                   rep_types, rep_acs,
-                                                                                                   mob_types,
-                                                                                                   mob_acs, mpf_type,
-                                                                                                   mpf_acs,
-                                                                                                   orit_types, orit_acs,
-                                                                                                   predicted_mobility,
-                                                                                                   mash_top_hit[
-                                                                                                       'top_hit'],
-                                                                                                   mash_top_hit[
-                                                                                                       'mash_hit_score'],
-                                                                                                   mash_top_hit[
-                                                                                                       'clustid'])
-    results_fh.write(string)
+    #main_report_column_names = ["file_id", "num_contigs", "total_length", "gc", "rep_type(s)",
+                              #  "rep_type_accession(s)", "relaxase_type(s)", "relaxase_type_accession(s)",
+                              #  "mpf_type", "mpf_type_accession(s)", "orit_type(s)", "orit_accession(s)",
+                              #  "PredictedMobility",
+                              #  "mash_nearest_neighbor", "mash_neighbor_distance", "mash_neighbor_cluster",
+                              #  "RefSeqHRrank", "RefSeqHRSciName",
+                              #  "LitRepHRPlasmClass", "LitPredDBHRRank", "LitPredDBHRRankSciName", "LitRepHRInPubs",
+                              #  "LitPMIDs", "LitPMIDsNumber"]
+    #main_report_mobtyper_df = pandas.DataFrame(columns=main_report_column_names)  # empty data frame
 
+
+    main_report_data_dict=collections.OrderedDict({"file_id":file_id, "num_contigs":stats['num_seq'], "total_length": stats['size'], "gc":stats['gc_content'],
+                           "rep_type(s)": rep_types, "rep_type_accession(s)": rep_acs, "relaxase_type(s)":mob_types,
+                           "relaxase_type_accession(s)": mob_acs, "mpf_type": mpf_type, "mpf_type_accession(s)": mpf_acs,
+                           "orit_type(s)": orit_types, "orit_accession(s)": orit_acs, "PredictedMobility": predicted_mobility,
+                           "mash_nearest_neighbor": mash_top_hit['top_hit'],"mash_neighbor_distance": mash_top_hit['mash_hit_score'],
+                           "mash_neighbor_cluster": mash_top_hit['clustid'], "RefSeqHRrank":"-","RefSeqHRSciName":"-",
+                           "LitRepHRPlasmClass":"-","LitPredDBHRRank":"-","LitPredDBHRRankSciName":"-",
+                           "LitRepHRInPubs":"-","LitMeanTransferRate":"-", "LitClosestRefAcc":"-", "LitClosestMashDist":"-", "LitPMIDs":"-",
+                           "LitPMIDsNumber":"-"})
+    main_report_mobtyper_df = pandas.DataFrame(columns=main_report_data_dict.keys())
+
+
+    #print(host_range_literature_report_collapsed_df)
+    if host_range_refseq_rank and host_range_refseq_name:
+        main_report_data_dict.update({"RefSeqHRrank":host_range_refseq_rank,"RefSeqHRSciName":host_range_refseq_name,
+                                      "LitRepHRPlasmClass":host_range_literature_report_collapsed_df["LiteratureReportedHostRangePlasmidClass"].values[0],
+                                      "LitPredDBHRRank":host_range_literature_report_collapsed_df["LiteraturePredictedDBHostRangeTreeRank"].values[0],
+                                      "LitPredDBHRRankSciName": host_range_literature_report_collapsed_df["LiteraturePredictedDBHostRangeTreeRankSciName"].values[0],
+                                      "LitRepHRInPubs":host_range_literature_report_collapsed_df["LiteratureReportedHostRangeInPubs"].values[0],
+                                      "LitMeanTransferRate":host_range_literature_report_collapsed_df["LiteratureMeanTransferRateRange"].values[0],
+                                      "LitClosestRefAcc":host_range_literature_report_collapsed_df["LiteratureClosestRefrencePlasmidAcc"].values[0],
+                                      "LitClosestMashDist": host_range_literature_report_collapsed_df["LiteratureClosestMashDistance"].values[0],
+                                      "LitPMIDs": host_range_literature_report_collapsed_df["LiteraturePMIDs"].values[0],
+                                      "LitPMIDsNumber":host_range_literature_report_collapsed_df["LiteraturePublicationsNumber"].values[0]
+                                      })
+
+    #print(main_report_column_names[1:len(main_report_data_list)])
+    #print(main_report_data_list)
+    main_report_mobtyper_df = main_report_mobtyper_df.append(pandas.DataFrame([main_report_data_dict]),ignore_index=True, sort=False)
+
+    main_report_mobtyper_df.to_csv(report_file, sep="\t", mode="w",encoding="UTF-8",index=False)
     if not keep_tmp:
         shutil.rmtree(tmp_dir)
 
-    print("{}".format(string))
+    #print("{}".format(string))
 
 
 # call main function
