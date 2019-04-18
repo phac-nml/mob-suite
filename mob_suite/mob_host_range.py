@@ -125,7 +125,7 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
             LiteratureMaxTransferRateRange  = "NA"
             LiteratureMeanTransferRateRange = "NA"
 
-        report_dict = {  "LiteratureQueryReplicon": ",".join(replicon_names),
+        report_dict = OrderedDict({  "LiteratureQueryReplicon": ",".join(replicon_names),
                          "LiteratureSearchReplicon": replicon_name,
                          "LiteratureFoundPlasmidsNames": ",".join(set(literature_knowledge["Plasmid_Name"])),
                          "LiteratureFoundPlasmidsNumber": len(set(literature_knowledge["Plasmid_Name"])),
@@ -139,7 +139,7 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
                          "LiteratureMaxTransferRateRange": [LiteratureMaxTransferRateRange],
                          "LiteratureMeanTransferRateRange": [LiteratureMeanTransferRateRange],
                          "LiteraturePMIDs": ";".join(set([str(i) for i in literature_knowledge.loc[:, "PMID"]])),
-                         "LiteraturePublicationsNumber": len(set(literature_knowledge.loc[:, "PMID"]))}
+                         "LiteraturePublicationsNumber": len(set(literature_knowledge.loc[:, "PMID"]))})
 
         #if input plasmid sequence is provided, do additional closest match based on the sequence similarity and append to the general report
 
@@ -156,10 +156,10 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
                 exit("Literatire top hit search failed! Check mash top hit return from the getClosestLiteratureRefPlasmid()")
 
 
-            report_dict.update({"LiteratureClosestRefrencePlasmidAcc":[literature_accession_top_hit],
+            report_dict.update(OrderedDict({"LiteratureClosestRefrencePlasmidAcc":[literature_accession_top_hit],
                                 "LiteratureClosestPlasmidName":literature_closest_seq_hit_df.loc[:,"Plasmid_Name"].values[0],
                                 "LiteratureClosestPlasmidSize": int(literature_closest_seq_hit_df.loc[:,"Size"].values[0]),
-                                "LiteratureClosestMashDistance": [literature_mash_dist_top_hit]})
+                                "LiteratureClosestMashDistance": [literature_mash_dist_top_hit]}))
         report_df = pandas.concat([report_df, pandas.DataFrame.from_dict(report_dict)])
     #print(report_df)
     return report_df
@@ -173,12 +173,7 @@ def collapseLiteratureReport(df):
     #publications	LiteratureClosestRefrencePlasmid	LiteratureClosestPlasmidName	ClosestLiteraturePlasmidSize	LiteratureClosestMashDistance
     :return: single row dataframe
     """
-    #'LiteratureQueryReplicon', 'LiteratureSearchReplicon', 'LiteratureFoundPlasmidsNames', 'LiteratureFoundPlasmidsNumber',
-    # 'LiteratureReportedHostRangePlasmidClass', 'LiteratureReportedHostPlasmidSpecies', 'LiteratureReportedPlasmidHostSpeciesNumber',
-    # 'LiteraturePredictedDBHostRangeTreeRank', 'LiteraturePredictedDBHostRangeTreeRankSciName',
-    # 'LiteratureReportedHostRangeInPubs', 'LiteratureMinTransferRateRange', 'LiteratureMaxTransferRateRange',
-    # 'LiteratureMeanTransferRateRange', 'LiteraturePMIDs', 'LiteraturePublicationsNumber', 'LiteratureClosestRefrencePlasmid',
-    # 'LiteratureClosestPlasmidName', 'ClosestLiteraturePlasmidSize', 'LiteratureClosestMashDistance'
+
     collapsedlitdf=pandas.DataFrame.from_records([],columns=df.columns,index=[0])
 
     conversiondict={"NarrowHostRange":1,"WideHostRange":2,"BroadHostRange":3}
@@ -199,10 +194,7 @@ def collapseLiteratureReport(df):
     hrtreeranknum = max([rankconversiondict[k] for k in df.loc[:, "LiteraturePredictedDBHostRangeTreeRank"].values])
     collapsedlitdf.loc[0,"LiteraturePredictedDBHostRangeTreeRank"] = [k for k in rankconversiondict if rankconversiondict[k] == hrtreeranknum][0]
     idx=df.loc[:,"LiteraturePredictedDBHostRangeTreeRank"] == collapsedlitdf.loc[0,"LiteraturePredictedDBHostRangeTreeRank"]
-
     collapsedlitdf.loc[0,"LiteraturePredictedDBHostRangeTreeRankSciName"] = df[idx]["LiteraturePredictedDBHostRangeTreeRankSciName"].values[0]
-    #print(collapsedlitdf.loc[0,"LiteraturePredictedDBHostRangeTreeRankSciName"])
-    #print(df.loc[:, "LiteratureReportedHostRange"].values)
     collapsedlitdf.loc[0,"LiteratureReportedHostRangeInPubs"] = numrank2nameconversiondict[max([rankconversiondict[k] for k in df.loc[:, "LiteratureReportedHostRangeInPubs"].values])]
 
     for field in ["LiteratureMinTransferRateRange","LiteratureMaxTransferRateRange", "LiteratureMeanTransferRateRange"]:
@@ -282,7 +274,8 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc_li
 
 
     logging.debug("Inside getRefSeqHostRange()")
-    logging.debug("%s %s %s %s %s",replicon_name_list,mob_cluster_id,relaxase_name_acc_list,relaxase_name_list,matchtype) #DEBUG
+    logging.debug("replicon_name_list:%s\nmob_cluster_id:%s\n%srelaxase_name_acc_list:%s\nrelaxase_name_list:%s\n",
+                  replicon_name_list,mob_cluster_id,relaxase_name_acc_list,relaxase_name_list,matchtype) #DEBUG
 
 
 
@@ -603,14 +596,14 @@ def getHostRangeDBSubset(hr_obs_data, search_name, column_name, matchtype):
             else:
                 selection_index.append(False)
         return (hr_obs_data.loc[selection_index])
-    elif matchtype == "multi":
+    elif matchtype == "multiexact":
         for item in hr_obs_data[column_name]:
             if any([i for i in str(item).split(',') if i == search_name]):
                 selection_index.append(True)
             else:
                 selection_index.append(False)
         return (hr_obs_data.loc[selection_index])
-    elif matchtype == "loose":  # will losely match for cases such as IncF*
+    elif matchtype == "loose":  # will losely match for query cases such as IncF*
         for item in hr_obs_data[column_name]:
             if len(re.findall(search_name+".*", item)) != 0:
                 selection_index.append(True)
@@ -623,9 +616,9 @@ def getHostRangeDBSubset(hr_obs_data, search_name, column_name, matchtype):
 #parse cml arguments if run as separate module
 def parse_args():
     parser = ArgumentParser(description="Welcome to mob-suite plasmid host range prediction module :-)")
-    parser.add_argument('--exact_match',action='store_const', const="True", required=False, help='Exact single replicon/relaxase match')
-    parser.add_argument('--multi_match', action='store_const', const="True", required=False, help='Exact multi replicon/relaxase match')
-    parser.add_argument('--loose_match', action='store_const', const="True", required=False,help='Wildcard loose replicon/relaxase match')
+    parser.add_argument('--exact_match',action='store_const', const="True", required=False, help='Single exact search criteria match')
+    parser.add_argument('--multi_match', action='store_const', const="True", required=False, help='Multiple exact search criteria match')
+    parser.add_argument('--loose_match', action='store_const', const="True", required=False,help='Wildcard loose search criteria match (e.g. IncF* will match IncFI, IncFII, etc.)')
     parser.add_argument('--replicon_name',  action='store', nargs=1, required=False, help='Replicon name(s)')
     parser.add_argument('--relaxase_name', action='store', nargs=1, required=False, help='Relaxase name')
     parser.add_argument('--relaxase_accession', action='store', required=False, help='Relaxase accession number')
@@ -683,23 +676,23 @@ def main():
     elif args.loose_match != None:
         matchtype="loose"    # approximate ORF replicon match such as replicon family name (e.g. F)
     elif args.multi_match != None:
-        matchtype="multi"     # multiple ORFs replicon match
+        matchtype="multiexact"     # multiple ORFs replicon match
     else:
         matchtype=None
 
     logging.info("INPUT: Replicon=" + str(args.replicon_name) + " and MOB-SuiteClusterID=" + str(args.cluster_id) + ";")
     logging.info("Started to run the main taxonomy query function per feature")
 
+    # hostrange based on MOB-Suite  RefSeq database
+    (rank, host_range, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(args.replicon_name, args.cluster_id,
+                                                                                 args.relaxase_name,
+                                                                                 args.relaxase_accession, matchtype,
+                                                                                 loadHostRangeDB())
+
     #get literature based host range for each replicon
     lit_report = getLiteratureBasedHostRange(args.replicon_name, loadliteratureplasmidDB())
-    #exit("Done literature mining test")
 
-    #hostrange based on MOB-Suite  RefSeq database
-    (rank, host_range, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(args.replicon_name, args.cluster_id,
-                                      args.relaxase_name, args.relaxase_accession, matchtype, loadHostRangeDB())
     tree = getTaxonomyTree(taxids, args.outputprefix)  # render phylo tree
-
-
 
     writeOutHostRangeResults( filename_prefix=args.outputprefix, replicon_name_list = args.replicon_name,
                         mob_cluster_id = args.cluster_id,
@@ -709,7 +702,7 @@ def main():
                         stats_host_range_dict = stats_host_range,
                         literature_hr_report=lit_report, no_header_flag = args.noheader, treeObject=tree)
 
-    print("Host Range module run is done!")
+    logging.info("Host Range module run is complete!")
 
 if __name__ == "__main__":
     # setup the application logging
