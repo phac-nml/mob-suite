@@ -25,7 +25,7 @@ from mob_suite.utils import \
     verify_init, \
     check_dependencies
 from mob_suite.mob_host_range import getTaxonomyTree, getLiteratureBasedHostRange, loadliteratureplasmidDB, \
-    writeOutHostRangeResults,getRefSeqHostRange,loadHostRangeDB,collapseLiteratureReport
+    writeOutHostRangeReports,getRefSeqHostRange,loadHostRangeDB,collapseLiteratureReport,renderTree
 
 
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
@@ -119,6 +119,7 @@ def parse_args():
                         default=False)
     parser.add_argument('--host_range_detailed', required=False, help='Complete host range report with phylogeny stats', action='store_true',
                         default=False)
+
     return parser.parse_args()
 
 
@@ -333,45 +334,57 @@ def main():
 
     #host_range_refseq_rank = None; host_range_refseq_name = None #init of values
 
+
     host_range_literature_report_collapsed_df = pandas.DataFrame()
-    if args.host_range:
+
+    if args.host_range and found_replicons:
+
         (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(replicon_name_list = list(found_replicons.values()),
                                                           mob_cluster_id = mash_top_hit['clustid'],
                                                           relaxase_name_acc_list = None,
                                                           relaxase_name_list = None,
-                                                          matchtype = "multi", hr_obs_data = loadHostRangeDB())
+                                                          matchtype = "multiexact", hr_obs_data = loadHostRangeDB())
         #print(found_replicons.values(), host_range_rank, host_range_name); exit("Break Point")
-        host_range_literature_report_df = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
+        host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
                                                                       plasmid_lit_db = loadliteratureplasmidDB(),
                                                                       input_seq = args.infile)
-        host_range_literature_report_collapsed_df = collapseLiteratureReport(host_range_literature_report_df)
-        host_range_literature_report_collapsed_df.to_csv("host_range_literature_report_collapsed_df.txt",sep="\t",index=False, mode="w")
+        if host_range_literature_report_df.empty == False:
+            host_range_literature_report_collapsed_df = collapseLiteratureReport(host_range_literature_report_df)
+            host_range_literature_report_collapsed_df.to_csv(args.outdir+"/"+re.sub("\..*","",file_id)+"_host_range_literature_report_collapsed_df.txt",sep="\t",index=False, mode="w")
 
         #print(host_range_literature_report_collapsed_df)
 
-    elif args.host_range_detailed:
+    elif args.host_range_detailed and found_replicons:
         (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
             replicon_name_list=list(found_replicons.values()),
             mob_cluster_id=mash_top_hit['clustid'],
             relaxase_name_acc_list=None,
             relaxase_name_list=None,
-            matchtype="multi",hr_obs_data = loadHostRangeDB())
+            matchtype="multiexact",hr_obs_data = loadHostRangeDB())
 
-        tree = getTaxonomyTree(taxids, filename=args.outdir)
-        host_range_literature_report_df = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
+        refseqtree = getTaxonomyTree(taxids) #refseq tree
+        renderTree(tree=refseqtree, taxids=taxids,
+                   filename_prefix=args.outdir+"/"+re.sub(r"\..*","",file_id)+"_refseqhostrange_")
+
+        host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
                                                                       plasmid_lit_db = loadliteratureplasmidDB(),
                                                                       input_seq = args.infile)
-        host_range_literature_report_collapsed_df = collapseLiteratureReport(host_range_literature_report_df)
 
-        writeOutHostRangeResults(filename_prefix = args.outdir,
+        if littaxids and host_range_literature_report_df.empty == False:
+            littree = getTaxonomyTree(littaxids) #literature tree
+            renderTree(tree=littree , taxids=littaxids ,
+                       filename_prefix=args.outdir+"/"+re.sub(r"\..*","",file_id)+ "_literaturehostrange_",
+                       )
+            host_range_literature_report_collapsed_df = collapseLiteratureReport(host_range_literature_report_df)
+
+        writeOutHostRangeReports(filename_prefix = args.outdir+"/"+re.sub(r"\..*","",file_id),
                                  replicon_name_list = list(found_replicons.values()),
                                  mob_cluster_id = mash_top_hit['clustid'],
                                  relaxase_name_acc = None,
                                  relaxase_name_list = None,
                                  convergance_rank=host_range_refseq_rank, convergance_taxonomy=host_range_refseq_name,
                                  stats_host_range_dict=stats_host_range,
-                                 literature_hr_report=host_range_literature_report_df,
-                                 no_header_flag=False, treeObject=tree)
+                                 literature_hr_report=host_range_literature_report_df)
     else:
         host_range_refseq_rank=None; host_range_refseq_name=None
 
@@ -442,8 +455,9 @@ def main():
 
     #print(host_range_literature_report_collapsed_df)
     if host_range_refseq_rank and host_range_refseq_name:
-        main_report_data_dict.update({"RefSeqHRrank":host_range_refseq_rank,"RefSeqHRSciName":host_range_refseq_name,
-                                      "LitRepHRPlasmClass":host_range_literature_report_collapsed_df["LiteratureReportedHostRangePlasmidClass"].values[0],
+        main_report_data_dict.update({"RefSeqHRrank":host_range_refseq_rank,"RefSeqHRSciName":host_range_refseq_name})
+    if host_range_literature_report_collapsed_df.empty == False:
+        main_report_data_dict.update({"LitRepHRPlasmClass":host_range_literature_report_collapsed_df["LiteratureReportedHostRangePlasmidClass"].values[0],
                                       "LitPredDBHRRank":host_range_literature_report_collapsed_df["LiteraturePredictedDBHostRangeTreeRank"].values[0],
                                       "LitPredDBHRRankSciName": host_range_literature_report_collapsed_df["LiteraturePredictedDBHostRangeTreeRankSciName"].values[0],
                                       "LitRepHRInPubs":host_range_literature_report_collapsed_df["LiteratureReportedHostRangeInPubs"].values[0],
@@ -456,11 +470,12 @@ def main():
 
     #print(main_report_column_names[1:len(main_report_data_list)])
     #print(main_report_data_list)
-    main_report_mobtyper_df = main_report_mobtyper_df.append(pandas.DataFrame([main_report_data_dict]),ignore_index=True, sort=False)
+    main_report_mobtyper_df = main_report_mobtyper_df.append(pandas.DataFrame([main_report_data_dict]),ignore_index=True)
 
     main_report_mobtyper_df.to_csv(report_file, sep="\t", mode="w",encoding="UTF-8",index=False)
     if not keep_tmp:
         shutil.rmtree(tmp_dir)
+    logging.info("Run completed")
 
     #print("{}".format(string))
 

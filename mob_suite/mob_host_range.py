@@ -12,18 +12,17 @@ from collections import Counter,OrderedDict
 
 #default init arguments
 args=ArgumentParser()
-args.multi_match = True
-args.exact_match = None
-args.loose_match = None
-args.render_tree = True
-args.write_newick = True
-args.header = False
-args.debug = False
-args.relaxase_accession = None
-args.outputprefix = ""
-args.inputseq = False
+# args.multi_match = True
+# args.exact_match = None
+# args.loose_match = None
+# args.render_tree = True
+# args.write_newick = True
+# args.debug = False
+# args.relaxase_accession = None
+# args.outdir = "./"
+# args.inputseq = False
 
-OUTDIR = os.getcwd()+"/"
+#OUTDIR = os.getcwd()+"/"
 
 # def createLogger():
 #     log = logging.getLogger('MOB-Suite')
@@ -69,23 +68,26 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
     :param plasmid_lit_db: pandas dataframe representing a database of well curated plasmid mentioned in the literature
     :param input_seq: path to the input plasmid sequence
     :return: report_df: pandas dataframe with all relevant information on the input query including literature reported host range and typical plasmids and PMIDs
+             lit_taxids: list of taxonomy ids
     '''
 
 
     report_df=pandas.DataFrame()
     repliconsearchdict = findHitsInLiteratureDBbyReplicon(replicon_names,plasmid_lit_db)
+    lit_taxids_list=[]
+    #report_dict=dict.fromkeys(['apple','ball'],"-")
 
     for replicon_name in repliconsearchdict.keys():
         #find hits in database based on replicon query
         idx = repliconsearchdict[replicon_name]
-
         literature_knowledge = plasmid_lit_db.iloc[idx,:].copy() # makring sure the new data frame is created
 
         if literature_knowledge.shape[0] == 0:
-            exit("Could not extract any information from the literature database matching the " + replicon_name)
+            continue
+            #raise Exception("Could not extract any information from the literature database matching the search")
+
         #data type conversion
         #literature_knowledge["TransferRate"] = pandas.to_numeric(literature_knowledge["TransferRate"])
-
 
         literature_knowledge.loc[:,"TransferRate"] = literature_knowledge.loc[:,"TransferRate"].astype(float)
         literature_knowledge.loc[literature_knowledge["Size"].isna() == False, "Size"] = literature_knowledge.loc[literature_knowledge["Size"].isna()== False, "Size"].astype(int)
@@ -99,7 +101,10 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
         #print(literature_knowledge.dtypes)
         #exit()
         #phylolitertree = getTaxonomyTree()
-        rank,rankname = getHostRangeRankCovergence(set(literature_knowledge["taxid"]))
+        #remove any entries that are map to uncultured bacteria (avoids inflation of the host range)
+        select_vector = [True if len(re.findall("uncultured", line)) == 0 else False for line in literature_knowledge["Species"]]
+        lit_taxids=list(set(literature_knowledge.loc[select_vector,"taxid"]))
+        rank,rankname = getHostRangeRankCovergence(lit_taxids)
 
         host_range_literature_claim=[] #what does the papers claim in terms of the host range?
         for pid in set(literature_knowledge.loc[:,"PMID"]):
@@ -143,10 +148,9 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
 
         #if input plasmid sequence is provided, do additional closest match based on the sequence similarity and append to the general report
 
-        if input_seq.strip():
-
+        if input_seq.strip():  #if plasmid sequence is available
             literature_accession_top_hit, literature_mash_dist_top_hit = getClosestLiteratureRefPlasmid(input_seq)
-            print("L",literature_accession_top_hit, literature_mash_dist_top_hit,literature_accession_top_hit.rsplit("."))
+            #print("L",literature_accession_top_hit, literature_mash_dist_top_hit,literature_accession_top_hit.rsplit("."))
             #print(plasmid_lit_db["NCBI_Accession"])
             #print()
             #by accession search
@@ -160,9 +164,12 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
                                 "LiteratureClosestPlasmidName":literature_closest_seq_hit_df.loc[:,"Plasmid_Name"].values[0],
                                 "LiteratureClosestPlasmidSize": int(literature_closest_seq_hit_df.loc[:,"Size"].values[0]),
                                 "LiteratureClosestMashDistance": [literature_mash_dist_top_hit]}))
+
+        #append results from different replicons (if multiple are present)
         report_df = pandas.concat([report_df, pandas.DataFrame.from_dict(report_dict)])
-    #print(report_df)
-    return report_df
+        lit_taxids_list = lit_taxids + lit_taxids
+
+    return report_df, lit_taxids_list
     #report_table.to_csv(args.outputprefix+'_literature_report.txt',sep="\t",
     #                    float_format='%.1E', index=False, na_rep="NA",mode="w")
 
@@ -259,15 +266,15 @@ def getHostRangeRankCovergence(taxids):
 def getRefSeqHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc_list, relaxase_name_list, matchtype, hr_obs_data):
     """
     Get NCBI RefSeq host range based on the search parameters either/or replicon, mob_cluster_id, relaxase family, relaxase accession
-    :param replicon_name_list: list of replicons to process ['IncP','IncF']
+    :param replicon_name_list: a list of replicons to process ['IncP','IncF']
     :param mob_cluster_id:  mob-cluster cluster id
-    :param relaxase_name_acc_list:  list of MOB accession ids ['NC_017627_00068' 'NC_011416_00039']
+    :param relaxase_name_acc_list:  a list of MOB accession ids ['NC_017627_00068' 'NC_011416_00039']
     :param relaxase_name_list: relaxase family names list ['MOBF' 'MOBP']
     :param matchtype: how we will match fields in the database (exactly = entire field, multi = query might represent part of the field)
     :param hr_obs_data: host range observed data
     :return: convergance_rank: effectively the host range approximated by the convergance rank on the phylogenetic tree
              converged_taxonomy_name: the host range name given by the convergence rank
-             unique_ref_selected_taxids: list of reference taxids that matched the query
+             unique_ref_selected_taxids: a list of reference taxids that matched the query
              ref_taxids_df: pandas dataframe with the key information on the host range
              stats_host_range_dict: dictionary on the number of hits per the each node of the resulting host range phylogenetic tree
     """
@@ -301,14 +308,18 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc_li
         logging.debug("Extracted total records (clusterid): {}".format(ref_taxids_df.shape[0]))
     if relaxase_name_acc_list is not None:
         for relaxase_name_acc in relaxase_name_acc_list:
-            ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, relaxase_name_acc, "Ref_relaxase_type(s)",matchtype)])
+            ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, relaxase_name_acc, "Ref_relaxase_type_accession(s)",matchtype)])
             logging.debug("Relaxase accession: {}\n".format(relaxase_name_acc))
     if relaxase_name_list is not None:
         for relaxase_name in relaxase_name_list:
             ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, relaxase_name, "Ref_relaxase_type(s)", matchtype)])
     if ref_taxids_df.empty:
         logging.error("RefSeq Plasmid database returned no hits perhaps due to no search paramenters specified (i.e. replicon, mob_cluster_id, relaxase family, relaxase accession #).")
-        exit("Empty dataframe returned from RefSeq plasmid database")
+        logging.error("Search parameters:\
+                       replicon name list: "+str(replicon_name_list)+"; mob_cluster_id: "+
+                       str(mob_cluster_id)+"; relaxase_name_acc_list: "+
+                       str(relaxase_name_acc_list)+"; relaxase_name_list: "+str(relaxase_name_list)+";")
+        raise Exception("Empty dataframe returned from RefSeq plasmid database")
 
 
     #select subset of ref data based on criteria (e.g. replicon name)
@@ -402,8 +413,6 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc_li
     #create lineage statistics dictionary per rank (e.g. 'superkingdom', ['Bacteria', 'Bacteria' ...],'phylum',[...])
     #print(taxonony_lineages_dict_list)
     stats_host_range_dict=OrderedDict({rank:list() for rank in ranks})
-
-    #
     for lineage_record in taxonony_lineages_dict_list:
          for rank in stats_host_range_dict.keys():
              stats_host_range_dict[rank].append(lineage_record.get(rank))
@@ -447,7 +456,7 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc_li
 
 
 
-def writeOutHostRangeResults(   filename_prefix = args.outputprefix,
+def writeOutHostRangeReports(   filename_prefix = None,
                                 replicon_name_list = None,
                                 mob_cluster_id = None,
                                 relaxase_name_acc = None,
@@ -455,8 +464,7 @@ def writeOutHostRangeResults(   filename_prefix = args.outputprefix,
                                 convergance_rank = None,
                                 convergance_taxonomy = None,
                                 stats_host_range_dict = None,
-                                literature_hr_report = pandas.DataFrame(),
-                                no_header_flag = True, treeObject=None
+                                literature_hr_report = pandas.DataFrame()
                                 ):
 
 
@@ -469,48 +477,47 @@ def writeOutHostRangeResults(   filename_prefix = args.outputprefix,
     else:
         relaxases = relaxase_name_list
 
-    if no_header_flag is True: #flag to write header in the report file
-        with open(file=OUTDIR + filename_prefix + "_hostrange_ncbi_nucleotide_report.txt", mode="w") as fp:
-            fp.write("{}\t{}\t{}\t{}\t{}\t{}\n".format("QueryReplicon(s)", "QueryClusterID", "QueryRelaxase(s)",
-                                                           "QueryRelaxaseAccession", "RefSeqRank", "RefSeqHostRange"))
+    #if no_header_flag is True: #flag to write header in the report file
+    #    with open(file=filename_prefix + "_hostrange_ncbi_nucleotide_report.txt", mode="w") as fp:
+    #        fp.write("{}\t{}\t{}\t{}\t{}\t{}\n".format("QueryReplicon(s)", "QueryClusterID", "QueryRelaxase(s)",
+    #                                                       "QueryRelaxaseAccession", "RefSeqRank", "RefSeqHostRange"))
 
-    with open(file=OUTDIR+filename_prefix+"_hostrange_ncbi_nucleotide_report.txt", mode="a") as fp:
-            fp.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(replicons, mob_cluster_id,
-                                                           relaxases, relaxase_name_acc, convergance_rank,
-                                                           convergance_taxonomy))
-    fp.close()
+    #with open(file=filename_prefix+"_hostrange_ncbi_nucleotide_report.txt", mode="a") as fp:
+    #        fp.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(replicons, mob_cluster_id,
+    #                                                       relaxases, relaxase_name_acc, convergance_rank,
+    #                                                       convergance_taxonomy))
+    #fp.close()
+    #logging.info("Wrote RefSeq host range report results into {}".format(
+    #     filename_prefix + "_hostrange_ncbi_nucleotide_report.txt"))  # replicon,relaxase,cluster,host range
 
-    with open(file=OUTDIR + filename_prefix + "_ncbi_nucleotide_asci_tree.txt", mode="w") as fp:
-        fp.write(treeObject.get_ascii(attributes=["rank", "sci_name"]))
-    fp.close()
+
 
     #decompose resulting phylogenetic tree into frequency counts per reach taxonomic rank (hierachy level)
-    strings2file = ["rank\tsci_name\tRefSeq_db_hits\tQuery\n"]
-    with open(file=OUTDIR+filename_prefix+"_ncbi_nucleotide_phylostats.txt", mode="w") as fp:
+    strings2file = ["rank\tsci_name\tRefSeq_db_hits\tQueryReplicon(s)\tQueryClusterID\tQueryRelaxase(s)\tQueryRelaxaseAccession\tRefSeqRank\tRefSeqHostRange\n"]
+    with open(file=filename_prefix+"_ncbi_nucleotide_phylostats.txt", mode="w") as fp:
         for rank in stats_host_range_dict.keys():
             names = (Counter(stats_host_range_dict[rank]).keys())
             values = (Counter(stats_host_range_dict[rank]).values())
             for couple in zip(names,values):
-               strings2file.append("{}\t{}\t{}\t{}\n".format(rank,couple[0],couple[1],"replicon:"+",".join(replicon_name_list)+";mob_cluster:"+str(mob_cluster_id)))
+               strings2file.append("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(rank,couple[0],couple[1],replicons, mob_cluster_id,
+                                                           relaxases, relaxase_name_acc, convergance_rank,
+                                                           convergance_taxonomy))
         fp.writelines(strings2file)
         fp.close()
+        logging.info(
+            "Wrote phylogeny stats into {}".format(filename_prefix + "_refseq_hostrange_tree_phylostats.txt"))
 
     # literature report
     if literature_hr_report.shape[0] != 0:
         literature_hr_report.to_csv(filename_prefix + '_literature_report.txt', sep="\t", index=False, na_rep="NA", mode="w")
 
 
-    logging.info("Wrote host range report results into {}".format(OUTDIR+filename_prefix+"_hostrange_ncbi_nucleotide_report.txt")) #replicon,relaxase,cluster,host range
-    logging.info("Wrote phylogeny stats into {}".format(OUTDIR + filename_prefix + "_ncbi_nucleotide_phylostats.txt"))
-    logging.info("Wrote ASCII host range tree into {}".format(OUTDIR + filename_prefix + "_ncbi_nucleotide_asci_tree.txt"))
 
-
-def getTaxonomyTree(taxids, filename=args.outputprefix):
+def getTaxonomyTree(taxids):
     """
-    Generate taxonomical tree based on taxonomic ids (taxids)
+    Generate and render taxonomical tree as text or image based on the list of taxonomic ids (taxids)
     :param taxids: list of NCBI Taxonomy ids (e.g. 562 - E.coli)
-    :param filename: output filename prefix for phylogenetic tree rendering in newick and image formats
-    :return: The output directory
+    :return: tree: object of PhyloTree class from ete3 library
     """
     ncbi = NCBITaxa()
 
@@ -531,44 +538,6 @@ def getTaxonomyTree(taxids, filename=args.outputprefix):
         #if node.rank == "no rank":
         #    node.delete()
 
-    #exit()
-    ts = TreeStyle()
-    ts.show_leaf_name = False; ts.show_scale=False; ts.show_branch_length = False;
-
-    #print(dir(ts))
-    #print(tree.get_ascii(attributes=["sci_name"]))
-
-    #pandas.DataFrame.to_csv(ref_taxids_df, "/Users/kirill/WORK/MOBSuiteHostRange2018/selected_df.csv")
-
-    #prettify the rendered tree providing the stats on the tree
-    #annotate nodes of the tree
-    for node in tree.traverse():
-        #print(node.features) #{'rank', 'common_name', 'support', 'sci_name', 'named_lineage', 'taxid', 'lineage', 'name', 'dist'}
-        #print(node.sci_name)
-        #print(ref_taxids_df)
-        nhits = len([t for t in taxids if t == node.taxid])
-        #print("{}:{}".format(node.taxid,nhits))
-        node.img_style['size'] = nhits
-        node.img_style['fgcolor'] = "red"
-        node.img_style['hz_line_color'] = "red"
-        node.img_style['vt_line_color'] = "red"
-        node.img_style['draw_descendants']=True
-        #print(node.img_style)
-        node.name = re.sub("_","",node.sci_name) + "|taxid"+str(node.taxid)+"|"+str(nhits)+"hits" #Newick does not like spaces in labels
-        #node.name=node.sci_name
-        #print(len(node.name))
-        #print(node.name, node.img_style)
-        #node.set_style()
-        #print(node.features)
-    #exit()
-    #tree.show(tree_style=ts)
-
-    #write an image
-    if args.render_tree == True:
-        tree.render(OUTDIR+filename+"_phylogeny_tree.png",  dpi=2800, w=2000, tree_style=ts)
-    #write a newick tree
-    if args.write_newick == True:
-        tree.write(format=2, outfile=OUTDIR+filename+"_phylogeny_tree.nwk")
     return(tree)
 
 def loadHostRangeDB():
@@ -582,12 +551,12 @@ def getHostRangeDBSubset(hr_obs_data, search_name, column_name, matchtype):
     """
     From the NCBI plasmid curated database get a subset as per search query (e.g. replicon, clusterid, relaxase)
     :param hr_obs_data: host range observed data from RefSeq database NCBI
-    :param search_name:
-    :param column_name:
-    :param matchtype:
+    :param search_name: a search string
+    :param column_name: a search string
+    :param matchtype: a sting
     :return: dataframe containing selected NCBI plasmid information (accession number, mobility, size, etc.)
     """
-    #print(matchtype,column_name,search_name,hr_obs_data.iloc[0,])
+    #print(matchtype,column_name,search_name,hr_obs_data.loc[0:5,column_name])
     selection_index = list()
     if matchtype == "exact":
         for item in hr_obs_data[column_name]:
@@ -623,10 +592,10 @@ def parse_args():
     parser.add_argument('--relaxase_name', action='store', nargs=1, required=False, help='Relaxase name')
     parser.add_argument('--relaxase_accession', action='store', required=False, help='Relaxase accession number')
     parser.add_argument('--cluster_id', action='store', required=False, help='MOB-Suite Cluster ID (e.g. 416)')
-    parser.add_argument('--render_tree',action='store_true', default=False,  required=False, help='Render taxanomic tree')
-    parser.add_argument('--write_newick', action='store_true', required=False, help='Write a newick tree')
-    parser.add_argument('--noheader', action='store_true', default=True, required=False, help='Print header in the final reported output (optional)')
-    parser.add_argument('--outputprefix', action='store', required=True, help='Output files name prefix')
+    parser.add_argument('--host_range_detailed', required=False, help='Complete host range report with phylogeny stats',
+                        action='store_true',
+                        default=False)
+    parser.add_argument('--outdir', action='store', required=True, help='Output files name prefix')
     parser.add_argument('--inputseq', action='store', required=False, help='Single plasmid sequence in FASTA format (optional)')
     parser.add_argument('--debug', required=False, help='Show debug detailed information (optional)', action='store_true')
 
@@ -640,11 +609,11 @@ def parse_args():
 
     #CASE1: prohibited characters in the name
     #correct file names that come with the prohibited characters like / or \ (e.g. IncA/C2)
-    args.outputprefix = re.sub("[\\|//]+", "", args.outputprefix)
+    args.outdir = re.sub("[\\|//]+", "", args.outdir)
 
     #CASE2: Output file exists. Remove the old version
-    if os.path.exists(OUTDIR+args.outputprefix+".txt"):
-        os.remove(OUTDIR+args.outputprefix+".txt")
+    #if os.path.exists(args.outdir+".txt"):
+    #    os.remove(args.outdir+".txt")
 
     if args.debug:
         logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]", level=logging.DEBUG)
@@ -684,25 +653,77 @@ def main():
     logging.info("Started to run the main taxonomy query function per feature")
 
     # hostrange based on MOB-Suite  RefSeq database
-    (rank, host_range, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(args.replicon_name, args.cluster_id,
+    (rank, host_range, taxids, taxids_df, stats_refseq_host_range_dict) = getRefSeqHostRange(args.replicon_name, args.cluster_id,
                                                                                  args.relaxase_name,
                                                                                  args.relaxase_accession, matchtype,
                                                                                  loadHostRangeDB())
 
     #get literature based host range for each replicon
-    lit_report = getLiteratureBasedHostRange(args.replicon_name, loadliteratureplasmidDB())
+    lit_report, littaxids = getLiteratureBasedHostRange(args.replicon_name, loadliteratureplasmidDB())
+    if args.replicon_name and lit_report.empty == False and args.host_range_detailed:
+        treeRefSeq = getTaxonomyTree(taxids)  # get a phylogenetic tree
+        renderTree(tree=treeRefSeq, taxids=taxids,
+                   filename_prefix=args.outdir + "/mob_hostrange_" + args.outdir + "_refseqhostrange_")
 
-    tree = getTaxonomyTree(taxids, args.outputprefix)  # render phylo tree
+        treeLiterature = getTaxonomyTree(littaxids)
+        renderTree(tree=treeLiterature,taxids=littaxids,
+                   filename_prefix=args.outdir+"/mob_hostrange_"+args.outdir+"_literaturehostrange_")
 
-    writeOutHostRangeResults( filename_prefix=args.outputprefix, replicon_name_list = args.replicon_name,
+
+    writeOutHostRangeReports( filename_prefix=args.outdir+"/mob_hostrange_"+args.outdir, replicon_name_list = args.replicon_name,
                         mob_cluster_id = args.cluster_id,
                         relaxase_name_acc = args.relaxase_accession,
                         relaxase_name_list = args.relaxase_name,
                         convergance_rank = rank, convergance_taxonomy = host_range,
-                        stats_host_range_dict = stats_host_range,
-                        literature_hr_report=lit_report, no_header_flag = args.noheader, treeObject=tree)
+                        stats_host_range_dict = stats_refseq_host_range_dict,
+                        literature_hr_report=lit_report)
 
     logging.info("Host Range module run is complete!")
+
+def renderTree(tree,taxids,filename_prefix):
+    ts = TreeStyle()
+    ts.show_leaf_name = False
+    ts.show_scale = False
+    ts.show_branch_length = False
+
+    # print(dir(ts))
+    # print(tree.get_ascii(attributes=["sci_name"]))
+
+    # pandas.DataFrame.to_csv(ref_taxids_df, "/Users/kirill/WORK/MOBSuiteHostRange2018/selected_df.csv")
+
+    # prettify the rendered tree providing the stats on the tree
+    # annotate nodes of the tree
+    for node in tree.traverse():
+        # print(node.features) #{'rank', 'common_name', 'support', 'sci_name', 'named_lineage', 'taxid', 'lineage', 'name', 'dist'}
+        # print(node.sci_name)
+        # print(ref_taxids_df)
+        nhits = len([t for t in taxids if t == node.taxid])
+        # print("{}:{}".format(node.taxid,nhits))
+        node.img_style['size'] = nhits
+        node.img_style['fgcolor'] = "red"
+        node.img_style['hz_line_color'] = "red"
+        node.img_style['vt_line_color'] = "red"
+        node.img_style['draw_descendants'] = True
+        # print(node.img_style)
+        node.name = re.sub("_", "", node.sci_name) + "|taxid" + str(node.taxid) + "|" + str(
+            nhits) + "hits"  # Newick does not like spaces in labels
+        # node.name=node.sci_name
+        # print(len(node.name))
+        # print(node.name, node.img_style)
+        # node.set_style()
+        # print(node.features)
+    # exit()
+    # tree.show(tree_style=ts)
+
+    # write an image
+    tree.render(filename_prefix+"phylogeny_tree.png", dpi=2800, w=2000, tree_style=ts)
+    with open(file=filename_prefix+ "asci_tree.txt", mode="w") as fp:
+        fp.write(tree.get_ascii(attributes=["rank", "sci_name"]))
+    logging.info("Wrote ASCII host range tree into {}".format(
+            filename_prefix + "asci_tree.txt"))
+    tree.write(format=2, outfile=filename_prefix + "phylogeny_tree.nwk")
+
+
 
 if __name__ == "__main__":
     # setup the application logging
@@ -714,11 +735,9 @@ if __name__ == "__main__":
 
 #TODO
 # BATCH mode processing
-# add examples to the database
-# individual module run
-# python mob_host_range.py --replicon_name IncF,IncP --inputseq /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET11_Ecoli_plasmid_529.fasta  --loose_match --outputprefix  run_test
-# python mob_host_range.py --replicon_name IncFIIA,IncFII --inputseq /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET11_Ecoli_plasmid_529.fasta  --loose_match --outputprefix  run_test
-#
+# Add phylogenetic stats for the literature inferred tree. Need to add taxonomy lineages full path in literature database
+
+
 # mob_typer run
 # cp *.py /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/
 # mob_typer --host_range -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET11_Ecoli_plasmid_529.fasta -o run_test
