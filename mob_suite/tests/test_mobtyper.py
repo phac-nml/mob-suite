@@ -163,7 +163,7 @@ def test_getTaxonomyTree_onRefSeqDB_and_Render():
     tree = getTaxonomyTree(taxids=unique_ref_selected_taxids)
     assert isinstance(tree, ete3.PhyloTree), "Class mismatch output by getTaxonomyTree(). Output class is " + type(tree).__name__
 
-
+    print(os.getcwd())
     renderTree(tree=tree, taxids=unique_ref_selected_taxids, filename_prefix="./run_test/run_test_refseqhostrange")
 
 def test_getTaxonomyTree_onLiteratureDB_and_Render():

@@ -78,9 +78,11 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
     #report_dict=dict.fromkeys(['apple','ball'],"-")
 
     for replicon_name in repliconsearchdict.keys():
+
         #find hits in database based on replicon query
         idx = repliconsearchdict[replicon_name]
-        literature_knowledge = plasmid_lit_db.iloc[idx,:].copy() # makring sure the new data frame is created
+        #get database subset for further analyses
+        literature_knowledge = plasmid_lit_db.iloc[idx,:].copy()
 
         if literature_knowledge.shape[0] == 0:
             continue
@@ -157,13 +159,21 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
             #idx = [i for i in range(0, len(literature_knowledge)) if len(re.findall(literature_accession_top_hit.rsplit(".")[0],plasmid_lit_db["NCBI_Accession"].values[i])) != 0]
             literature_closest_seq_hit_df = plasmid_lit_db[plasmid_lit_db["NCBI_Accession"] == literature_accession_top_hit.rsplit(".")[0]]
             if literature_closest_seq_hit_df.empty:
-                exit("Literatire top hit search failed! Check mash top hit return from the getClosestLiteratureRefPlasmid()")
+                raise Exception("Literature top hit search failed! Check mash top hit return from the getClosestLiteratureRefPlasmid()")
+            if literature_closest_seq_hit_df.shape[0] > 1:
+                raise Exception("Literature top hit dataframe returned more than a single hit ... Expecting a single top hit.")
 
-
+            literature_closest_donor_strain = literature_closest_seq_hit_df.loc[:,"Donor"].values[0]
+            literature_closest_recipient_strain = literature_closest_seq_hit_df.loc[:, "Recipient"].values[0]
+            literature_closest_transfer_rate = literature_closest_seq_hit_df.loc[:, "Recipient"].values[0]
+            #additional fields
             report_dict.update(OrderedDict({"LiteratureClosestRefrencePlasmidAcc":[literature_accession_top_hit],
-                                "LiteratureClosestPlasmidName":literature_closest_seq_hit_df.loc[:,"Plasmid_Name"].values[0],
-                                "LiteratureClosestPlasmidSize": int(literature_closest_seq_hit_df.loc[:,"Size"].values[0]),
-                                "LiteratureClosestMashDistance": [literature_mash_dist_top_hit]}))
+                                "LiteratureClosestReferencePlasmidName":literature_closest_seq_hit_df.loc[:,"Plasmid_Name"].values[0],
+                                "LiteratureClosestReferencePlasmidSize": int(literature_closest_seq_hit_df.loc[:,"Size"].values[0]),
+                                "LiteratureClosestReferenceMashDistance": [literature_mash_dist_top_hit],
+                                "LiteratureClosestReferenceDonorStrain":[literature_closest_donor_strain],
+                                "LiteratureClosestReferenceRecipientStrain": [literature_closest_recipient_strain],
+                                "LiteratureClosestReferenceTransferRate": [literature_closest_transfer_rate]}))
 
         #append results from different replicons (if multiple are present)
         report_df = pandas.concat([report_df, pandas.DataFrame.from_dict(report_dict)])
@@ -182,13 +192,13 @@ def collapseLiteratureReport(df):
     """
 
     collapsedlitdf=pandas.DataFrame.from_records([],columns=df.columns,index=[0])
+    collapsedlitdf.iloc[0]=df.iloc[0]
 
     conversiondict={"NarrowHostRange":1,"WideHostRange":2,"BroadHostRange":3}
 
     #no rank;no rank;superkingdom;phylum;class;order;family;genus;species group;species
     rankconversiondict={"species":1,"genus":2,"family":3,"order":4,"class":5,"phylum":6,"superkingdom":7}
     numrank2nameconversiondict = {1:"species", 2:"genus",3:"family",4:"order",5:"class", 6:"phylum",7:"superkingdom"}
-
 
     collapsedlitdf.loc[0,"LiteratureQueryReplicon"] = df.loc[0,"LiteratureQueryReplicon"]
     collapsedlitdf.loc[0, "LiteratureSearchReplicon"] = ",".join(df.loc[:,"LiteratureSearchReplicon"].values)
@@ -214,9 +224,9 @@ def collapseLiteratureReport(df):
     collapsedlitdf.loc[0, "LiteraturePublicationsNumber"] = sum(df["LiteraturePublicationsNumber"])
 
     #the closest sequence based result will the only one, no need to collapse, just copy
-    if [col for col in df.columns if col == "LiteratureClosestRefrencePlasmidAcc"]:
-        for field in ['LiteratureClosestRefrencePlasmidAcc', 'LiteratureClosestPlasmidName', 'LiteratureClosestPlasmidSize', 'LiteratureClosestMashDistance']:
-            collapsedlitdf.loc[0, field] = df.loc[0,field]
+    #if [col for col in df.columns if col == "LiteratureClosestRefrencePlasmidAcc"]:
+    #    for field in ['LiteratureClosestRefrencePlasmidAcc', 'LiteratureClosestPlasmidName', 'LiteratureClosestPlasmidSize', 'LiteratureClosestMashDistance']:
+    #        collapsedlitdf.loc[0, field] = df.loc[0,field]
 
     return(collapsedlitdf)
 
@@ -736,7 +746,7 @@ if __name__ == "__main__":
 #TODO
 # BATCH mode processing
 # Add phylogenetic stats for the literature inferred tree. Need to add taxonomy lineages full path in literature database
-
+# Add literature closest transfer rate value if available field in all outputs
 
 # mob_typer run
 # cp *.py /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/

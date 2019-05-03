@@ -448,8 +448,10 @@ def main():
                            "mash_nearest_neighbor": mash_top_hit['top_hit'],"mash_neighbor_distance": mash_top_hit['mash_hit_score'],
                            "mash_neighbor_cluster": mash_top_hit['clustid'], "RefSeqHRrank":"-","RefSeqHRSciName":"-",
                            "LitRepHRPlasmClass":"-","LitPredDBHRRank":"-","LitPredDBHRRankSciName":"-",
-                           "LitRepHRInPubs":"-","LitMeanTransferRate":"-", "LitClosestRefAcc":"-", "LitClosestMashDist":"-", "LitPMIDs":"-",
-                           "LitPMIDsNumber":"-"})
+                           "LitRepHRInPubs":"-","LitMeanTransferRate":"-",
+                           "LitClosestRefAcc":"-", "LitClosestRefMashDist":"-","LitClosestRefDonorStrain":"-",
+                           "LitClosestRefRecipientStrain":"-","LitClosestRefTransferRate":"-",
+                           "LitPMIDs":"-","LitPMIDsNumber":"-"})
     main_report_mobtyper_df = pandas.DataFrame(columns=main_report_data_dict.keys())
 
 
@@ -463,7 +465,10 @@ def main():
                                       "LitRepHRInPubs":host_range_literature_report_collapsed_df["LiteratureReportedHostRangeInPubs"].values[0],
                                       "LitMeanTransferRate":host_range_literature_report_collapsed_df["LiteratureMeanTransferRateRange"].values[0],
                                       "LitClosestRefAcc":host_range_literature_report_collapsed_df["LiteratureClosestRefrencePlasmidAcc"].values[0],
-                                      "LitClosestMashDist": host_range_literature_report_collapsed_df["LiteratureClosestMashDistance"].values[0],
+                                      "LitClosestMashDist": host_range_literature_report_collapsed_df["LiteratureClosestReferenceMashDistance"].values[0],
+                                      "LitClosestRefDonorStrain": host_range_literature_report_collapsed_df["LiteratureClosestReferenceDonorStrain"].values[0],
+                                      "LitClosestRefRecipientStrain": host_range_literature_report_collapsed_df["LiteratureClosestReferenceRecipientStrain"].values[0],
+                                      "LitClosestRefTransferRate": host_range_literature_report_collapsed_df["LiteratureClosestReferenceTransferRate"].values[0],
                                       "LitPMIDs": host_range_literature_report_collapsed_df["LiteraturePMIDs"].values[0],
                                       "LitPMIDsNumber":host_range_literature_report_collapsed_df["LiteraturePublicationsNumber"].values[0]
                                       })
