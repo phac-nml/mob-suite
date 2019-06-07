@@ -273,11 +273,11 @@ def getHostRangeRankCovergence(taxids):
 
 
 #the main function to process
-def getRefSeqHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc_list, relaxase_name_list, matchtype, hr_obs_data):
+def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_acc_list, relaxase_name_list, matchtype, hr_obs_data):
     """
     Get NCBI RefSeq host range based on the search parameters either/or replicon, mob_cluster_id, relaxase family, relaxase accession
     :param replicon_name_list: a list of replicons to process ['IncP','IncF']
-    :param mob_cluster_id:  mob-cluster cluster id
+    :param mob_cluster_id_list:  mob-cluster cluster id
     :param relaxase_name_acc_list:  a list of MOB accession ids ['NC_017627_00068' 'NC_011416_00039']
     :param relaxase_name_list: relaxase family names list ['MOBF' 'MOBP']
     :param matchtype: how we will match fields in the database (exactly = entire field, multi = query might represent part of the field)
@@ -292,12 +292,10 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc_li
 
     logging.debug("Inside getRefSeqHostRange()")
     logging.debug("replicon_name_list:%s\nmob_cluster_id:%s\n%srelaxase_name_acc_list:%s\nrelaxase_name_list:%s\n",
-                  replicon_name_list,mob_cluster_id,relaxase_name_acc_list,relaxase_name_list,matchtype) #DEBUG
+                  replicon_name_list,mob_cluster_id_list,relaxase_name_acc_list,relaxase_name_list,matchtype) #DEBUG
 
 
 
-    if mob_cluster_id != None:
-        mob_cluster_id=str(mob_cluster_id) #make sure it is a string
 
     logging.info("Loading the plasmid reference database ...")
 
@@ -308,26 +306,28 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc_li
     logging.info("Searching  RefSeq plasmid database ...")
 
     if replicon_name_list is not None:
-        for replicon_name in replicon_name_list:
+        for replicon_name in replicon_name_list: #allows to run multi-replicon queries
             n_total_records_before = ref_taxids_df.shape[0]
-            logging.debug("Replicon name: {} MOB-Cluster: {}\n".format(replicon_name, mob_cluster_id))
-            ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, replicon_name, "Ref_rep_type(s)", matchtype)])
+            logging.debug("Replicon name: {} MOB-Cluster: {}\n".format(replicon_name, mob_cluster_id_list))
+            ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, replicon_name, "Ref_rep_type(s)", matchtype="exact")])
             logging.debug("Extracted records (replicon): {}".format(ref_taxids_df.shape[0] - n_total_records_before))
-    if mob_cluster_id is not None:
-        ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, mob_cluster_id, "Ref_cluster_id", matchtype)])
+    if mob_cluster_id_list is not None:
+        for mob_cluster_id in mob_cluster_id_list:
+            mob_cluster_id = str(mob_cluster_id)  # make sure clusterid is a string
+            ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, mob_cluster_id, "Ref_cluster_id", matchtype="exact")])#must peform only exact match to DB
         logging.debug("Extracted total records (clusterid): {}".format(ref_taxids_df.shape[0]))
     if relaxase_name_acc_list is not None:
         for relaxase_name_acc in relaxase_name_acc_list:
-            ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, relaxase_name_acc, "Ref_relaxase_type_accession(s)",matchtype)])
+            ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, relaxase_name_acc, "Ref_relaxase_type_accession(s)",matchtype="exact")])
             logging.debug("Relaxase accession: {}\n".format(relaxase_name_acc))
     if relaxase_name_list is not None:
         for relaxase_name in relaxase_name_list:
-            ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, relaxase_name, "Ref_relaxase_type(s)", matchtype)])
+            ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, relaxase_name, "Ref_relaxase_type(s)", matchtype="exact")])
     if ref_taxids_df.empty:
         logging.error("RefSeq Plasmid database returned no hits perhaps due to no search paramenters specified (i.e. replicon, mob_cluster_id, relaxase family, relaxase accession #).")
         logging.error("Search parameters:\
                        replicon name list: "+str(replicon_name_list)+"; mob_cluster_id: "+
-                       str(mob_cluster_id)+"; relaxase_name_acc_list: "+
+                       str(mob_cluster_id_list)+"; relaxase_name_acc_list: "+
                        str(relaxase_name_acc_list)+"; relaxase_name_list: "+str(relaxase_name_list)+";")
         raise Exception("Empty dataframe returned from RefSeq plasmid database")
 
@@ -395,7 +395,7 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc_li
     ref_taxids = list(ref_taxids_df['taxid']) #might be duplicated taxids
     unique_ref_selected_taxids = set(list(ref_taxids_df['taxid'])) #UNIQUE taxids returned as per query
 
-    logging.debug("Found {} records (with duplicates) in the reference database.({} unique and {} duplicated)".format(n_ref_rep_hits, \
+    logging.debug("Found {} records (with duplicates) in the reference database.({} unique and {} duplicated)".format(n_ref_rep_hits,
                                                                                                                  len(unique_ref_selected_taxids),
                                                                                                                  n_ref_rep_hits-len(unique_ref_selected_taxids)))
 
@@ -464,58 +464,67 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id, relaxase_name_acc_li
 
     return(convergance_rank, converged_taxonomy_name, unique_ref_selected_taxids, ref_taxids_df,stats_host_range_dict)
 
-
+def taxonomical_hits_breakdown_stats_per_taxonomical_rank(filename_prefix,stats_host_range_dict,dbtype):
+    with open(file=filename_prefix+"_refseqhostrange_phylostats.txt", mode="w") as fp:
+        strings2file = ["rank\tsci_name\tdb_hits\tconvergance_rank\tconvergance_sci_name\n"]
+        for rank in stats_host_range_dict.keys():
+            names = (Counter(stats_host_range_dict[rank]).keys())
+            values = (Counter(stats_host_range_dict[rank]).values())
+            for couple in zip(names,values):
+               strings2file.append("{}\t{}\t{}\n".format(rank,couple[0],couple[1]))
+        fp.writelines(strings2file)
+        fp.close()
+        logging.info("Wrote phylogeny stats into {}".format(filename_prefix + "_"+dbtype+"_hostrange_tree_phylostats.txt"))
 
 def writeOutHostRangeReports(   filename_prefix = None,
                                 replicon_name_list = None,
-                                mob_cluster_id = None,
-                                relaxase_name_acc = None,
+                                mob_cluster_id_list = None,
+                                relaxase_name_acc_list = None,
                                 relaxase_name_list = None,
                                 convergance_rank = None,
                                 convergance_taxonomy = None,
                                 stats_host_range_dict = None,
                                 literature_hr_report = pandas.DataFrame()
                                 ):
+    ###Should refactor this function to be more abastract, Rank and converaganice should accept both datbases predictions on rank
 
+    dict_molecular_features={"replicons":replicon_name_list,"mob_cluster_ids":mob_cluster_id_list,
+                             "relaxase_names":relaxase_name_list, "relaxase_name_accs":relaxase_name_acc_list }
 
-    if replicon_name_list != None:
-        replicons = ",".join(replicon_name_list)
-    else:
-        replicons = replicon_name_list
-    if relaxase_name_list  != None:
-        relaxases = ",".join(relaxase_name_list )
-    else:
-        relaxases = relaxase_name_list
+    for key in dict_molecular_features.keys():
+        if dict_molecular_features[key] != None:
+            dict_molecular_features[key] = ",".join([str(x) for x in dict_molecular_features[key]])
+
+    with open(filename_prefix+"_refseqhostrange_report.txt",mode="w") as fp:
+        strings2file = ["filename\tquery_replicons\tquery_mob_cluster_ids\tquery_relaxase_names\tquery_relaxase_name_accs\tconvergance_refseq_rank\tconvergance_refseq_sci_name\n"]
+        strings2file.append("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(filename_prefix, dict_molecular_features["replicons"],
+                                                  dict_molecular_features["mob_cluster_ids"],
+                                                  dict_molecular_features["relaxase_names"],
+                                                  dict_molecular_features["relaxase_name_accs"],
+                                                  convergance_rank,convergance_taxonomy))
+        fp.writelines(strings2file)
+        logging.info("Wrote phylogeny stats into {}".format(filename_prefix+"_refseqhostrange_report.txt"))
+    fp.close()
 
     #if no_header_flag is True: #flag to write header in the report file
-    #    with open(file=filename_prefix + "_hostrange_ncbi_nucleotide_report.txt", mode="w") as fp:
+    #    with open(file=filename_prefix + "_hostrange_refseqhostrange_report.txt", mode="w") as fp:
     #        fp.write("{}\t{}\t{}\t{}\t{}\t{}\n".format("QueryReplicon(s)", "QueryClusterID", "QueryRelaxase(s)",
     #                                                       "QueryRelaxaseAccession", "RefSeqRank", "RefSeqHostRange"))
 
-    #with open(file=filename_prefix+"_hostrange_ncbi_nucleotide_report.txt", mode="a") as fp:
+    #with open(file=filename_prefix+"_hostrange_refseqhostrange_report.txt", mode="a") as fp:
     #        fp.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(replicons, mob_cluster_id,
     #                                                       relaxases, relaxase_name_acc, convergance_rank,
     #                                                       convergance_taxonomy))
     #fp.close()
     #logging.info("Wrote RefSeq host range report results into {}".format(
-    #     filename_prefix + "_hostrange_ncbi_nucleotide_report.txt"))  # replicon,relaxase,cluster,host range
+    #     filename_prefix + "_hostrange_refseqhostrange_report.txt"))  # replicon,relaxase,cluster,host range
 
 
 
     #decompose resulting phylogenetic tree into frequency counts per reach taxonomic rank (hierachy level)
-    strings2file = ["rank\tsci_name\tRefSeq_db_hits\tQueryReplicon(s)\tQueryClusterID\tQueryRelaxase(s)\tQueryRelaxaseAccession\tRefSeqRank\tRefSeqHostRange\n"]
-    with open(file=filename_prefix+"_ncbi_nucleotide_phylostats.txt", mode="w") as fp:
-        for rank in stats_host_range_dict.keys():
-            names = (Counter(stats_host_range_dict[rank]).keys())
-            values = (Counter(stats_host_range_dict[rank]).values())
-            for couple in zip(names,values):
-               strings2file.append("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(rank,couple[0],couple[1],replicons, mob_cluster_id,
-                                                           relaxases, relaxase_name_acc, convergance_rank,
-                                                           convergance_taxonomy))
-        fp.writelines(strings2file)
-        fp.close()
-        logging.info(
-            "Wrote phylogeny stats into {}".format(filename_prefix + "_refseq_hostrange_tree_phylostats.txt"))
+    #strings2file = ["rank\tsci_name\tRefSeq_db_hits\tQueryReplicon(s)\tQueryClusterID\tQueryRelaxase(s)\tQueryRelaxaseAccession\tRefSeqRank\tRefSeqHostRange\n"]
+    taxonomical_hits_breakdown_stats_per_taxonomical_rank(filename_prefix,stats_host_range_dict,dbtype="refseqhostrange")
+
 
     # literature report
     if literature_hr_report.shape[0] != 0:
@@ -559,9 +568,10 @@ def loadHostRangeDB():
 
 def getHostRangeDBSubset(hr_obs_data, search_name, column_name, matchtype):
     """
-    From the NCBI plasmid curated database get a subset as per search query (e.g. replicon, clusterid, relaxase)
+    From the NCBI RefSeq Plasmid database get a subset as per search query (e.g. replicon, clusterid, relaxase)
+    Use different replicon matching methods (exact, multiple, loose). We recommend loose matching due to notation diversity
     :param hr_obs_data: host range observed data from RefSeq database NCBI
-    :param search_name: a search string
+    :param search_name: a search string containing a single item (replicon, relaxase, clusterid name)
     :param column_name: a search string
     :param matchtype: a sting
     :return: dataframe containing selected NCBI plasmid information (accession number, mobility, size, etc.)
@@ -575,33 +585,33 @@ def getHostRangeDBSubset(hr_obs_data, search_name, column_name, matchtype):
             else:
                 selection_index.append(False)
         return (hr_obs_data.loc[selection_index])
-    elif matchtype == "multiexact":
+    #elif matchtype == "multiexact":
+    #    for item in hr_obs_data[column_name]:
+    #        if any([i for i in str(item).split(',') if i == search_name]):
+    #            selection_index.append(True)
+    #        else:
+    #            selection_index.append(False)
+    #    return (hr_obs_data.loc[selection_index])
+    elif matchtype == "loose":  # will losely match for query cases such as IncF* and complex entires (e.g. IncF/IncH)
         for item in hr_obs_data[column_name]:
-            if any([i for i in str(item).split(',') if i == search_name]):
-                selection_index.append(True)
-            else:
-                selection_index.append(False)
-        return (hr_obs_data.loc[selection_index])
-    elif matchtype == "loose":  # will losely match for query cases such as IncF*
-        for item in hr_obs_data[column_name]:
-            if len(re.findall(search_name+".*", item)) != 0:
+            if len(re.findall(str(search_name)+".*", str(item))) != 0:
                 selection_index.append(True)
             else:
                 selection_index.append(False)
         return (hr_obs_data.loc[selection_index])
     else:
-        exit("No match type specified (could be either exact (--exact_match) or multi (--multi_match))")
+        exit("No match type specified (could be either exact (--exact_match) or multi (--loose_match))")
 
 #parse cml arguments if run as separate module
 def parse_args():
     parser = ArgumentParser(description="Welcome to mob-suite plasmid host range prediction module :-)")
     parser.add_argument('--exact_match',action='store_const', const="True", required=False, help='Single exact search criteria match')
-    parser.add_argument('--multi_match', action='store_const', const="True", required=False, help='Multiple exact search criteria match')
+    #parser.add_argument('--multi_match', action='store_const', const="True", required=False, help='Multiple exact search criteria match')
     parser.add_argument('--loose_match', action='store_const', const="True", required=False,help='Wildcard loose search criteria match (e.g. IncF* will match IncFI, IncFII, etc.)')
     parser.add_argument('--replicon_name',  action='store', nargs=1, required=False, help='Replicon name(s)')
     parser.add_argument('--relaxase_name', action='store', nargs=1, required=False, help='Relaxase name')
-    parser.add_argument('--relaxase_accession', action='store', required=False, help='Relaxase accession number')
-    parser.add_argument('--cluster_id', action='store', required=False, help='MOB-Suite Cluster ID (e.g. 416)')
+    parser.add_argument('--relaxase_accession', action='store', nargs=1, required=False, help='Relaxase accession number')
+    parser.add_argument('--cluster_id', action='store', nargs=1, required=False, help='MOB-Suite Cluster ID (e.g. 416)')
     parser.add_argument('--host_range_detailed', required=False, help='Complete host range report with phylogeny stats',
                         action='store_true',
                         default=False)
@@ -612,10 +622,15 @@ def parse_args():
     args = parser.parse_args()
 
 
-    #if multiple replicons are present, then we convert them into a list
+    #if multiple replicons, relaxases, relaxases accessions, clusterids are present, then we convert them into a list
     if args.replicon_name:
-        #print(args.replicon_name)
         args.replicon_name = re.split(",", args.replicon_name[0])
+    elif args.relaxase_name:
+        args.relaxase_name = re.split(",", args.relaxase_name[0])
+    elif args.relaxase_accession:
+        args.relaxase_accession = re.split(",", args.relaxase_accession[0])
+    elif args.cluster_id:
+        args.cluster_id = re.split(",", args.cluster_id[0])
 
     #CASE1: prohibited characters in the name
     #correct file names that come with the prohibited characters like / or \ (e.g. IncA/C2)
@@ -654,8 +669,8 @@ def main():
         matchtype="exact"    # single ORF replicon match
     elif args.loose_match != None:
         matchtype="loose"    # approximate ORF replicon match such as replicon family name (e.g. F)
-    elif args.multi_match != None:
-        matchtype="multiexact"     # multiple ORFs replicon match
+    #elif args.multi_match != None:
+    #    matchtype="multiexact"     # multiple ORFs replicon match
     else:
         matchtype=None
 
@@ -667,22 +682,30 @@ def main():
                                                                                  args.relaxase_name,
                                                                                  args.relaxase_accession, matchtype,
                                                                                  loadHostRangeDB())
+    if len(taxids) == 1:
+        rank="NA"
+        host_range="NA"
+        logging.warning("Only single hit was found in the NCBI RefSeq database. Can not predict host range ... Broaden your search criterion")
 
-    #get literature based host range for each replicon
-    lit_report, littaxids = getLiteratureBasedHostRange(args.replicon_name, loadliteratureplasmidDB())
-    if args.replicon_name and lit_report.empty == False and args.host_range_detailed:
+    if len(taxids) > 0 and args.host_range_detailed:
         treeRefSeq = getTaxonomyTree(taxids)  # get a phylogenetic tree
         renderTree(tree=treeRefSeq, taxids=taxids,
                    filename_prefix=args.outdir + "/mob_hostrange_" + args.outdir + "_refseqhostrange_")
 
+    #get literature based host range for each replicon
+    lit_report=pandas.DataFrame()
+    littaxids = []
+    if args.replicon_name != None:
+        lit_report, littaxids = getLiteratureBasedHostRange(args.replicon_name, loadliteratureplasmidDB())
+    if lit_report.empty == False and args.host_range_detailed:
         treeLiterature = getTaxonomyTree(littaxids)
         renderTree(tree=treeLiterature,taxids=littaxids,
                    filename_prefix=args.outdir+"/mob_hostrange_"+args.outdir+"_literaturehostrange_")
 
 
     writeOutHostRangeReports( filename_prefix=args.outdir+"/mob_hostrange_"+args.outdir, replicon_name_list = args.replicon_name,
-                        mob_cluster_id = args.cluster_id,
-                        relaxase_name_acc = args.relaxase_accession,
+                        mob_cluster_id_list = args.cluster_id,
+                        relaxase_name_acc_list = args.relaxase_accession,
                         relaxase_name_list = args.relaxase_name,
                         convergance_rank = rank, convergance_taxonomy = host_range,
                         stats_host_range_dict = stats_refseq_host_range_dict,
@@ -744,6 +767,16 @@ if __name__ == "__main__":
 
 
 #TODO
+# Bug #1: mob_recon error. mob_aggregated_report.txt is empty sometimes
+# Bug #2: mob_recon error. double counting of identical contigs and inflation of the plasmid size.
+# Bug #3: mob_hostrange. NCBI RefSeq results are not printed when run as a standalone module. Output results for NCBI RefSeq prediction too
+# Bug #4: mob_hostrange. Output NCBI RefSeq + Literature predictions in a single file
+# Feature #1: resolve multi-replicon inputs case for NCBI RefSeq and Literature host-range predictions
+# Feature #2: Average size of the plasmids of input Inc group(s)
+# Feature #3: Match Inc types in Replicon column via regular expressions as some have a complex multi-replicon structure (e.g. ColE2/ColRNAI).
+# Match Col-like plasmids with just Col query
+# Feature #4: Match Inc types in step-wise manner (subfamily --> family). If no matches returned by subfamily match (e.g. IncFII) match with family (IncF)
+
 # BATCH mode processing
 # Add phylogenetic stats for the literature inferred tree. Need to add taxonomy lineages full path in literature database
 # Add literature closest transfer rate value if available field in all outputs

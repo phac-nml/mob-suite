@@ -338,12 +338,11 @@ def main():
     host_range_literature_report_collapsed_df = pandas.DataFrame()
 
     if args.host_range and found_replicons:
-
         (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(replicon_name_list = list(found_replicons.values()),
-                                                          mob_cluster_id = mash_top_hit['clustid'],
+                                                          mob_cluster_id_list = mash_top_hit['clustid'],
                                                           relaxase_name_acc_list = None,
                                                           relaxase_name_list = None,
-                                                          matchtype = "multiexact", hr_obs_data = loadHostRangeDB())
+                                                          matchtype = "loose_match", hr_obs_data = loadHostRangeDB())
         #print(found_replicons.values(), host_range_rank, host_range_name); exit("Break Point")
         host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
                                                                       plasmid_lit_db = loadliteratureplasmidDB(),
@@ -357,10 +356,10 @@ def main():
     elif args.host_range_detailed and found_replicons:
         (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
             replicon_name_list=list(found_replicons.values()),
-            mob_cluster_id=mash_top_hit['clustid'],
+            mob_cluster_id_list=mash_top_hit['clustid'],
             relaxase_name_acc_list=None,
             relaxase_name_list=None,
-            matchtype="multiexact",hr_obs_data = loadHostRangeDB())
+            matchtype="loose_match",hr_obs_data = loadHostRangeDB())
 
         refseqtree = getTaxonomyTree(taxids) #refseq tree
         renderTree(tree=refseqtree, taxids=taxids,
@@ -379,8 +378,8 @@ def main():
 
         writeOutHostRangeReports(filename_prefix = args.outdir+"/"+re.sub(r"\..*","",file_id),
                                  replicon_name_list = list(found_replicons.values()),
-                                 mob_cluster_id = mash_top_hit['clustid'],
-                                 relaxase_name_acc = None,
+                                 mob_cluster_id_list = [mash_top_hit['clustid']],
+                                 relaxase_name_acc_list = None,
                                  relaxase_name_list = None,
                                  convergance_rank=host_range_refseq_rank, convergance_taxonomy=host_range_refseq_name,
                                  stats_host_range_dict=stats_host_range,
