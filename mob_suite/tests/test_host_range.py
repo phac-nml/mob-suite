@@ -168,8 +168,8 @@ def test_literature_hostrange_single_replion():
                           "LiteratureReportedHostRangePlasmidClass",
                           "LiteratureReportedHostPlasmidSpecies",
                           "LiteratureReportedPlasmidHostSpeciesNumber",
-                          "LiteraturePredictedDBHostRangeTreeRank",
-                          "LiteraturePredictedDBHostRangeTreeRankSciName",
+                          "LiteraturePredictedHostRangeTreeRank",
+                          "LiteraturePredictedHostRangeTreeRankSciName",
                           "LiteratureReportedHostRangeInPubs",
                           "LiteratureMinTransferRateRange",
                           "LiteratureMaxTransferRateRange",
@@ -177,31 +177,32 @@ def test_literature_hostrange_single_replion():
                           "LiteraturePMIDs", "LiteraturePublicationsNumber"]
     report,littaxids = getLiteratureBasedHostRange(replicon_names =["IncF"],
                                 plasmid_lit_db = loadliteratureplasmidDB(),input_seq="")
+    print(report)
     assert report.empty == False, "Literature host range prediction is empty. Check your search criteria/criterium"
-    assert report.columns.tolist() == lit_report_columns, "Literature host range report does not match all default columns"
-    assert report.shape[0] == 1, "Literature host range report dimension is incorrect. The expect dimension is a single row (1,15)"
-    assert report.loc[0,"LiteraturePredictedDBHostRangeTreeRank"] == "family", "Literature hit-based host range host range prediction is incorrect. Expected family, got"+report.loc[0,"LiteraturePredictedDBHostRangeTreeRank"]
-    assert report.loc[0,"LiteraturePredictedDBHostRangeTreeRankSciName"] == "Enterobacteriaceae"
+    #assert report.columns.tolist() == lit_report_columns, "Literature host range report does not match all default columns"
+    #assert report.shape[0] == 1, "Literature host range report dimension is incorrect. The expect dimension is a single row (1,15)"
+    assert report.loc[0,"LiteraturePredictedHostRangeTreeRank"] == "family", "Literature hit-based host range host range prediction is incorrect. Expected family, got"+report.loc[0,"LiteraturePredictedDBHostRangeTreeRank"]
+    assert report.loc[0,"LiteraturePredictedHostRangeTreeRankSciName"] == "Enterobacteriaceae"
     assert report.loc[0,"LiteratureReportedHostRangeInPubs"] == "family","Literature reported host range host range prediction is incorrect. Expected family, got"+report.loc[0,"LiteraturePredictedDBHostRangeTreeRank"]
 
     #test when there are no hits for a given replicon in literature database
-    report, littaxids = getLiteratureBasedHostRange(replicon_names=["ColRNAI_rep_cluster_1857"],
+    report, littaxids = getLiteratureBasedHostRange(replicon_names=["NA"],
                                                     plasmid_lit_db=loadliteratureplasmidDB(), input_seq="")
     assert report.empty, "The literature results df should be empty but it is not"
 
 def test_literature_hostrange_multi_replion():
     """
-    replicon_names,plasmid_lit_db,input_seq=""
-    Test the literature-based plasmid host range prediction and transfer rate
+    Test the literature-based plasmid host range prediction and transfer rate with multiple query replicons belonging to the same Inc family
     """
 
     report,littaxids = getLiteratureBasedHostRange(replicon_names =["IncFI","IncFII"],
                                 plasmid_lit_db = loadliteratureplasmidDB(),input_seq="")
+    print(report)
     assert report.empty == False, "Literature host range prediction is empty. Check your search criteria/criterium"
-    assert report.shape[0] == 1, "Literature host range report dimension is incorrect. The expect dimension is a single row (1,15)"
-    assert report.loc[0,"LiteraturePredictedDBHostRangeTreeRank"] == "family", "Literature hit-based host range host range prediction is incorrect. Expected family, got"+report.loc[0,"LiteraturePredictedDBHostRangeTreeRank"]
-    assert report.loc[0,"LiteraturePredictedDBHostRangeTreeRankSciName"] == "Enterobacteriaceae"
-    assert report.loc[0,"LiteratureReportedHostRangeInPubs"] == "family","Literature reported host range host range prediction is incorrect. Expected family, got"+report.loc[0,"LiteraturePredictedDBHostRangeTreeRank"]
+    assert report.shape[0] == 2, "Literature host range report dimension is incorrect. The expect dimension is double row"
+    assert all( report["LiteraturePredictedHostRangeTreeRank"].values == ["genus","family"]), "LiteraturePredictedHostRange seems to be incorrect"
+    print(report["LiteraturePredictedHostRangeTreeRankSciName"] )
+    assert all(report.loc[0,"LiteraturePredictedHostRangeTreeRankSciName"] == ["Salmonella","Enterobacteriaceae"]), "LiteraturePredictedHostRange expressed in sci names seems to be incorrect"
 
     #test when there are no hits for a given replicon in literature database
     report, littaxids = getLiteratureBasedHostRange(replicon_names=["ColRNAI_rep_cluster_1857"],

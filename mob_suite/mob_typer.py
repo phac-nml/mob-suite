@@ -190,7 +190,7 @@ def main():
     	os.remove(orit_blast_results)    
     if os.path.isfile(replicon_blast_results):
     	os.remove(replicon_blast_results)     	
-    report_file = os.path.join(out_dir, 'mobtyper_' + re.sub("\..*","",file_id) + '_report.txt')
+    report_file = os.path.join(out_dir, 'mobtyper_' + re.sub(r"\..*","",file_id) + '_report.txt')
     mash_file = os.path.join(tmp_dir, 'mash_' + file_id + '.txt')
 
     # Input numeric params
@@ -349,7 +349,7 @@ def main():
                                                                       input_seq = args.infile)
         if host_range_literature_report_df.empty == False:
             host_range_literature_report_collapsed_df = collapseLiteratureReport(host_range_literature_report_df)
-            host_range_literature_report_collapsed_df.to_csv(args.outdir+"/"+re.sub("\..*","",file_id)+"_host_range_literature_report_collapsed_df.txt",sep="\t",index=False, mode="w")
+            host_range_literature_report_collapsed_df.to_csv(args.outdir+"/"+re.sub(r"\..*","",file_id)+"_host_range_literature_report_collapsed_df.txt",sep="\t",index=False, mode="w")
 
         #print(host_range_literature_report_collapsed_df)
 
@@ -459,8 +459,8 @@ def main():
         main_report_data_dict.update({"RefSeqHRrank":host_range_refseq_rank,"RefSeqHRSciName":host_range_refseq_name})
     if host_range_literature_report_collapsed_df.empty == False:
         main_report_data_dict.update({"LitRepHRPlasmClass":host_range_literature_report_collapsed_df["LiteratureReportedHostRangePlasmidClass"].values[0],
-                                      "LitPredDBHRRank":host_range_literature_report_collapsed_df["LiteraturePredictedDBHostRangeTreeRank"].values[0],
-                                      "LitPredDBHRRankSciName": host_range_literature_report_collapsed_df["LiteraturePredictedDBHostRangeTreeRankSciName"].values[0],
+                                      "LitPredDBHRRank":host_range_literature_report_collapsed_df["LiteraturePredictedHostRangeTreeRank"].values[0],
+                                      "LitPredDBHRRankSciName": host_range_literature_report_collapsed_df["LiteraturePredictedHostRangeTreeRankSciName"].values[0],
                                       "LitRepHRInPubs":host_range_literature_report_collapsed_df["LiteratureReportedHostRangeInPubs"].values[0],
                                       "LitMeanTransferRate":host_range_literature_report_collapsed_df["LiteratureMeanTransferRateRange"].values[0],
                                       "LitClosestRefAcc":host_range_literature_report_collapsed_df["LiteratureClosestRefrencePlasmidAcc"].values[0],

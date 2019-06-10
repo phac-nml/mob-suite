@@ -5,8 +5,9 @@ pandas.set_option('display.max_columns', 500)
 pandas.set_option('display.width', 1000)
 import subprocess
 from argparse import ArgumentParser
-from ete3 import NCBITaxa, TreeStyle
 from collections import Counter,OrderedDict
+from ete3 import NCBITaxa, TreeStyle
+
 
 #pandas.options.display.float_format = '{:.1E}'.format #render scientific notation
 
@@ -38,24 +39,30 @@ args=ArgumentParser()
 
 #LOG = createLogger()
 def loadliteratureplasmidDB():
-    return  pandas.read_csv(os.path.dirname(os.path.abspath(__file__))+"/databases/host_range_literature_plasmidDB.csv",sep=",",encoding = "ISO-8859-1")
+    return  pandas.read_csv(os.path.dirname(os.path.abspath(__file__))+"/databases/host_range_literature_plasmidDB_latest.csv",sep=",",encoding = "ISO-8859-1")
 
 def findHitsInLiteratureDBbyReplicon(replicon_names,plasmid_lit_db):
     """
     Get me the indices/hits per each replicon name and adjust if the replicon name returns no hit, then use inc family search
-    :param replicon_names: names of inc replicons (e.g. IncFII)
+    :param replicon_names: names of query replicons (e.g. IncFII)
     :param plasmid_lit_db: pandas dataframe with all literature information on plasmids
     :return: repliconsearchdict: dictionary replicon name / hit indices (i.e. rows) (e.g. {'IncF': [0, 1, 2, 3, 4, 5, 6, 7, 97, 123, 135]})
     """
     repliconsearchdict = {}
     for replicon_name in replicon_names:
-        idx = [i for i in range(0, plasmid_lit_db.shape[0]) if plasmid_lit_db.iloc[i, :]["Replicon"] == replicon_name]
+        db_hit_indices=[i for i in range(0, plasmid_lit_db.shape[0]) if plasmid_lit_db.iloc[i, :]["Replicon"] == replicon_name]
+        if len(db_hit_indices) != 0:
+            repliconsearchdict[replicon_name] = db_hit_indices
+        elif len(re.findall("Inc[A-Z]{1}|ColRNA", replicon_name)) != 0:
+            db_hit_indices = [i for i in range(0, plasmid_lit_db.shape[0]) if len(re.findall(replicon_name, plasmid_lit_db.iloc[i, :]["Replicon"])) != 0]
+            repliconsearchdict[replicon_name] = db_hit_indices
+
+        #re.findall("Inc[A-Z]{1}|Col", replicon_name)
         # search literature database by replicon family (e.g. IncF) if no results are returned
-        if len(idx) == 0:
-            replicon_name = re.findall("Inc[A-Z]{1}|ColRNA", replicon_name)[0]  # if exact match failed, search by replicon family
-            idx = [i for i in range(0, plasmid_lit_db.shape[0]) if
-                   len(re.findall(replicon_name, plasmid_lit_db.iloc[i, :]["Replicon"])) != 0]
-        repliconsearchdict[replicon_name] = idx
+        #if len(idx) == 0: # if exact match failed, search by replicon family
+        #    replicon_name = re.findall("Inc[A-Z]{1}|Col", replicon_name)[0]
+
+
     return repliconsearchdict
 
 def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
@@ -64,7 +71,7 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
     # Make HR prediction based on the literature evidence on replicon and mob-suite cluster
     # If replicon is not know or mash dist to the nearest reference sequence is > 0.05 ... do not do any prediction
     # Indicate if the plasmid is broad or narrow range class
-    :param replicon_name: replicon name based on Inc typing (e.g. IncP)
+    :param replicon_names: query replicon names to query literature database
     :param plasmid_lit_db: pandas dataframe representing a database of well curated plasmid mentioned in the literature
     :param input_seq: path to the input plasmid sequence
     :return: report_df: pandas dataframe with all relevant information on the input query including literature reported host range and typical plasmids and PMIDs
@@ -78,7 +85,6 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
     #report_dict=dict.fromkeys(['apple','ball'],"-")
 
     for replicon_name in repliconsearchdict.keys():
-
         #find hits in database based on replicon query
         idx = repliconsearchdict[replicon_name]
         #get database subset for further analyses
@@ -104,9 +110,9 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
         #exit()
         #phylolitertree = getTaxonomyTree()
         #remove any entries that are map to uncultured bacteria (avoids inflation of the host range)
-        select_vector = [True if len(re.findall("uncultured", line)) == 0 else False for line in literature_knowledge["Species"]]
-        lit_taxids=list(set(literature_knowledge.loc[select_vector,"taxid"]))
-        rank,rankname = getHostRangeRankCovergence(lit_taxids)
+        select_vector = [True if len(re.findall("uncultured", line)) == 0 else False for line in literature_knowledge["IsolationSpecies"]]
+        lit_taxids=list(set(literature_knowledge.loc[select_vector,"IsolationTaxid"]))
+        litrank,rankname = getHostRangeRankCovergence(lit_taxids)
 
         host_range_literature_claim=[] #what does the papers claim in terms of the host range?
         for pid in set(literature_knowledge.loc[:,"PMID"]):
@@ -121,30 +127,36 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
 
         host_range_literature_claim = Counter(host_range_literature_claim).most_common(1)[0][0] #get the most common host range rank hit
         hostrangeclassdict = Counter(literature_knowledge["HostRangeClass"])
-        HostRangeClass = [key for key in hostrangeclassdict.keys()  if  hostrangeclassdict[key] == max(hostrangeclassdict.values())]
+        HostRangeClass = [key for key in hostrangeclassdict.keys()  if  hostrangeclassdict[key] == max(hostrangeclassdict.values())][0]
+
+        LiteratureMinTransferRateRange = "NA"
+        LiteratureMaxTransferRateRange = "NA"
+        LiteratureMeanTransferRateRange = "NA"
 
         if any(literature_knowledge["TransferRate"] > 0):
             LiteratureMinTransferRateRange = min([i for i in literature_knowledge["TransferRate"] if i >= 0])
             LiteratureMeanTransferRateRange = mean([i for i in literature_knowledge["TransferRate"] if i >= 0])
             LiteratureMaxTransferRateRange = max([i for i in literature_knowledge["TransferRate"] if i >= 0])
-        else:
-            LiteratureMinTransferRateRange  = "NA"
-            LiteratureMaxTransferRateRange  = "NA"
-            LiteratureMeanTransferRateRange = "NA"
+        elif any(literature_knowledge["TransferRate"] == 0):
+            LiteratureMinTransferRateRange = "mobilizable/non-conjugative"
+            LiteratureMeanTransferRateRange = "mobilizable/non-conjugative"
+            LiteratureMaxTransferRateRange = "mobilizable/non-conjugative"
+
+
 
         report_dict = OrderedDict({  "LiteratureQueryReplicon": ",".join(replicon_names),
                          "LiteratureSearchReplicon": replicon_name,
                          "LiteratureFoundPlasmidsNames": ",".join(set(literature_knowledge["Plasmid_Name"])),
                          "LiteratureFoundPlasmidsNumber": len(set(literature_knowledge["Plasmid_Name"])),
                          "LiteratureReportedHostRangePlasmidClass": HostRangeClass,
-                         "LiteratureReportedHostPlasmidSpecies": ",".join(set(literature_knowledge["Species"])),
-                         "LiteratureReportedPlasmidHostSpeciesNumber": len(set(literature_knowledge["Species"])),
-                         "LiteraturePredictedDBHostRangeTreeRank": [rank],
-                         "LiteraturePredictedDBHostRangeTreeRankSciName": [rankname],
-                         "LiteratureReportedHostRangeInPubs": [host_range_literature_claim],
-                         "LiteratureMinTransferRateRange": [LiteratureMinTransferRateRange],
-                         "LiteratureMaxTransferRateRange": [LiteratureMaxTransferRateRange],
-                         "LiteratureMeanTransferRateRange": [LiteratureMeanTransferRateRange],
+                         "LiteratureReportedHostPlasmidSpecies": ",".join(set(literature_knowledge["IsolationSpecies"])),
+                         "LiteratureReportedPlasmidHostSpeciesNumber": len(set(literature_knowledge["IsolationSpecies"])),
+                         "LiteraturePredictedHostRangeTreeRank": litrank,
+                         "LiteraturePredictedHostRangeTreeRankSciName": rankname,
+                         "LiteratureReportedHostRangeInPubs": host_range_literature_claim,
+                         "LiteratureMinTransferRateRange": LiteratureMinTransferRateRange,
+                         "LiteratureMaxTransferRateRange": LiteratureMaxTransferRateRange,
+                         "LiteratureMeanTransferRateRange": LiteratureMeanTransferRateRange,
                          "LiteraturePMIDs": ";".join(set([str(i) for i in literature_knowledge.loc[:, "PMID"]])),
                          "LiteraturePublicationsNumber": len(set(literature_knowledge.loc[:, "PMID"]))})
 
@@ -157,10 +169,21 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
             #print()
             #by accession search
             #idx = [i for i in range(0, len(literature_knowledge)) if len(re.findall(literature_accession_top_hit.rsplit(".")[0],plasmid_lit_db["NCBI_Accession"].values[i])) != 0]
-            literature_closest_seq_hit_df = plasmid_lit_db[plasmid_lit_db["NCBI_Accession"] == literature_accession_top_hit.rsplit(".")[0]]
+            #remove version "NC_002638.1" number
+
+            literature_accession_top_hit = literature_accession_top_hit.rsplit(".")[0]
+
+            literature_closest_seq_hit_df = pandas.DataFrame()
+            for i in range(0, plasmid_lit_db.shape[0]):
+                if re.findall(literature_accession_top_hit, str(plasmid_lit_db.iloc[i]["NCBI_Accession"])):
+                    #print(literature_accession_top_hit, plasmid_lit_db.iloc[i]["NCBI_Accession"])
+                    literature_closest_seq_hit_df = pandas.concat([literature_closest_seq_hit_df, plasmid_lit_db.iloc[[i]]])
+
             if literature_closest_seq_hit_df.empty:
                 raise Exception("Literature top hit search failed! Check mash top hit return from the getClosestLiteratureRefPlasmid()")
-            if literature_closest_seq_hit_df.shape[0] > 1:
+
+            #print(literature_closest_seq_hit_df)
+            if literature_closest_seq_hit_df.shape[0] != 1:
                 raise Exception("Literature top hit dataframe returned more than a single hit ... Expecting a single top hit.")
 
             literature_closest_donor_strain = literature_closest_seq_hit_df.loc[:,"Donor"].values[0]
@@ -176,9 +199,8 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
                                 "LiteratureClosestReferenceTransferRate": [literature_closest_transfer_rate]}))
 
         #append results from different replicons (if multiple are present)
-        report_df = pandas.concat([report_df, pandas.DataFrame.from_dict(report_dict)])
+        report_df = pandas.concat([report_df, pandas.DataFrame.from_dict([report_dict])])
         lit_taxids_list = lit_taxids + lit_taxids
-
     return report_df, lit_taxids_list
     #report_table.to_csv(args.outputprefix+'_literature_report.txt',sep="\t",
     #                    float_format='%.1E', index=False, na_rep="NA",mode="w")
@@ -198,7 +220,7 @@ def collapseLiteratureReport(df):
 
     #no rank;no rank;superkingdom;phylum;class;order;family;genus;species group;species
     rankconversiondict={"species":1,"genus":2,"family":3,"order":4,"class":5,"phylum":6,"superkingdom":7}
-    numrank2nameconversiondict = {1:"species", 2:"genus",3:"family",4:"order",5:"class", 6:"phylum",7:"superkingdom"}
+    numrank2nameconversiondict = {0:"nan", 1:"species", 2:"genus",3:"family",4:"order",5:"class", 6:"phylum",7:"superkingdom"}
 
     collapsedlitdf.loc[0,"LiteratureQueryReplicon"] = df.loc[0,"LiteratureQueryReplicon"]
     collapsedlitdf.loc[0, "LiteratureSearchReplicon"] = ",".join(df.loc[:,"LiteratureSearchReplicon"].values)
@@ -208,11 +230,20 @@ def collapseLiteratureReport(df):
     collapsedlitdf.loc[0, "LiteratureReportedHostRangePlasmidClass"] = [k for k in conversiondict if conversiondict[k] == hrclassnum][0]
     collapsedlitdf.loc[0,"LiteratureReportedHostPlasmidSpecies"]=",".join(set(df.loc[:,"LiteratureReportedHostPlasmidSpecies"].values.tolist()[0].split(",")))
     collapsedlitdf.loc[0, "LiteratureReportedPlasmidHostSpeciesNumber"] = len(set(df.loc[:,"LiteratureReportedHostPlasmidSpecies"].values.tolist()[0].split(",")))
-    hrtreeranknum = max([rankconversiondict[k] for k in df.loc[:, "LiteraturePredictedDBHostRangeTreeRank"].values])
-    collapsedlitdf.loc[0,"LiteraturePredictedDBHostRangeTreeRank"] = [k for k in rankconversiondict if rankconversiondict[k] == hrtreeranknum][0]
-    idx=df.loc[:,"LiteraturePredictedDBHostRangeTreeRank"] == collapsedlitdf.loc[0,"LiteraturePredictedDBHostRangeTreeRank"]
-    collapsedlitdf.loc[0,"LiteraturePredictedDBHostRangeTreeRankSciName"] = df[idx]["LiteraturePredictedDBHostRangeTreeRankSciName"].values[0]
-    collapsedlitdf.loc[0,"LiteratureReportedHostRangeInPubs"] = numrank2nameconversiondict[max([rankconversiondict[k] for k in df.loc[:, "LiteratureReportedHostRangeInPubs"].values])]
+    hrtreeranknum = max([rankconversiondict[k] for k in df.loc[:, "LiteraturePredictedHostRangeTreeRank"].values])
+    collapsedlitdf.loc[0,"LiteraturePredictedHostRangeTreeRank"] = [k for k in rankconversiondict if rankconversiondict[k] == hrtreeranknum][0]
+    idx=df.loc[:,"LiteraturePredictedHostRangeTreeRank"] == collapsedlitdf.loc[0,"LiteraturePredictedHostRangeTreeRank"]
+    collapsedlitdf.loc[0,"LiteraturePredictedHostRangeTreeRankSciName"] = df[idx]["LiteraturePredictedHostRangeTreeRankSciName"].values[0]
+
+    idx=[]
+    for i in range(0,df.shape[0]):
+        if isinstance(df.iloc[i]["LiteratureReportedHostRangeInPubs"],int):
+            idx.append(i)
+
+    if len(idx) > 0 :
+        collapsedlitdf.loc[0,"LiteratureReportedHostRangeInPubs"] = numrank2nameconversiondict[max([rankconversiondict[k] for k in df.iloc[idx]["LiteratureReportedHostRangeInPubs"].values])]
+    else:
+        collapsedlitdf.loc[0, "LiteratureReportedHostRangeInPubs"] = "NA"
 
     for field in ["LiteratureMinTransferRateRange","LiteratureMaxTransferRateRange", "LiteratureMeanTransferRateRange"]:
         if all(df[field].isna()):
@@ -236,7 +267,7 @@ def getClosestLiteratureRefPlasmid(input_fasta):
     find closest representative plasmid at < 0.05 mash distance. Since plasmids are genomics puzzles of fragements,
     k-mer based approach of distance estimataion might be of benefit in contrast to more deterministic BLAST-based approaches
     :param query single contig sequence in FASTA format
-    :return: closest literature curated plasmid accession number and mash distance between query and reference
+    :return: closest literature-curated plasmid accession number from the literature database and mash distance between query and reference
     """
     reference_db=os.path.dirname(os.path.abspath(__file__))+"/databases/literature_mined_plasmid_seq_db.fasta.msh"
     #input_fasta="/Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET11_Ecoli_plasmid_529.fasta"
@@ -263,13 +294,30 @@ def getHostRangeRankCovergence(taxids):
     :param taxids - list of taxonomy ids allowing to build a tree
     :return rank - taxonomic rank at which phylogenetic tree branches converge
     :return sci_name - taxonomic rank name at which phylogenetic tree branches converge
+    Note if no rank is returned due to small diversity amongst tree terminal nodes due to presence of single taxid or low literatuer coverage
+    then traverse the tree and report rank at genus level. Of course this literature based host range prediction might be understatement.
     """
-    from ete3 import NCBITaxa, TreeStyle
+
     ncbi = NCBITaxa()
     #taxids=[562,573,1288825,439842]
     tree = ncbi.get_topology(taxids)
     tree.annotate_ncbi_taxa(taxid_attr='name')
-    return(tree.rank,tree.sci_name)
+
+    tree_rank=tree.rank
+    tree_sci_name=tree.sci_name
+    if tree_rank == "no rank":
+        ranks_list=list()
+        for node in  tree.traverse():
+            ranked_taxids = ncbi.get_lineage(taxid=node.taxid)
+            ranks_list =  ranks_list+ranked_taxids
+        ranks_list_counts_dict = Counter(ranks_list)
+        maxchildnodes = max(ranks_list_counts_dict.values())
+        for k in ranks_list_counts_dict.keys():
+            rank_temp = ncbi.get_rank([k])
+            if ranks_list_counts_dict[k] == maxchildnodes and rank_temp[k] == "genus":
+                tree_rank = rank_temp[k]
+                tree_sci_name = ncbi.get_taxid_translator([k])[k]
+    return(tree_rank,tree_sci_name)
 
 
 #the main function to process
@@ -560,7 +608,7 @@ def getTaxonomyTree(taxids):
     return(tree)
 
 def loadHostRangeDB():
-    database_abs_path = os.path.dirname(os.path.abspath(__file__))+"/databases/"+"host_range_plasmidDB.csv"
+    database_abs_path = os.path.dirname(os.path.abspath(__file__))+"/databases/"+"host_range_ncbirefseq_plasmidDB_latest.csv"
     #print(database_abs_path)
     data_obs_hr = pandas.read_csv(database_abs_path, sep=",", encoding="ISO-8859-1")
     return data_obs_hr
@@ -784,3 +832,8 @@ if __name__ == "__main__":
 # mob_typer run
 # cp *.py /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/
 # mob_typer --host_range -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET11_Ecoli_plasmid_529.fasta -o run_test
+
+# Copy latest database files
+# cp host_range_literature_plasmidDB_latest.csv /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/databases/
+# cp host_range_ncbirefseq_plasmidDB_latest.csv /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/databases/
+# cp literature_mined_plasmid_seq_db.fasta.msh /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/databases/
