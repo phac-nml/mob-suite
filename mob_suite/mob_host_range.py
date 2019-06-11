@@ -48,6 +48,8 @@ def findHitsInLiteratureDBbyReplicon(replicon_names,plasmid_lit_db):
     :param plasmid_lit_db: pandas dataframe with all literature information on plasmids
     :return: repliconsearchdict: dictionary replicon name / hit indices (i.e. rows) (e.g. {'IncF': [0, 1, 2, 3, 4, 5, 6, 7, 97, 123, 135]})
     """
+
+    # Match by Inc families if exact match is returns no hits (e.g. IncF instead of IncFII)
     repliconsearchdict = {}
     for replicon_name in replicon_names:
         db_hit_indices=[i for i in range(0, plasmid_lit_db.shape[0]) if plasmid_lit_db.iloc[i, :]["Replicon"] == replicon_name]
@@ -96,11 +98,11 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
 
         #data type conversion
         #literature_knowledge["TransferRate"] = pandas.to_numeric(literature_knowledge["TransferRate"])
-
         literature_knowledge.loc[:,"TransferRate"] = literature_knowledge.loc[:,"TransferRate"].astype(float)
         literature_knowledge.loc[literature_knowledge["Size"].isna() == False, "Size"] = literature_knowledge.loc[literature_knowledge["Size"].isna()== False, "Size"].astype(int)
         literature_knowledge.loc[literature_knowledge["Year"].isna() == False, "Year"] = literature_knowledge.loc[literature_knowledge["Year"].isna() == False, "Year"].astype(int)
-        literature_knowledge.loc[:,"PMID"] = literature_knowledge.loc[:,"PMID"].astype(int)
+        literature_knowledge.loc[literature_knowledge["PMID"].isna() == False,"PMID"] = literature_knowledge.loc[literature_knowledge["PMID"].isna() == False,"PMID"].astype(int)
+
 
         #print(literature_knowledge)
         #print(literature_knowledge.loc[:,["HostRangeRankClaim","PMID"]])
@@ -117,12 +119,13 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
         host_range_literature_rank_claim=[] #what does the papers claim in terms of the host range?
         host_range_literature_name_claim = []
 
-        for pid in set(literature_knowledge.loc[:,"PMID"]):
-            hr_lit_claim = literature_knowledge[literature_knowledge["PMID"] == pid][["HostRangeRankClaim","HostRangeClaim","PMID","PMCID"]]
+        #print(literature_knowledge)
+        #for pid in set(literature_knowledge.loc[:,"Replicon"]):
+        #    hr_lit_claim = literature_knowledge[literature_knowledge["PMID"] == pid][["HostRangeRankClaim","HostRangeClaim","PMID","PMCID"]]
             #print(hr_lit_claim)
             #print(hr_lit_claim["HostRangeRankClaim"].values[0],hr_lit_claim["PMID"].values[0],hr_lit_claim["PMID"].isna().values)
-            host_range_literature_rank_claim.append(str(hr_lit_claim["HostRangeRankClaim"].values[0]))
-            host_range_literature_name_claim.append(str(hr_lit_claim["HostRangeClaim"].values[0]))
+        host_range_literature_rank_claim = literature_knowledge["HostRangeRankClaim"].values
+        host_range_literature_name_claim = literature_knowledge["HostRangeClaim"].values
             #if hr_lit_claim["HostRangeRankClaim"].isna().values[0] == False and hr_lit_claim["PMID"].isna().values[0] == False :
             #    host_range_literature_rank_claim.append(str(hr_lit_claim["HostRangeRankClaim"].values[0])+" (PMID:"+str(hr_lit_claim["PMID"].values[0])+")")
             #elif hr_lit_claim["HostRangeRankClaim"].isna().values[0] == False and hr_lit_claim["PMCID"].isna().values[0] == False:
@@ -224,7 +227,7 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
 def collapseLiteratureReport(df):
     """
     Aggregate data for easier reporting averaging and maximizing fields
-    :param: df: dataframe returned from literature report with the following columns
+    :param: df: dataframe returned from literature report with the following columns (may be more than 1 row if multi-replicons are present)
     #publications	LiteratureClosestRefrencePlasmid	LiteratureClosestPlasmidName	ClosestLiteraturePlasmidSize	LiteratureClosestMashDistance
     :return: single row dataframe
     """
@@ -236,9 +239,9 @@ def collapseLiteratureReport(df):
 
     #no rank;no rank;superkingdom;phylum;class;order;family;genus;species group;species
     rankconversiondict={"species":1,"genus":2,"family":3,"order":4,"class":5,"phylum":6,"superkingdom":7}
-    numrank2nameconversiondict = {0:"nan", 1:"species", 2:"genus",3:"family",4:"order",5:"class", 6:"phylum",7:"superkingdom"}
+    numrank2nameconversiondict = {1:"species", 2:"genus",3:"family",4:"order",5:"class", 6:"phylum",7:"superkingdom"}
 
-    collapsedlitdf.loc[0,"LiteratureQueryReplicon"] = df.loc[0,"LiteratureQueryReplicon"]
+    collapsedlitdf.loc[0,"LiteratureQueryReplicon"] = str(set(df["LiteratureQueryReplicon"].values))
     collapsedlitdf.loc[0, "LiteratureSearchReplicon"] = ",".join(df.loc[:,"LiteratureSearchReplicon"].values)
     collapsedlitdf.loc[0, "LiteratureFoundPlasmidsNames"] = ",".join(df.loc[:,"LiteratureFoundPlasmidsNames"].values)
     collapsedlitdf.loc[0,"LiteratureFoundPlasmidsNumber"]=sum(df.loc[:, "LiteratureFoundPlasmidsNumber"])
@@ -251,13 +254,14 @@ def collapseLiteratureReport(df):
     idx=df.loc[:,"LiteraturePredictedHostRangeTreeRank"] == collapsedlitdf.loc[0,"LiteraturePredictedHostRangeTreeRank"]
     collapsedlitdf.loc[0,"LiteraturePredictedHostRangeTreeRankSciName"] = df[idx]["LiteraturePredictedHostRangeTreeRankSciName"].values[0]
 
-    idx=[]
-    for i in range(0,df.shape[0]):
-        if isinstance(df.iloc[i]["LiteratureReportedHostRangeInPubs"],int):
-            idx.append(i)
-
-    if len(idx) > 0 :
-        collapsedlitdf.loc[0,"LiteratureReportedHostRangeRankInPubs"] = numrank2nameconversiondict[max([rankconversiondict[k] for k in df.iloc[idx]["LiteratureReportedHostRangeRankInPubs"].values])]
+    #idx=[]
+    #print(df);exit() #KeyError: 'LiteratureReportedHostRangeInPubs'
+    #for i in range(0,df.shape[0]):
+    #    if isinstance(df.iloc[i]["LiteratureReportedHostRangeInPubs"],int):
+    #        idx.append(i)
+    print(df)
+    if df.shape[0] > 1:
+        collapsedlitdf.loc[0,"LiteratureReportedHostRangeRankInPubs"] = numrank2nameconversiondict[max([rankconversiondict[k] for k in df["LiteratureReportedHostRangeRankInPubs"].values if k != "-"])]
         collapsedlitdf.loc[0, "LiteratureReportedHostRangeNameInPubs"] = dict(zip(df["LiteratureReportedHostRangeRankInPubs"], df["LiteratureReportedHostRangeNameInPubs"]))[collapsedlitdf.loc[0,"LiteratureReportedHostRangeRankInPubs"]]
     else:
         collapsedlitdf.loc[0, "LiteratureReportedHostRangeRankInPubs"] = "-"
@@ -276,7 +280,7 @@ def collapseLiteratureReport(df):
     #if [col for col in df.columns if col == "LiteratureClosestRefrencePlasmidAcc"]:
     #    for field in ['LiteratureClosestRefrencePlasmidAcc', 'LiteratureClosestPlasmidName', 'LiteratureClosestPlasmidSize', 'LiteratureClosestMashDistance']:
     #        collapsedlitdf.loc[0, field] = df.loc[0,field]
-
+    print(collapsedlitdf)
     return(collapsedlitdf)
 
 def getClosestLiteratureRefPlasmid(input_fasta):

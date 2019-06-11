@@ -178,29 +178,26 @@ def test_literature_hostrange_single_replion():
     replicon_names,plasmid_lit_db,input_seq=""
     Test the literature-based plasmid host range prediction and transfer rate
     """
-    lit_report_columns = ["LiteratureQueryReplicon",
-                          "LiteratureSearchReplicon",
-                          "LiteratureFoundPlasmidsNames",
-                          "LiteratureFoundPlasmidsNumber",
-                          "LiteratureReportedHostRangePlasmidClass",
-                          "LiteratureReportedHostPlasmidSpecies",
-                          "LiteratureReportedPlasmidHostSpeciesNumber",
-                          "LiteraturePredictedHostRangeTreeRank",
-                          "LiteraturePredictedHostRangeTreeRankSciName",
-                          "LiteratureReportedHostRangeInPubs",
-                          "LiteratureMinTransferRateRange",
-                          "LiteratureMaxTransferRateRange",
-                          "LiteratureMeanTransferRateRange",
-                          "LiteraturePMIDs", "LiteraturePublicationsNumber"]
+    lit_report_columns = ["LiteratureQueryReplicon", "LiteratureSearchReplicon","LiteratureFoundPlasmidsNames",
+    "LiteratureFoundPlasmidsNumber","LiteratureReportedHostRangePlasmidClass","LiteratureReportedHostPlasmidSpecies",
+    "LiteratureReportedPlasmidHostSpeciesNumber","LiteraturePredictedHostRangeTreeRank",
+    "LiteraturePredictedHostRangeTreeRankSciName","LiteratureReportedHostRangeRankInPubs",
+    "LiteratureReportedHostRangeNameInPubs","LiteratureMinTransferRateRange","LiteratureMaxTransferRateRange",
+    "LiteratureMeanTransferRateRange","LiteraturePMIDs","LiteraturePublicationsNumber"]
+
     report,littaxids = getLiteratureBasedHostRange(replicon_names =["IncF"],
                                 plasmid_lit_db = loadliteratureplasmidDB(),input_seq="")
-    print(report)
+
+    #check the column names in literature report
+    for column in report.columns.values:
+        assert any([c == column for c in lit_report_columns]), "The column name "+column+" is not it the literature report dataframe"
+
     assert report.empty == False, "Literature host range prediction is empty. Check your search criteria/criterium"
     #assert report.columns.tolist() == lit_report_columns, "Literature host range report does not match all default columns"
     #assert report.shape[0] == 1, "Literature host range report dimension is incorrect. The expect dimension is a single row (1,15)"
     assert report.loc[0,"LiteraturePredictedHostRangeTreeRank"] == "family", "Literature hit-based host range host range prediction is incorrect. Expected family, got"+report.loc[0,"LiteraturePredictedDBHostRangeTreeRank"]
     assert report.loc[0,"LiteraturePredictedHostRangeTreeRankSciName"] == "Enterobacteriaceae"
-    assert report.loc[0,"LiteratureReportedHostRangeInPubs"] == "family","Literature reported host range host range prediction is incorrect. Expected family, got"+report.loc[0,"LiteraturePredictedDBHostRangeTreeRank"]
+    assert report.loc[0,"LiteratureReportedHostRangeRankInPubs"] == "family","Literature reported host range host range prediction is incorrect. Expected family, got"+report.loc[0,"LiteraturePredictedDBHostRangeTreeRank"]
 
     #test when there are no hits for a given replicon in literature database
     report, littaxids = getLiteratureBasedHostRange(replicon_names=["NA"],
