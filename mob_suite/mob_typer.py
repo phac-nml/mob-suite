@@ -368,11 +368,13 @@ def main():
                    tree=refseqtree, taxids=taxids,
                    filename_prefix=args.outdir+"/"+output_file_prefix+"_refseqhostrange_")
 
-
+        #get literature report summary dataframe (might be more than 1 row if multiple replicons are present)
         host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(
                                                                                   replicon_names = list(found_replicons.values()),
                                                                                   plasmid_lit_db = loadliteratureplasmidDB(),
                                                                                   input_seq = args.infile )
+
+
 
         if littaxids:
             littree = getTaxonomyTree(littaxids) #literature tree

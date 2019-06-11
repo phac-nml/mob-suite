@@ -216,7 +216,7 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
 
         #append results from different replicons (if multiple are present)
         report_df = pandas.concat([report_df, pandas.DataFrame.from_dict([report_dict])],sort=False)
-        lit_taxids_list = lit_taxids + lit_taxids
+        lit_taxids_list = lit_taxids_list + lit_taxids
 
     report_df.fillna("-", inplace=True)
 
