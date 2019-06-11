@@ -188,7 +188,9 @@ Use this tool only to update the plasmid databases or build a new one and should
 | mash_neighbor_distance | Mash distance from query to match |
 | mash_neighbor_cluster | MOB-cluster type of reference match |
 
-#MOB-recon report file format
+
+# MOB-recon report file format
+
 | field name    | description                           |
 | --------------| --------------------------------------|
 | NCBI-HR-Rank  | NCBI RefSeq host range prediction expressed as a taxonomic rank  | 
