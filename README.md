@@ -6,7 +6,7 @@ bacteria to new niches through horizontal transmission of novel traits to differ
 backgrounds. The MOB-suite is designed to be a modular set of tools for the typing and
 reconstruction of plasmid sequences from WGS assemblies.
 
-The MOB-suite depends on a series of databases which are too large to be hosted in git-hub. They can be downloaded or updated by running mob_init or if running any of the tools for the first time, the databases will download and initialize automatically. However, they are quite large so the first run will take a long time depending on your connection and speed of your computer.
+The MOB-suite depends on a series of databases (replicons, MOB, mpf, plasmids) which are too large to be hosted in git-hub. They can be downloaded or updated by running `mob_init` or if running any of the tools for the first time, the databases will download and initialize automatically. However, they are quite large so the first run will take a long time depending on your connection and speed of your computer.
 The databases can be downloaded from figshare here: https://ndownloader.figshare.com/articles/5841882?private_link=a4c92dd84f17b2cefea6
 
 ### MOB-init
@@ -25,18 +25,23 @@ This tool reconstructs individual plasmid sequences from draft genome assemblies
 ### MOB-typer
 Provides in silico predictions of the replicon family, relaxase type, mate-pair formation type and predicted transferability of the plasmid
 
+### MOB-hostrange
+Provides information on plasmid reproductive host range and transfer rate using both sequencing and experimental data from public databases (NCBI) and publications (PubMED). The predicted host range represents a range of putative hosts where a given plasmid can stably replicate and be maintained by the host. Transfer rate prediction is based on the experiemental evidence reported in the survayed literature.
+
+
 ## Installation ##
 
 ## Requires
-Python v. 3.6 +
++ Python v. 3.6 +
 
 ## Dependencies
 
-blast+ v. 2.3.0 +
-circlator
-mash
++ blast+ v. 2.3.0
++ circlator
++ mash
 
 ## Installation
+
 ```
 % conda config --add channels defaults
 % conda config --add channels conda-forge
@@ -45,7 +50,8 @@ mash
 ```
 
 The MOB-suite uses the minimus2 pipeline from Circlator but there are some hardcoded links which need to be created in order for the tool to work correctly.
-After installing circlator and amos run the following as root. 
+After installing circlator and amos run the following as root.
+ 
 ```
 % which show-coords 
 using the path above as "conda-show-coords-path"
@@ -54,15 +60,27 @@ using the path above as "conda-show-coords-path"
 ```
 
 ### Pip
-We recommend installing via bioconda but you can install it via pip using the command below
+
+We recommend installing MOB-Suite via bioconda but you can install it via pip using the command below
+
 ```
 % pip3 install mob_suite
 
+```
+### Conda
+
+To install MOB-Suite as a package inside a conda environment run the following command. All additional databases will be automatically downloaded by `mob_init.py`
 
 ```
-## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and predict mobility
+conda config --add channels bioconda
+conda install -c bioconda mob_suite
+```
+
+
+## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and to predict mobility
 
 You can perform plasmid typing using a fasta formated file containing a single plasmid represented by one or more contigs. Do not include multiple unrelated plasmids in the file as they will be treated as a single plasmid.
+
 
 ```
 # Basic Mode
@@ -170,11 +188,30 @@ Use this tool only to update the plasmid databases or build a new one and should
 | mash_neighbor_distance | Mash distance from query to match |
 | mash_neighbor_cluster | MOB-cluster type of reference match |
 
+#MOB-recon report file format
+| field name    | description                           |
+| --------------| --------------------------------------|
+| NCBI-HR-Rank  | NCBI RefSeq host range prediction expressed as a taxonomic rank  | 
+| NCBI-HR-Name  | NCBI RefSeq host range prediction expressed as a taxonomic scintific name                 |
+|LitPredDBHRRank | Literature-based host range rank prediction |
+|LitPredDBHRRankSciName| Literature-based host range  prediction expressed as taxanomic scientific name |
+|LitRepHRRankInPubs | Literature-reported host range  expressed as taxanomic rank |
+|LitRepHRNameInPubs | Literature-reported host range  expressed as taxanomic scientific name |
+|LitMeanTransferRate| Literature-reported plasmid transfer mean rate |
+|LitClosestRefAcc | NCBI Nucleotide literature-reported plasmid accession number closest to the query plasmid based on the lowest MASH distance |
+|LitClosestRefDonorStrain| The donor stain used in conjugation experiment |
+|LitClosestRefRecipientStrain|The recipient stain used in conjugation experiment |
+|LitClosestRefTransferRate|The literature-reported plasmid transfer rate of the closest literature-reported plasmid |
+|LitClosestConjugTemp |The literature-reported conjugation temperature  during the reported plasmid transfer of the closest literature-reported plasmid (reported in `LitClosestRefAcc` field) |
+|LitPMIDs | PubMED articles identifiers reporting on the provided query plasmid | 
+|LitPMIDsNumber | Number of PubMED articles identifiers reporting on the provided query plasmid |
+|LitClosestMashDist | MASH distance between the query plasmid and the closest literature plasmid (the lower the better) | 
 
 
 ## Contact
 
 James Robertson - james.robertson@canada.ca
+Kyrylo Bessonov - kyrylo.bessonov@canada.ca
 
 ## License
 

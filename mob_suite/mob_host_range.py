@@ -114,18 +114,31 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
         lit_taxids=list(set(literature_knowledge.loc[select_vector,"IsolationTaxid"]))
         litrank,rankname = getHostRangeRankCovergence(lit_taxids)
 
-        host_range_literature_claim=[] #what does the papers claim in terms of the host range?
+        host_range_literature_rank_claim=[] #what does the papers claim in terms of the host range?
+        host_range_literature_name_claim = []
+
         for pid in set(literature_knowledge.loc[:,"PMID"]):
-            hr_lit_claim = literature_knowledge[literature_knowledge["PMID"] == pid][["HostRangeRankClaim","PMID","PMCID"]]
+            hr_lit_claim = literature_knowledge[literature_knowledge["PMID"] == pid][["HostRangeRankClaim","HostRangeClaim","PMID","PMCID"]]
             #print(hr_lit_claim)
             #print(hr_lit_claim["HostRangeRankClaim"].values[0],hr_lit_claim["PMID"].values[0],hr_lit_claim["PMID"].isna().values)
-            host_range_literature_claim.append(str(hr_lit_claim["HostRangeRankClaim"].values[0]))
+            host_range_literature_rank_claim.append(str(hr_lit_claim["HostRangeRankClaim"].values[0]))
+            host_range_literature_name_claim.append(str(hr_lit_claim["HostRangeClaim"].values[0]))
             #if hr_lit_claim["HostRangeRankClaim"].isna().values[0] == False and hr_lit_claim["PMID"].isna().values[0] == False :
-            #    host_range_literature_claim.append(str(hr_lit_claim["HostRangeRankClaim"].values[0])+" (PMID:"+str(hr_lit_claim["PMID"].values[0])+")")
+            #    host_range_literature_rank_claim.append(str(hr_lit_claim["HostRangeRankClaim"].values[0])+" (PMID:"+str(hr_lit_claim["PMID"].values[0])+")")
             #elif hr_lit_claim["HostRangeRankClaim"].isna().values[0] == False and hr_lit_claim["PMCID"].isna().values[0] == False:
-            #    host_range_literature_claim.append(str(hr_lit_claim["HostRangeRankClaim"].values[0]) + " (PMCID:" + str(hr_lit_claim["PMCID"].values[0]) + ")")
+            #    host_range_literature_rank_claim.append(str(hr_lit_claim["HostRangeRankClaim"].values[0]) + " (PMCID:" + str(hr_lit_claim["PMCID"].values[0]) + ")")
+        dict_hr_lit_reported = dict(zip(host_range_literature_rank_claim, host_range_literature_name_claim))
 
-        host_range_literature_claim = Counter(host_range_literature_claim).most_common(1)[0][0] #get the most common host range rank hit
+        for key, value in sorted(Counter(host_range_literature_rank_claim).items(), key=lambda item: item[1], reverse=True):
+            if key != "nan":
+                host_range_literature_rank_claim = key
+                host_range_literature_name_claim = dict_hr_lit_reported[key]
+                break
+            else:
+                host_range_literature_rank_claim = "-"; host_range_literature_name_claim="-"
+
+
+
         hostrangeclassdict = Counter(literature_knowledge["HostRangeClass"])
         HostRangeClass = [key for key in hostrangeclassdict.keys()  if  hostrangeclassdict[key] == max(hostrangeclassdict.values())][0]
 
@@ -153,7 +166,8 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
                          "LiteratureReportedPlasmidHostSpeciesNumber": len(set(literature_knowledge["IsolationSpecies"])),
                          "LiteraturePredictedHostRangeTreeRank": litrank,
                          "LiteraturePredictedHostRangeTreeRankSciName": rankname,
-                         "LiteratureReportedHostRangeInPubs": host_range_literature_claim,
+                         "LiteratureReportedHostRangeRankInPubs": host_range_literature_rank_claim,
+                         "LiteratureReportedHostRangeNameInPubs": host_range_literature_name_claim,
                          "LiteratureMinTransferRateRange": LiteratureMinTransferRateRange,
                          "LiteratureMaxTransferRateRange": LiteratureMaxTransferRateRange,
                          "LiteratureMeanTransferRateRange": LiteratureMeanTransferRateRange,
@@ -186,21 +200,23 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
             if literature_closest_seq_hit_df.shape[0] != 1:
                 raise Exception("Literature top hit dataframe returned more than a single hit ... Expecting a single top hit.")
 
-            literature_closest_donor_strain = literature_closest_seq_hit_df.loc[:,"Donor"].values[0]
-            literature_closest_recipient_strain = literature_closest_seq_hit_df.loc[:, "Recipient"].values[0]
-            literature_closest_transfer_rate = literature_closest_seq_hit_df.loc[:, "Recipient"].values[0]
             #additional fields
-            report_dict.update(OrderedDict({"LiteratureClosestRefrencePlasmidAcc":[literature_accession_top_hit],
+            report_dict.update(
+                                OrderedDict({"LiteratureClosestRefrencePlasmidAcc": literature_accession_top_hit,
                                 "LiteratureClosestReferencePlasmidName":literature_closest_seq_hit_df.loc[:,"Plasmid_Name"].values[0],
                                 "LiteratureClosestReferencePlasmidSize": int(literature_closest_seq_hit_df.loc[:,"Size"].values[0]),
-                                "LiteratureClosestReferenceMashDistance": [literature_mash_dist_top_hit],
-                                "LiteratureClosestReferenceDonorStrain":[literature_closest_donor_strain],
-                                "LiteratureClosestReferenceRecipientStrain": [literature_closest_recipient_strain],
-                                "LiteratureClosestReferenceTransferRate": [literature_closest_transfer_rate]}))
+                                "LiteratureClosestReferenceMashDistance": literature_mash_dist_top_hit,
+                                "LiteratureClosestReferenceDonorStrain": literature_closest_seq_hit_df.loc[:,"Donor"].values[0],
+                                "LiteratureClosestReferenceRecipientStrain": literature_closest_seq_hit_df.loc[:, "Recipient"].values[0],
+                                "LiteratureClosestReferenceTransferRate": literature_closest_seq_hit_df.loc[:, "TransferRate"].values[0],
+                                "LiteratureClosestReferenceConjugationTemperature": literature_closest_seq_hit_df.loc[:, "ConjugationTemperature"].values[0]}))
 
         #append results from different replicons (if multiple are present)
-        report_df = pandas.concat([report_df, pandas.DataFrame.from_dict([report_dict])])
+        report_df = pandas.concat([report_df, pandas.DataFrame.from_dict([report_dict])],sort=False)
         lit_taxids_list = lit_taxids + lit_taxids
+
+    report_df.fillna("-", inplace=True)
+
     return report_df, lit_taxids_list
     #report_table.to_csv(args.outputprefix+'_literature_report.txt',sep="\t",
     #                    float_format='%.1E', index=False, na_rep="NA",mode="w")
@@ -241,13 +257,15 @@ def collapseLiteratureReport(df):
             idx.append(i)
 
     if len(idx) > 0 :
-        collapsedlitdf.loc[0,"LiteratureReportedHostRangeInPubs"] = numrank2nameconversiondict[max([rankconversiondict[k] for k in df.iloc[idx]["LiteratureReportedHostRangeInPubs"].values])]
+        collapsedlitdf.loc[0,"LiteratureReportedHostRangeRankInPubs"] = numrank2nameconversiondict[max([rankconversiondict[k] for k in df.iloc[idx]["LiteratureReportedHostRangeRankInPubs"].values])]
+        collapsedlitdf.loc[0, "LiteratureReportedHostRangeNameInPubs"] = dict(zip(df["LiteratureReportedHostRangeRankInPubs"], df["LiteratureReportedHostRangeNameInPubs"]))[collapsedlitdf.loc[0,"LiteratureReportedHostRangeRankInPubs"]]
     else:
-        collapsedlitdf.loc[0, "LiteratureReportedHostRangeInPubs"] = "NA"
+        collapsedlitdf.loc[0, "LiteratureReportedHostRangeRankInPubs"] = "-"
+        collapsedlitdf.loc[0,"LiteratureReportedHostRangeNameInPubs" ] = "-"
 
     for field in ["LiteratureMinTransferRateRange","LiteratureMaxTransferRateRange", "LiteratureMeanTransferRateRange"]:
         if all(df[field].isna()):
-            collapsedlitdf.loc[0, field] = "NaN"
+            collapsedlitdf.loc[0, field] = "-"
         else:
             collapsedlitdf.loc[0,field] = mean(df[df[field].isna() == False][field].values)
 
@@ -333,8 +351,8 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
     :return: convergance_rank: effectively the host range approximated by the convergance rank on the phylogenetic tree
              converged_taxonomy_name: the host range name given by the convergence rank
              unique_ref_selected_taxids: a list of reference taxids that matched the query
-             ref_taxids_df: pandas dataframe with the key information on the host range
-             stats_host_range_dict: dictionary on the number of hits per the each node of the resulting host range phylogenetic tree
+             ref_taxids_df: pandas dataframe from the RefSeq plasmid database with the selected hits based on the search criteria
+             stats_host_range_dict: dictionary with taxonomy rank keys and taxonomy rank names as values for future taxonomy hit statistics calculation
     """
 
 
@@ -525,6 +543,7 @@ def taxonomical_hits_breakdown_stats_per_taxonomical_rank(filename_prefix,stats_
         logging.info("Wrote phylogeny stats into {}".format(filename_prefix + "_"+dbtype+"_hostrange_tree_phylostats.txt"))
 
 def writeOutHostRangeReports(   filename_prefix = None,
+                                samplename = None,
                                 replicon_name_list = None,
                                 mob_cluster_id_list = None,
                                 relaxase_name_acc_list = None,
@@ -545,7 +564,9 @@ def writeOutHostRangeReports(   filename_prefix = None,
 
     with open(filename_prefix+"_refseqhostrange_report.txt",mode="w") as fp:
         strings2file = ["filename\tquery_replicons\tquery_mob_cluster_ids\tquery_relaxase_names\tquery_relaxase_name_accs\tconvergance_refseq_rank\tconvergance_refseq_sci_name\n"]
-        strings2file.append("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(filename_prefix, dict_molecular_features["replicons"],
+        strings2file.append("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(
+                                                  samplename,
+                                                  dict_molecular_features["replicons"],
                                                   dict_molecular_features["mob_cluster_ids"],
                                                   dict_molecular_features["relaxase_names"],
                                                   dict_molecular_features["relaxase_name_accs"],
@@ -751,13 +772,15 @@ def main():
                    filename_prefix=args.outdir+"/mob_hostrange_"+args.outdir+"_literaturehostrange_")
 
 
-    writeOutHostRangeReports( filename_prefix=args.outdir+"/mob_hostrange_"+args.outdir, replicon_name_list = args.replicon_name,
-                        mob_cluster_id_list = args.cluster_id,
-                        relaxase_name_acc_list = args.relaxase_accession,
-                        relaxase_name_list = args.relaxase_name,
-                        convergance_rank = rank, convergance_taxonomy = host_range,
-                        stats_host_range_dict = stats_refseq_host_range_dict,
-                        literature_hr_report=lit_report)
+    writeOutHostRangeReports( filename_prefix=args.outdir+"/mob_hostrange_"+args.outdir,
+                              samplename="-" ,
+                              replicon_name_list = args.replicon_name,
+                              mob_cluster_id_list = args.cluster_id,
+                              relaxase_name_acc_list = args.relaxase_accession,
+                              relaxase_name_list = args.relaxase_name,
+                              convergance_rank = rank, convergance_taxonomy = host_range,
+                              stats_host_range_dict = stats_refseq_host_range_dict,
+                              literature_hr_report=lit_report)
 
     logging.info("Host Range module run is complete!")
 
@@ -824,6 +847,9 @@ if __name__ == "__main__":
 # Feature #3: Match Inc types in Replicon column via regular expressions as some have a complex multi-replicon structure (e.g. ColE2/ColRNAI).
 # Match Col-like plasmids with just Col query
 # Feature #4: Match Inc types in step-wise manner (subfamily --> family). If no matches returned by subfamily match (e.g. IncFII) match with family (IncF)
+# Feature #5: add stats of the host range taxonomy hits for literature host range hits (similar to refseq ones)
+# Feature #6: make column heads easier to report and maintain. refactor that section
+
 
 # BATCH mode processing
 # Add phylogenetic stats for the literature inferred tree. Need to add taxonomy lineages full path in literature database
@@ -831,7 +857,7 @@ if __name__ == "__main__":
 
 # mob_typer run
 # cp *.py /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/
-# mob_typer --host_range -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET11_Ecoli_plasmid_529.fasta -o run_test
+# mob_typer --host_range -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET11_Ecoli_plasmid_529.fasta --host_range_detailed -o run_test
 
 # Copy latest database files
 # cp host_range_literature_plasmidDB_latest.csv /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/databases/

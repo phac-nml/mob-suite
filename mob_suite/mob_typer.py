@@ -176,6 +176,7 @@ def main():
 
     tmp_dir = os.path.join(out_dir, '__tmp')
     file_id = os.path.basename(input_fasta)
+    output_file_prefix = re.sub(r"\..*", "", file_id)  # remove file extension by matching everything  before dot
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
     replicon_ref = args.plasmid_replicons
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')
@@ -190,8 +191,8 @@ def main():
     	os.remove(orit_blast_results)    
     if os.path.isfile(replicon_blast_results):
     	os.remove(replicon_blast_results)     	
-    report_file = os.path.join(out_dir, 'mobtyper_' + re.sub(r"\..*","",file_id) + '_report.txt')
-    mash_file = os.path.join(tmp_dir, 'mash_' + file_id + '.txt')
+    report_file = os.path.join(out_dir, 'mobtyper_' + output_file_prefix + '_report.txt')
+    mash_file = os.path.join(tmp_dir, 'mash_' + output_file_prefix + '.txt')
 
     # Input numeric params
 
@@ -334,22 +335,22 @@ def main():
 
     #host_range_refseq_rank = None; host_range_refseq_name = None #init of values
 
-
-    host_range_literature_report_collapsed_df = pandas.DataFrame()
-
+    host_range_literature_report_df = pandas.DataFrame()
     if args.host_range and found_replicons:
-        (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(replicon_name_list = list(found_replicons.values()),
+        (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
+                                                          replicon_name_list = list(found_replicons.values()),
                                                           mob_cluster_id_list = mash_top_hit['clustid'],
                                                           relaxase_name_acc_list = None,
                                                           relaxase_name_list = None,
                                                           matchtype = "loose_match", hr_obs_data = loadHostRangeDB())
         #print(found_replicons.values(), host_range_rank, host_range_name); exit("Break Point")
-        host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
-                                                                      plasmid_lit_db = loadliteratureplasmidDB(),
-                                                                      input_seq = args.infile)
+        host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(
+                                                          replicon_names = list(found_replicons.values()),
+                                                          plasmid_lit_db = loadliteratureplasmidDB(),
+                                                          input_seq = args.infile)
         if host_range_literature_report_df.empty == False:
             host_range_literature_report_collapsed_df = collapseLiteratureReport(host_range_literature_report_df)
-            host_range_literature_report_collapsed_df.to_csv(args.outdir+"/"+re.sub(r"\..*","",file_id)+"_host_range_literature_report_collapsed_df.txt",sep="\t",index=False, mode="w")
+            host_range_literature_report_collapsed_df.to_csv(args.outdir+"/"+output_file_prefix+"_host_range_literature_report_collapsed_df.txt",sep="\t",index=False, mode="w")
 
         #print(host_range_literature_report_collapsed_df)
 
@@ -361,27 +362,36 @@ def main():
             relaxase_name_list=None,
             matchtype="loose_match",hr_obs_data = loadHostRangeDB())
 
+
         refseqtree = getTaxonomyTree(taxids) #refseq tree
-        renderTree(tree=refseqtree, taxids=taxids,
-                   filename_prefix=args.outdir+"/"+re.sub(r"\..*","",file_id)+"_refseqhostrange_")
+        renderTree(
+                   tree=refseqtree, taxids=taxids,
+                   filename_prefix=args.outdir+"/"+output_file_prefix+"_refseqhostrange_")
 
-        host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
-                                                                      plasmid_lit_db = loadliteratureplasmidDB(),
-                                                                      input_seq = args.infile)
 
-        if littaxids and host_range_literature_report_df.empty == False:
+        host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(
+                                                                                  replicon_names = list(found_replicons.values()),
+                                                                                  plasmid_lit_db = loadliteratureplasmidDB(),
+                                                                                  input_seq = args.infile )
+
+        if littaxids:
             littree = getTaxonomyTree(littaxids) #literature tree
-            renderTree(tree=littree , taxids=littaxids ,
-                       filename_prefix=args.outdir+"/"+re.sub(r"\..*","",file_id)+ "_literaturehostrange_",
-                       )
-            host_range_literature_report_collapsed_df = collapseLiteratureReport(host_range_literature_report_df)
+            renderTree(
+                       tree=littree, taxids=littaxids ,
+                       filename_prefix=args.outdir+"/"+output_file_prefix+ "_literaturehostrange_")
+        if host_range_literature_report_df.shape[0] > 1:
+            host_range_literature_report_df= collapseLiteratureReport(host_range_literature_report_df)
 
-        writeOutHostRangeReports(filename_prefix = args.outdir+"/"+re.sub(r"\..*","",file_id),
+        #print(host_range_literature_report_df)
+
+        writeOutHostRangeReports(filename_prefix = args.outdir+"/"+output_file_prefix,
+                                 samplename=output_file_prefix,
                                  replicon_name_list = list(found_replicons.values()),
                                  mob_cluster_id_list = [mash_top_hit['clustid']],
                                  relaxase_name_acc_list = None,
                                  relaxase_name_list = None,
-                                 convergance_rank=host_range_refseq_rank, convergance_taxonomy=host_range_refseq_name,
+                                 convergance_rank=host_range_refseq_rank,
+                                 convergance_taxonomy=host_range_refseq_name,
                                  stats_host_range_dict=stats_host_range,
                                  literature_hr_report=host_range_literature_report_df)
     else:
@@ -445,36 +455,39 @@ def main():
                            "relaxase_type_accession(s)": mob_acs, "mpf_type": mpf_type, "mpf_type_accession(s)": mpf_acs,
                            "orit_type(s)": orit_types, "orit_accession(s)": orit_acs, "PredictedMobility": predicted_mobility,
                            "mash_nearest_neighbor": mash_top_hit['top_hit'],"mash_neighbor_distance": mash_top_hit['mash_hit_score'],
-                           "mash_neighbor_cluster": mash_top_hit['clustid'], "RefSeqHRrank":"-","RefSeqHRSciName":"-",
+                           "mash_neighbor_cluster": mash_top_hit['clustid'], "NCBI-HR-rank":"-","NCBI-HR-Name":"-",
                            "LitRepHRPlasmClass":"-","LitPredDBHRRank":"-","LitPredDBHRRankSciName":"-",
-                           "LitRepHRInPubs":"-","LitMeanTransferRate":"-",
-                           "LitClosestRefAcc":"-", "LitClosestRefMashDist":"-","LitClosestRefDonorStrain":"-",
-                           "LitClosestRefRecipientStrain":"-","LitClosestRefTransferRate":"-",
+                           "LitRepHRRankInPubs":"-", "LitRepHRNameInPubs":"-","LitMeanTransferRate":"-",
+                           "LitClosestRefAcc":"-", "LitClosestRefDonorStrain":"-",
+                           "LitClosestRefRecipientStrain":"-","LitClosestRefTransferRate":"-", "LitClosestConjugTemp":"-",
                            "LitPMIDs":"-","LitPMIDsNumber":"-"})
     main_report_mobtyper_df = pandas.DataFrame(columns=main_report_data_dict.keys())
 
 
     #print(host_range_literature_report_collapsed_df)
     if host_range_refseq_rank and host_range_refseq_name:
-        main_report_data_dict.update({"RefSeqHRrank":host_range_refseq_rank,"RefSeqHRSciName":host_range_refseq_name})
-    if host_range_literature_report_collapsed_df.empty == False:
-        main_report_data_dict.update({"LitRepHRPlasmClass":host_range_literature_report_collapsed_df["LiteratureReportedHostRangePlasmidClass"].values[0],
-                                      "LitPredDBHRRank":host_range_literature_report_collapsed_df["LiteraturePredictedHostRangeTreeRank"].values[0],
-                                      "LitPredDBHRRankSciName": host_range_literature_report_collapsed_df["LiteraturePredictedHostRangeTreeRankSciName"].values[0],
-                                      "LitRepHRInPubs":host_range_literature_report_collapsed_df["LiteratureReportedHostRangeInPubs"].values[0],
-                                      "LitMeanTransferRate":host_range_literature_report_collapsed_df["LiteratureMeanTransferRateRange"].values[0],
-                                      "LitClosestRefAcc":host_range_literature_report_collapsed_df["LiteratureClosestRefrencePlasmidAcc"].values[0],
-                                      "LitClosestMashDist": host_range_literature_report_collapsed_df["LiteratureClosestReferenceMashDistance"].values[0],
-                                      "LitClosestRefDonorStrain": host_range_literature_report_collapsed_df["LiteratureClosestReferenceDonorStrain"].values[0],
-                                      "LitClosestRefRecipientStrain": host_range_literature_report_collapsed_df["LiteratureClosestReferenceRecipientStrain"].values[0],
-                                      "LitClosestRefTransferRate": host_range_literature_report_collapsed_df["LiteratureClosestReferenceTransferRate"].values[0],
-                                      "LitPMIDs": host_range_literature_report_collapsed_df["LiteraturePMIDs"].values[0],
-                                      "LitPMIDsNumber":host_range_literature_report_collapsed_df["LiteraturePublicationsNumber"].values[0]
+        main_report_data_dict.update({"NCBI-HR-rank":host_range_refseq_rank,"NCBI-HR-Name":host_range_refseq_name})
+
+    if host_range_literature_report_df.empty == False:
+        main_report_data_dict.update({"LitRepHRPlasmClass":host_range_literature_report_df["LiteratureReportedHostRangePlasmidClass"].values[0],
+                                      "LitPredDBHRRank":host_range_literature_report_df["LiteraturePredictedHostRangeTreeRank"].values[0],
+                                      "LitPredDBHRRankSciName": host_range_literature_report_df["LiteraturePredictedHostRangeTreeRankSciName"].values[0],
+                                      "LitRepHRRankInPubs":host_range_literature_report_df["LiteratureReportedHostRangeRankInPubs"].values[0],
+                                      "LitRepHRNameInPubs": host_range_literature_report_df["LiteratureReportedHostRangeNameInPubs"].values[0],
+                                      "LitMeanTransferRate":host_range_literature_report_df["LiteratureMeanTransferRateRange"].values[0],
+                                      "LitClosestRefAcc":host_range_literature_report_df["LiteratureClosestRefrencePlasmidAcc"].values[0],
+                                      "LitClosestMashDist": host_range_literature_report_df["LiteratureClosestReferenceMashDistance"].values[0],
+                                      "LitClosestRefDonorStrain": host_range_literature_report_df["LiteratureClosestReferenceDonorStrain"].values[0],
+                                      "LitClosestRefRecipientStrain": host_range_literature_report_df["LiteratureClosestReferenceRecipientStrain"].values[0],
+                                      "LitClosestRefTransferRate": host_range_literature_report_df["LiteratureClosestReferenceTransferRate"].values[0],
+                                      "LitClosestConjugTemp": host_range_literature_report_df["LiteratureClosestReferenceConjugationTemperature"].values[0],
+                                      "LitPMIDs": host_range_literature_report_df["LiteraturePMIDs"].values[0],
+                                      "LitPMIDsNumber":host_range_literature_report_df["LiteraturePublicationsNumber"].values[0]
                                       })
 
-    #print(main_report_column_names[1:len(main_report_data_list)])
-    #print(main_report_data_list)
-    main_report_mobtyper_df = main_report_mobtyper_df.append(pandas.DataFrame([main_report_data_dict]),ignore_index=True)
+
+    main_report_mobtyper_df = main_report_mobtyper_df.append(pandas.DataFrame([main_report_data_dict]),sort=False)
+
 
     main_report_mobtyper_df.to_csv(report_file, sep="\t", mode="w",encoding="UTF-8",index=False)
     if not keep_tmp:

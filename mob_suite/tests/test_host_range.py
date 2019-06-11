@@ -72,6 +72,23 @@ def test_getRefSeqHostRange_multireplicon():
         assert unique_ref_selected_taxids != [], "Could not extract any hits from the RefSeq Host range database. Taxid list is empty. Check the getRefSeqHostRange()"
         assert stats_host_range_dict != {}, "Empty RefSeq host-range hits dictionary. Check the getRefSeqHostRange()"
 
+    for matchtype in ["exact", "loose"]:
+        (returnhrrank, returnhrsciname, unique_ref_selected_taxids, ref_taxids_df,
+         stats_host_range_dict) = getRefSeqHostRange(
+            replicon_name_list=["IncFIIA", "IncFII"],
+            mob_cluster_id_list=None,
+            relaxase_name_acc_list=None,
+            relaxase_name_list=None,
+            matchtype=matchtype,
+            hr_obs_data=loadHostRangeDB())
+
+def test_check_data_types_in_literature_host_range_reporting_dataframe():
+    """
+    Test if all columns match the data type (int, str, etc.)
+    :return:
+    """
+
+
 
 def test_getHostrange_clusterID():
     (convergance_rank, converged_taxonomy_name,
