@@ -195,17 +195,17 @@ Use this tool only to update the plasmid databases or build a new one and should
 | --------------| --------------------------------------|
 | NCBI-HR-Rank  | NCBI RefSeq host range prediction expressed as a taxonomic rank  | 
 | NCBI-HR-Name  | NCBI RefSeq host range prediction expressed as a taxonomic scintific name                 |
-|LitPredDBHRRank | Literature-based host range rank prediction |
-|LitPredDBHRRankSciName| Literature-based host range  prediction expressed as taxanomic scientific name |
+|LitPredDBHRRank | Literature-based host range rank prediction (LiteratureDB) |
+|LitPredDBHRRankSciName| Literature-based host range  prediction expressed as taxanomic scientific name (LiteratureDB) |
 |LitRepHRRankInPubs | Literature-reported host range  expressed as taxanomic rank |
 |LitRepHRNameInPubs | Literature-reported host range  expressed as taxanomic scientific name |
 |LitMeanTransferRate| Literature-reported plasmid transfer mean rate |
-|LitClosestRefAcc | NCBI Nucleotide literature-reported plasmid accession number closest to the query plasmid based on the lowest MASH distance |
-|LitClosestRefDonorStrain| The donor stain used in conjugation experiment |
-|LitClosestRefRecipientStrain|The recipient stain used in conjugation experiment |
+|LitClosestRefAcc | NCBI Nucleotide literature-reported plasmid accession number closest to the query plasmid |
+|LitClosestRefDonorStrain| The donor stain used in the conjugation experiment with the plasmid reported in `LitClosestRefAcc` field |
+|LitClosestRefRecipientStrain| The recipient stain used in the conjugation experiment |
 |LitClosestRefTransferRate|The literature-reported plasmid transfer rate of the closest literature-reported plasmid |
-|LitClosestConjugTemp |The literature-reported conjugation temperature  during the reported plasmid transfer of the closest literature-reported plasmid (reported in `LitClosestRefAcc` field) |
-|LitPMIDs | PubMED articles identifiers reporting on the provided query plasmid | 
+|LitClosestConjugTemp |The literature-reported conjugation temperature  during the plasmid transfer of the literature-reported plasmid (reported in `LitClosestRefAcc` field) |
+|LitPMIDs | PubMED articles identifiers linked to the query plasmid | 
 |LitPMIDsNumber | Number of PubMED articles identifiers reporting on the provided query plasmid |
 |LitClosestMashDist | MASH distance between the query plasmid and the closest literature plasmid (the lower the better) | 
 
