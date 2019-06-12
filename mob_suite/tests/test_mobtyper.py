@@ -63,7 +63,7 @@ def test_mob_typer_host_range_multi_replicon():
     assert results_df["LitPredDBHRRankSciName"].values[0] == "-"
 
 def test_mob_typer_host_range_multi_replicon_KU295134():
-    #KU295134.fasta with IncFII and IncN replicons
+    #KU295134.fasta with IncFII and IncN replicons with closest literature reference NC_011385
     #suitable to check the multi-replicon case and how host range data collapse is functioning
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/KU295134.fasta",

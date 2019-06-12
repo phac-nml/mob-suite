@@ -115,8 +115,6 @@ def parse_args():
     parser.add_argument('--plasmid_orit', type=str, required=False, help='Fasta of known plasmid oriT dna sequences',
                         default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              'databases/orit.fas'))
-    parser.add_argument('--host_range',  required=False, help='Predict host range', action='store_true',
-                        default=False)
     parser.add_argument('--host_range_detailed', required=False, help='Complete host range report with phylogeny stats', action='store_true',
                         default=False)
 
@@ -336,25 +334,9 @@ def main():
     #host_range_refseq_rank = None; host_range_refseq_name = None #init of values
 
     host_range_literature_report_df = pandas.DataFrame()
-    if args.host_range and found_replicons:
-        (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
-                                                          replicon_name_list = list(found_replicons.values()),
-                                                          mob_cluster_id_list = mash_top_hit['clustid'],
-                                                          relaxase_name_acc_list = None,
-                                                          relaxase_name_list = None,
-                                                          matchtype = "loose_match", hr_obs_data = loadHostRangeDB())
-        #print(found_replicons.values(), host_range_rank, host_range_name); exit("Break Point")
-        host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(
-                                                          replicon_names = list(found_replicons.values()),
-                                                          plasmid_lit_db = loadliteratureplasmidDB(),
-                                                          input_seq = args.infile)
-        if host_range_literature_report_df.empty == False:
-            host_range_literature_report_collapsed_df = collapseLiteratureReport(host_range_literature_report_df)
-            host_range_literature_report_collapsed_df.to_csv(args.outdir+"/"+output_file_prefix+"_host_range_literature_report_collapsed_df.txt",sep="\t",index=False, mode="w")
+    #print(host_range_literature_report_collapsed_df)
 
-        #print(host_range_literature_report_collapsed_df)
-
-    elif args.host_range_detailed and found_replicons:
+    if args.host_range_detailed and found_replicons:
         (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
             replicon_name_list=list(found_replicons.values()),
             mob_cluster_id_list=mash_top_hit['clustid'],
@@ -381,8 +363,7 @@ def main():
             renderTree(
                        tree=littree, taxids=littaxids ,
                        filename_prefix=args.outdir+"/"+output_file_prefix+ "_literaturehostrange_")
-        if host_range_literature_report_df.shape[0] > 1:
-            host_range_literature_report_df= collapseLiteratureReport(host_range_literature_report_df)
+
 
         #print(host_range_literature_report_df)
 
@@ -440,16 +421,6 @@ def main():
 
     if mob_acs != '-' and mpf_acs != '-':
         predicted_mobility = 'Conjugative'
-
-    #main_report_column_names = ["file_id", "num_contigs", "total_length", "gc", "rep_type(s)",
-                              #  "rep_type_accession(s)", "relaxase_type(s)", "relaxase_type_accession(s)",
-                              #  "mpf_type", "mpf_type_accession(s)", "orit_type(s)", "orit_accession(s)",
-                              #  "PredictedMobility",
-                              #  "mash_nearest_neighbor", "mash_neighbor_distance", "mash_neighbor_cluster",
-                              #  "RefSeqHRrank", "RefSeqHRSciName",
-                              #  "LitRepHRPlasmClass", "LitPredDBHRRank", "LitPredDBHRRankSciName", "LitRepHRInPubs",
-                              #  "LitPMIDs", "LitPMIDsNumber"]
-    #main_report_mobtyper_df = pandas.DataFrame(columns=main_report_column_names)  # empty data frame
 
 
     main_report_data_dict=collections.OrderedDict({"file_id":file_id, "num_contigs":stats['num_seq'], "total_length": stats['size'], "gc":stats['gc_content'],

@@ -39,7 +39,10 @@ args=ArgumentParser()
 
 #LOG = createLogger()
 def loadliteratureplasmidDB():
-    return  pandas.read_csv(os.path.dirname(os.path.abspath(__file__))+"/databases/host_range_literature_plasmidDB_latest.csv",sep=",",encoding = "ISO-8859-1")
+    literatureplasmidDB = pandas.read_csv(os.path.dirname(os.path.abspath(__file__))+"/databases/host_range_literature_plasmidDB_latest.csv",
+                            sep=",",encoding = "ISO-8859-1")
+
+    return literatureplasmidDB
 
 def findHitsInLiteratureDBbyReplicon(replicon_names,plasmid_lit_db):
     """
@@ -101,10 +104,11 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
         literature_knowledge.loc[:,"TransferRate"] = literature_knowledge.loc[:,"TransferRate"].astype(float)
         literature_knowledge.loc[literature_knowledge["Size"].isna() == False, "Size"] = literature_knowledge.loc[literature_knowledge["Size"].isna()== False, "Size"].astype(int)
         literature_knowledge.loc[literature_knowledge["Year"].isna() == False, "Year"] = literature_knowledge.loc[literature_knowledge["Year"].isna() == False, "Year"].astype(int)
-        literature_knowledge.loc[literature_knowledge["PMID"].isna() == False,"PMID"] = literature_knowledge.loc[literature_knowledge["PMID"].isna() == False,"PMID"].astype(int)
+        literature_knowledge.loc[literature_knowledge["PMID"].isna() == False,"PMID"] = literature_knowledge.loc[literature_knowledge["PMID"].isna() == False,"PMID"].astype(pandas.Int32Dtype())
 
 
-        #print(literature_knowledge)
+        #print(literature_knowledge.loc[literature_knowledge["PMID"].isna() == False,"PMID"])
+
         #print(literature_knowledge.loc[:,["HostRangeRankClaim","PMID"]])
 
         #print(literature_knowledge.loc[:,"PMID"])
@@ -174,8 +178,8 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
                          "LiteratureMinTransferRateRange": LiteratureMinTransferRateRange,
                          "LiteratureMaxTransferRateRange": LiteratureMaxTransferRateRange,
                          "LiteratureMeanTransferRateRange": LiteratureMeanTransferRateRange,
-                         "LiteraturePMIDs": ";".join(set([str(i) for i in literature_knowledge.loc[:, "PMID"]])),
-                         "LiteraturePublicationsNumber": len(set(literature_knowledge.loc[:, "PMID"]))})
+                         "LiteraturePMIDs": ";".join(set([str(int(i)) for i in literature_knowledge.loc[:, "PMID"] if pandas.isna(i) == False])),
+                         "LiteraturePublicationsNumber": len(set(literature_knowledge.loc[literature_knowledge["PMID"].isna() == False, "PMID"]))})
 
         #if input plasmid sequence is provided, do additional closest match based on the sequence similarity and append to the general report
 
@@ -241,25 +245,33 @@ def collapseLiteratureReport(df):
     rankconversiondict={"species":1,"genus":2,"family":3,"order":4,"class":5,"phylum":6,"superkingdom":7}
     numrank2nameconversiondict = {1:"species", 2:"genus",3:"family",4:"order",5:"class", 6:"phylum",7:"superkingdom"}
 
-    collapsedlitdf.loc[0,"LiteratureQueryReplicon"] = str(set(df["LiteratureQueryReplicon"].values))
+    collapsedlitdf.loc[0,"LiteratureQueryReplicon"] = ",".join(list(set(df["LiteratureQueryReplicon"].values)))
     collapsedlitdf.loc[0, "LiteratureSearchReplicon"] = ",".join(df.loc[:,"LiteratureSearchReplicon"].values)
     collapsedlitdf.loc[0, "LiteratureFoundPlasmidsNames"] = ",".join(df.loc[:,"LiteratureFoundPlasmidsNames"].values)
     collapsedlitdf.loc[0,"LiteratureFoundPlasmidsNumber"]=sum(df.loc[:, "LiteratureFoundPlasmidsNumber"])
     hrclassnum = max([conversiondict[k] for k in set(df.loc[:, "LiteratureReportedHostRangePlasmidClass"].values)])
     collapsedlitdf.loc[0, "LiteratureReportedHostRangePlasmidClass"] = [k for k in conversiondict if conversiondict[k] == hrclassnum][0]
-    collapsedlitdf.loc[0,"LiteratureReportedHostPlasmidSpecies"]=",".join(set(df.loc[:,"LiteratureReportedHostPlasmidSpecies"].values.tolist()[0].split(",")))
-    collapsedlitdf.loc[0, "LiteratureReportedPlasmidHostSpeciesNumber"] = len(set(df.loc[:,"LiteratureReportedHostPlasmidSpecies"].values.tolist()[0].split(",")))
+
+    species_list=[]
+    for value in df.loc[:, "LiteratureReportedHostPlasmidSpecies"].values:
+        species_list = species_list+value.split(",")
+
+    collapsedlitdf.loc[0,"LiteratureReportedHostPlasmidSpecies"]=",".join(species_list)
+    collapsedlitdf.loc[0, "LiteratureReportedPlasmidHostSpeciesNumber"] = len(species_list)
     hrtreeranknum = max([rankconversiondict[k] for k in df.loc[:, "LiteraturePredictedHostRangeTreeRank"].values])
     collapsedlitdf.loc[0,"LiteraturePredictedHostRangeTreeRank"] = [k for k in rankconversiondict if rankconversiondict[k] == hrtreeranknum][0]
     idx=df.loc[:,"LiteraturePredictedHostRangeTreeRank"] == collapsedlitdf.loc[0,"LiteraturePredictedHostRangeTreeRank"]
     collapsedlitdf.loc[0,"LiteraturePredictedHostRangeTreeRankSciName"] = df[idx]["LiteraturePredictedHostRangeTreeRankSciName"].values[0]
 
+
+    #print(df.loc[:,"LiteratureReportedHostPlasmidSpecies"].values.tolist())
+    #print(collapsedlitdf.loc[0,"LiteratureReportedHostPlasmidSpecies"]);exit(1)
     #idx=[]
     #print(df);exit() #KeyError: 'LiteratureReportedHostRangeInPubs'
     #for i in range(0,df.shape[0]):
     #    if isinstance(df.iloc[i]["LiteratureReportedHostRangeInPubs"],int):
     #        idx.append(i)
-    print(df)
+    #print(df)
     if df.shape[0] > 1:
         collapsedlitdf.loc[0,"LiteratureReportedHostRangeRankInPubs"] = numrank2nameconversiondict[max([rankconversiondict[k] for k in df["LiteratureReportedHostRangeRankInPubs"].values if k != "-"])]
         collapsedlitdf.loc[0, "LiteratureReportedHostRangeNameInPubs"] = dict(zip(df["LiteratureReportedHostRangeRankInPubs"], df["LiteratureReportedHostRangeNameInPubs"]))[collapsedlitdf.loc[0,"LiteratureReportedHostRangeRankInPubs"]]
@@ -276,11 +288,6 @@ def collapseLiteratureReport(df):
     collapsedlitdf.loc[0,"LiteraturePMIDs"] = ";".join(df["LiteraturePMIDs"])
     collapsedlitdf.loc[0, "LiteraturePublicationsNumber"] = sum(df["LiteraturePublicationsNumber"])
 
-    #the closest sequence based result will the only one, no need to collapse, just copy
-    #if [col for col in df.columns if col == "LiteratureClosestRefrencePlasmidAcc"]:
-    #    for field in ['LiteratureClosestRefrencePlasmidAcc', 'LiteratureClosestPlasmidName', 'LiteratureClosestPlasmidSize', 'LiteratureClosestMashDistance']:
-    #        collapsedlitdf.loc[0, field] = df.loc[0,field]
-    print(collapsedlitdf)
     return(collapsedlitdf)
 
 def getClosestLiteratureRefPlasmid(input_fasta):
@@ -558,9 +565,14 @@ def writeOutHostRangeReports(   filename_prefix = None,
                                 literature_hr_report = pandas.DataFrame()
                                 ):
     ###Should refactor this function to be more abastract, Rank and converaganice should accept both datbases predictions on rank
-
     dict_molecular_features={"replicons":replicon_name_list,"mob_cluster_ids":mob_cluster_id_list,
                              "relaxase_names":relaxase_name_list, "relaxase_name_accs":relaxase_name_acc_list }
+
+    #collapse data if literature report contains more than one cell
+    if literature_hr_report.shape[0] > 1:
+        literature_hr_report.to_csv(filename_prefix + '_literature_uncollapsed_report.txt', sep="\t", index=False, na_rep="NA",mode="w")
+        literature_hr_report = collapseLiteratureReport(literature_hr_report) #collapse report
+
 
     for key in dict_molecular_features.keys():
         if dict_molecular_features[key] != None:
@@ -705,6 +717,7 @@ def parse_args():
     elif args.cluster_id:
         args.cluster_id = re.split(",", args.cluster_id[0])
 
+
     #CASE1: prohibited characters in the name
     #correct file names that come with the prohibited characters like / or \ (e.g. IncA/C2)
     args.outdir = re.sub("[\\|//]+", "", args.outdir)
@@ -827,9 +840,9 @@ def renderTree(tree,taxids,filename_prefix):
     tree.render(filename_prefix+"phylogeny_tree.png", dpi=2800, w=2000, tree_style=ts)
     with open(file=filename_prefix+ "asci_tree.txt", mode="w") as fp:
         fp.write(tree.get_ascii(attributes=["rank", "sci_name"]))
-    logging.info("Wrote ASCII host range tree into {}".format(
-            filename_prefix + "asci_tree.txt"))
+    logging.info("Wrote ASCII host range tree into {}".format(filename_prefix + "asci_tree.txt"))
     tree.write(format=2, outfile=filename_prefix + "phylogeny_tree.nwk")
+    logging.info("Wrote Newick host range tree into {}".format(filename_prefix + "asci_tree.txt"))
 
 
 
@@ -860,8 +873,9 @@ if __name__ == "__main__":
 # Add literature closest transfer rate value if available field in all outputs
 
 # mob_typer run
-# cp *.py /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/
-# mob_typer --host_range -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET11_Ecoli_plasmid_529.fasta --host_range_detailed -o run_test
+# cp ~/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/*.py /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/
+# mob_typer -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET11_Ecoli_plasmid_529.fasta --host_range_detailed -o run_test
+# mob_typer -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/KU295134.fasta  --host_range_detailed -o run_test
 
 # Copy latest database files
 # cp host_range_literature_plasmidDB_latest.csv /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/databases/
