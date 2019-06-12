@@ -223,7 +223,7 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
         lit_taxids_list = lit_taxids_list + lit_taxids
 
     report_df.fillna("-", inplace=True)
-  
+
     return report_df, lit_taxids_list
     #report_table.to_csv(args.outputprefix+'_literature_report.txt',sep="\t",
     #                    float_format='%.1E', index=False, na_rep="NA",mode="w")
