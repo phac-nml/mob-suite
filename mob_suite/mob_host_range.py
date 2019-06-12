@@ -102,10 +102,10 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
         #data type conversion
         #literature_knowledge["TransferRate"] = pandas.to_numeric(literature_knowledge["TransferRate"])
         literature_knowledge.loc[:,"TransferRate"] = literature_knowledge.loc[:,"TransferRate"].astype(float)
+        #literature_knowledge.loc[:, "Size"] = literature_knowledge.loc[:, "Size"].astype(pandas.Int32Dtype())
         literature_knowledge.loc[literature_knowledge["Size"].isna() == False, "Size"] = literature_knowledge.loc[literature_knowledge["Size"].isna()== False, "Size"].astype(int)
-        literature_knowledge.loc[literature_knowledge["Year"].isna() == False, "Year"] = literature_knowledge.loc[literature_knowledge["Year"].isna() == False, "Year"].astype(int)
-        literature_knowledge.loc[literature_knowledge["PMID"].isna() == False,"PMID"] = literature_knowledge.loc[literature_knowledge["PMID"].isna() == False,"PMID"].astype(pandas.Int32Dtype())
-
+        literature_knowledge.loc[:, "Year"] = literature_knowledge.loc[:, "Year"].astype(pandas.Int32Dtype()) #The lack of NaN rep in integer columns is a pandas "gotcha".
+        literature_knowledge.loc[:,"PMID"] = literature_knowledge.loc[:,"PMID"].astype(pandas.Int32Dtype()) #The lack of NaN rep in integer columns is a pandas "gotcha".
 
         #print(literature_knowledge.loc[literature_knowledge["PMID"].isna() == False,"PMID"])
 
@@ -223,7 +223,7 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
         lit_taxids_list = lit_taxids_list + lit_taxids
 
     report_df.fillna("-", inplace=True)
-
+  
     return report_df, lit_taxids_list
     #report_table.to_csv(args.outputprefix+'_literature_report.txt',sep="\t",
     #                    float_format='%.1E', index=False, na_rep="NA",mode="w")
