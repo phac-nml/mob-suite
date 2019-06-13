@@ -24,29 +24,7 @@ def test_mob_typer_host_range_multi_replicon():
     assert results_df["LitRepHRNameInPubs"].values[0]  == "Enterobacteriaceae"
     assert results_df["LitPMIDsNumber"].values[0]  == 5
 
-    args = [
-        "--infile", os.path.dirname(__file__) + "/TestData/AY603981.fasta",
-        "--outdir", "run_test",
-        "--host_range"
-    ]
-    sys.argv[1:] = args
-    mob_suite.mob_typer.main()
-    results_df = pandas.read_csv("./run_test/mobtyper_AY603981_report.txt", sep="\t")
-    assert results_df["NCBI-HR-rank"].values[0] == "-"
-    assert results_df["NCBI-HR-Name"].values[0] == "-"
-    assert results_df["PredictedMobility"].values[0] == "Mobilizable"
 
-    args = [
-        "--infile", os.path.dirname(__file__) + "/TestData/AB011548.fasta",
-        "--outdir", "run_test",
-        "--host_range"
-    ]
-    sys.argv[1:] = args
-    mob_suite.mob_typer.main()
-    results_df = pandas.read_csv("./run_test/mobtyper_AY603981_report.txt", sep="\t")
-    assert results_df["NCBI-HR-rank"].values[0] == "-"
-    assert results_df["NCBI-HR-Name"].values[0] == "-"
-    assert results_df["PredictedMobility"].values[0] == "Mobilizable"
 
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/AB011548.fasta",
@@ -79,6 +57,18 @@ def test_mob_typer_host_range_multi_replicon_KU295134():
     assert results_df["NCBI-HR-Name"].values[0] == "Gammaproteobacteria"
     assert results_df["PredictedMobility"].values[0] == "Conjugative"
 
+def test_mob_typer_host_range_no_replicon_data():
+    args = [
+        "--infile", os.path.dirname(__file__) + "/TestData/AY603981.fasta",
+        "--outdir", "run_test",
+        "--host_range"
+    ]
+    sys.argv[1:] = args
+    mob_suite.mob_typer.main()
+    results_df = pandas.read_csv("./run_test/mobtyper_AY603981_report.txt", sep="\t")
+    assert results_df["NCBI-HR-rank"].values[0] == "class"
+    assert results_df["NCBI-HR-Name"].values[0] == "Gammaproteobacteria"
+    assert results_df["PredictedMobility"].values[0] == "Mobilizable"
 
 #check that mobtyper has literature report part non-empty
 

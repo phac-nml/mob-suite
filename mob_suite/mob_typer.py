@@ -317,7 +317,7 @@ def main():
             found_orit[acs] = type
 
 
-    # Get closest neighbor by mash distance
+    # Get closest neighbor by mash distance in the entire plasmid database
     m = mash()
     mash_distances = dict()
     mashfile_handle = open(mash_file, 'w')
@@ -325,17 +325,9 @@ def main():
     mash_results = m.read_mash(mash_file)
     mash_top_hit = getMashBestHit(mash_results)
 
+
     # GET HOST RANGE
-
-
-    #(host_range_rank, host_range_name) = getHostRange_module_enty_point(list(found_replicons.values()), mash_top_hit['clustid'],
-    #                                                                    None, None)
-
-    #host_range_refseq_rank = None; host_range_refseq_name = None #init of values
-
     host_range_literature_report_df = pandas.DataFrame()
-    #print(host_range_literature_report_collapsed_df)
-
     if args.host_range_detailed and found_replicons:
         (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
             replicon_name_list=list(found_replicons.values()),
@@ -359,14 +351,13 @@ def main():
 
 
         if littaxids:
-            littree = getTaxonomyTree(littaxids) #literature tree
+            littree = getTaxonomyTree(littaxids) #get literature tree
             renderTree(
                        tree=littree, taxids=littaxids ,
                        filename_prefix=args.outdir+"/"+output_file_prefix+ "_literaturehostrange_")
 
 
-        #print(host_range_literature_report_df)
-
+        #write hostrange reports
         writeOutHostRangeReports(filename_prefix = args.outdir+"/"+output_file_prefix,
                                  samplename=output_file_prefix,
                                  replicon_name_list = list(found_replicons.values()),
@@ -377,14 +368,36 @@ def main():
                                  convergance_taxonomy=host_range_refseq_name,
                                  stats_host_range_dict=stats_host_range,
                                  literature_hr_report=host_range_literature_report_df)
+    elif args.host_range_detailed and found_mob: #by MOB_accession numbers
+        (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
+                                                                                                                    replicon_name_list=None,
+                                                                                                                    mob_cluster_id_list=mash_top_hit['clustid'],
+                                                                                                                    relaxase_name_acc_list=found_mob.keys(),
+                                                                                                                    relaxase_name_list=None,
+                                                                                                                    matchtype="loose_match", hr_obs_data=loadHostRangeDB())
+
+        refseqtree = getTaxonomyTree(taxids)  # refseq tree
+        renderTree(
+                    tree=refseqtree, taxids=taxids,
+                    filename_prefix=args.outdir + "/" + output_file_prefix + "_refseqhostrange_")
+
+        writeOutHostRangeReports(filename_prefix=args.outdir + "/" + output_file_prefix,
+                                 samplename=output_file_prefix,
+                                 replicon_name_list=None,
+                                 mob_cluster_id_list=[mash_top_hit['clustid']],
+                                 relaxase_name_acc_list=None,
+                                 relaxase_name_list=None,
+                                 convergance_rank=host_range_refseq_rank,
+                                 convergance_taxonomy=host_range_refseq_name,
+                                 stats_host_range_dict=stats_host_range
+                                 )
+
+        #print(host_range_refseq_rank, host_range_refseq_name, taxids_df["Organism"])
+
     else:
         host_range_refseq_rank=None; host_range_refseq_name=None
 
-
-    #results_fh = open(report_file, 'w')
-
-
-
+    #END HOST RANGE MODULE
 
     if len(found_replicons) > 0:
         rep_types = ",".join(list(found_replicons.values()))
@@ -440,6 +453,7 @@ def main():
     #print(host_range_literature_report_collapsed_df)
     if host_range_refseq_rank and host_range_refseq_name:
         main_report_data_dict.update({"NCBI-HR-rank":host_range_refseq_rank,"NCBI-HR-Name":host_range_refseq_name})
+
 
     if host_range_literature_report_df.empty == False:
         main_report_data_dict.update({"LitRepHRPlasmClass":host_range_literature_report_df["LiteratureReportedHostRangePlasmidClass"].values[0],

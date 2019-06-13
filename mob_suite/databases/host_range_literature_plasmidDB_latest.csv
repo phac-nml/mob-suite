@@ -158,7 +158,7 @@ IncC,pVCR94ΔX,KF551948.1,120572,BroadHostRange,Vibrio cholerae,BI144,NA,666,Ent
 IncA/C,pRA1,NC_012885.1,143963,BroadHostRange,Aeromonas hydrophila,NA,NA,644,Enterobacterales,family,Aeromonas hydrophila,E. coli DH10B,9.20E-03,NA,19482926,PMC2715731,,2009,Fricke WF,
 IncA/C,pRA1,FJ705807.1,143963,BroadHostRange,Aeromonas hydrophila,NA,NA,644,Enterobacteriaceae,family,Aeromonas hydrophila,E. coli DH10B,9.20E-03,NA,19482926,PMC2715731,,2009,Fricke WF,
 IncA/C,pYR1,CP000602,158038,BroadHostRange,Yersinia ruckeri,YR71,NA,29486,Enterobacteriaceae,family,Yersinia ruckeri YR71,E. coli DH10B,5.00E-02,NA,19482926,PMC2715731,,2009,Fricke WF,
-IncA/C,pN418,NA,NA,BroadHostRange,Salmonella enterica Heidelberg N418,N418,Heidelberg ,1030005,Enterobacteriaceae,family,Salmonella enterica Heidelberg N418,E. coli DH10B,2.9E10-3,NA,19482926,PMC2715731,,2009,Fricke WF,
+IncA/C,pN418,NA,NA,BroadHostRange,Salmonella enterica Heidelberg N418,N418,Heidelberg ,1030005,Enterobacteriaceae,family,Salmonella enterica Heidelberg N418,E. coli DH10B,2.90E-03,NA,19482926,PMC2715731,,2009,Fricke WF,
 IncF,pCVM29188_146,CP001122,146811,BroadHostRange,Salmonella enterica Kentucky ,CVM29188,Kentucky ,439842,NA,NA,Salmonella enterica Kentucky CVM29188,E. coli DH10B,3.00E-04,NA,19482926,PMC2715731,,2009,Fricke WF,
 IncA/C,pIP1202,CP000603,182913,BroadHostRange,Yersinia pestis,IP275,NA,373665,Enterobacteriaceae,family,NA,NA,NA,NA,20138094,NA,,2010,Lindsey RL,
 IncM,R69,KM406488.1,78899,BroadHostRange,Salmonella enterica subsp. enterica serovar Paratyphi B,NA,Paratyphi B,57045,Enterobacteriaceae,family,Escherichia coli,Escherichia coli,2.00E-03,NA,25933288,PMC4416936 ,,2015,Carattoli A,

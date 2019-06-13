@@ -1,10 +1,25 @@
 from mob_suite.mob_host_range import getRefSeqHostRange, getLiteratureBasedHostRange, loadliteratureplasmidDB, \
     loadHostRangeDB, getTaxonomyTree, renderTree
 import pytest,os,sys
-import ete3, pandas
+import ete3, numpy
 
 
 #test the main function
+def test_loadliteratureHostRangeDB():
+    lit_database_data = loadliteratureplasmidDB()
+    print(type(lit_database_data["Size"].dtype))
+    assert isinstance(lit_database_data["PMID"].values[0], object), "Incorrect value type for PMID column"
+    assert isinstance(lit_database_data["Size"].values[0], numpy.float64), "Incorrect value type for plasmid Size column"
+    assert isinstance(lit_database_data["TransferRate"].values[0], numpy.float64), "Incorrect value type for TransferRate column"
+
+def test_HostRangeDB():
+    refseq_plasmid_database_data = loadHostRangeDB()
+    assert isinstance(refseq_plasmid_database_data["Ref_cluster_id"].values[0],object), "Incorrect value type for PMID column"
+    assert isinstance(refseq_plasmid_database_data["lineage_taxid"].values[0], object), "Incorrect value type for lineage_taxid column"
+    assert isinstance(refseq_plasmid_database_data["lineage_ranks"].values[0], object), "Incorrect value type for lineage_ranks column"
+    assert isinstance(refseq_plasmid_database_data["lineage_names"].values[0], object), "Incorrect value type for lineage_names column"
+    assert isinstance(refseq_plasmid_database_data["taxid"].values[0], object), "Incorrect value type for lineage_ranks column"
+
 def test_getRefSeqHostRange_replicon():
     """
     Check the RefSeq host range prediction functionality using IncI1 as a query replicon.
@@ -211,11 +226,10 @@ def test_literature_hostrange_multi_replion():
 
     report,littaxids = getLiteratureBasedHostRange(replicon_names =["IncFI","IncFII"],
                                 plasmid_lit_db = loadliteratureplasmidDB(),input_seq="")
-    print(report)
+
     assert report.empty == False, "Literature host range prediction is empty. Check your search criteria/criterium"
     assert report.shape[0] == 2, "Literature host range report dimension is incorrect. The expect dimension is double row"
     assert all( report["LiteraturePredictedHostRangeTreeRank"].values == ["genus","family"]), "LiteraturePredictedHostRange seems to be incorrect"
-    print(report["LiteraturePredictedHostRangeTreeRankSciName"] )
     assert all(report.loc[0,"LiteraturePredictedHostRangeTreeRankSciName"] == ["Salmonella","Enterobacteriaceae"]), "LiteraturePredictedHostRange expressed in sci names seems to be incorrect"
 
     #test when there are no hits for a given replicon in literature database

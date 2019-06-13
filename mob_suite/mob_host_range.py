@@ -40,7 +40,20 @@ args=ArgumentParser()
 #LOG = createLogger()
 def loadliteratureplasmidDB():
     literatureplasmidDB = pandas.read_csv(os.path.dirname(os.path.abspath(__file__))+"/databases/host_range_literature_plasmidDB_latest.csv",
-                            sep=",",encoding = "ISO-8859-1")
+                            sep=",",encoding = "ISO-8859-1",dtype={"PMID":str, "TransferRate":float, "Year":str,"Size":float})
+
+
+
+    #literature_knowledge.loc[:, "TransferRate"] = literature_knowledge.loc[:, "TransferRate"].astype(float)
+    # literature_knowledge.loc[:, "Size"] = literature_knowledge.loc[:, "Size"].astype(pandas.Int32Dtype())
+    #print(literatureplasmidDB["Size"])
+    #literatureplasmidDB.loc[literatureplasmidDB["Size"].isna() == False, "Size"] = literatureplasmidDB.loc[literatureplasmidDB["Size"].isna() == False, "Size"].astype(int)
+    #print(literatureplasmidDB["Size"])
+    #exit()
+    #literature_knowledge.loc[:, "Year"] = literature_knowledge.loc[:, "Year"].astype(
+    #    pandas.Int32Dtype())  # The lack of NaN rep in integer columns is a pandas "gotcha".
+    #literature_knowledge.loc[:, "PMID"] = literature_knowledge.loc[:, "PMID"].astype(
+    #    pandas.Int32Dtype())  # The lack of NaN rep in integer columns is a pandas "gotcha".
 
     return literatureplasmidDB
 
@@ -89,62 +102,34 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
     lit_taxids_list=[]
     #report_dict=dict.fromkeys(['apple','ball'],"-")
 
+
     for replicon_name in repliconsearchdict.keys():
-        #find hits in database based on replicon query
-        idx = repliconsearchdict[replicon_name]
-        #get database subset for further analyses
-        literature_knowledge = plasmid_lit_db.iloc[idx,:].copy()
+        idx = repliconsearchdict[replicon_name] #find hits in database based on replicon query
+        literature_knowledge = plasmid_lit_db.iloc[idx,:].copy() #get database subset for further analyses
 
         if literature_knowledge.shape[0] == 0:
             continue
             #raise Exception("Could not extract any information from the literature database matching the search")
 
-        #data type conversion
-        #literature_knowledge["TransferRate"] = pandas.to_numeric(literature_knowledge["TransferRate"])
-        literature_knowledge.loc[:,"TransferRate"] = literature_knowledge.loc[:,"TransferRate"].astype(float)
-        #literature_knowledge.loc[:, "Size"] = literature_knowledge.loc[:, "Size"].astype(pandas.Int32Dtype())
-        literature_knowledge.loc[literature_knowledge["Size"].isna() == False, "Size"] = literature_knowledge.loc[literature_knowledge["Size"].isna()== False, "Size"].astype(int)
-        literature_knowledge.loc[:, "Year"] = literature_knowledge.loc[:, "Year"].astype(pandas.Int32Dtype()) #The lack of NaN rep in integer columns is a pandas "gotcha".
-        literature_knowledge.loc[:,"PMID"] = literature_knowledge.loc[:,"PMID"].astype(pandas.Int32Dtype()) #The lack of NaN rep in integer columns is a pandas "gotcha".
-
-        #print(literature_knowledge.loc[literature_knowledge["PMID"].isna() == False,"PMID"])
-
-        #print(literature_knowledge.loc[:,["HostRangeRankClaim","PMID"]])
-
-        #print(literature_knowledge.loc[:,"PMID"])
-        #print(literature_knowledge.dtypes)
-        #exit()
-        #phylolitertree = getTaxonomyTree()
         #remove any entries that are map to uncultured bacteria (avoids inflation of the host range)
         select_vector = [True if len(re.findall("uncultured", line)) == 0 else False for line in literature_knowledge["IsolationSpecies"]]
         lit_taxids=list(set(literature_knowledge.loc[select_vector,"IsolationTaxid"]))
         litrank,rankname = getHostRangeRankCovergence(lit_taxids)
 
-        host_range_literature_rank_claim=[] #what does the papers claim in terms of the host range?
-        host_range_literature_name_claim = []
 
-        #print(literature_knowledge)
-        #for pid in set(literature_knowledge.loc[:,"Replicon"]):
-        #    hr_lit_claim = literature_knowledge[literature_knowledge["PMID"] == pid][["HostRangeRankClaim","HostRangeClaim","PMID","PMCID"]]
-            #print(hr_lit_claim)
-            #print(hr_lit_claim["HostRangeRankClaim"].values[0],hr_lit_claim["PMID"].values[0],hr_lit_claim["PMID"].isna().values)
         host_range_literature_rank_claim = literature_knowledge["HostRangeRankClaim"].values
         host_range_literature_name_claim = literature_knowledge["HostRangeClaim"].values
-            #if hr_lit_claim["HostRangeRankClaim"].isna().values[0] == False and hr_lit_claim["PMID"].isna().values[0] == False :
-            #    host_range_literature_rank_claim.append(str(hr_lit_claim["HostRangeRankClaim"].values[0])+" (PMID:"+str(hr_lit_claim["PMID"].values[0])+")")
-            #elif hr_lit_claim["HostRangeRankClaim"].isna().values[0] == False and hr_lit_claim["PMCID"].isna().values[0] == False:
-            #    host_range_literature_rank_claim.append(str(hr_lit_claim["HostRangeRankClaim"].values[0]) + " (PMCID:" + str(hr_lit_claim["PMCID"].values[0]) + ")")
         dict_hr_lit_reported = dict(zip(host_range_literature_rank_claim, host_range_literature_name_claim))
 
-        for key, value in sorted(Counter(host_range_literature_rank_claim).items(), key=lambda item: item[1], reverse=True):
-            if key != "nan":
+        lit_rank_claim_frequency_dict = sorted(Counter(host_range_literature_rank_claim).items(), key=lambda item: item[1], reverse=True)
+
+        host_range_literature_rank_claim = "-"
+        host_range_literature_name_claim = "-"
+        for key, value in lit_rank_claim_frequency_dict: #account for NaN values and pick the most frequent literature host-range prediction
+            if isinstance(key, str):
                 host_range_literature_rank_claim = key
                 host_range_literature_name_claim = dict_hr_lit_reported[key]
                 break
-            else:
-                host_range_literature_rank_claim = "-"; host_range_literature_name_claim="-"
-
-
 
         hostrangeclassdict = Counter(literature_knowledge["HostRangeClass"])
         HostRangeClass = [key for key in hostrangeclassdict.keys()  if  hostrangeclassdict[key] == max(hostrangeclassdict.values())][0]
@@ -218,8 +203,8 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
                                 "LiteratureClosestReferenceTransferRate": literature_closest_seq_hit_df.loc[:, "TransferRate"].values[0],
                                 "LiteratureClosestReferenceConjugationTemperature": literature_closest_seq_hit_df.loc[:, "ConjugationTemperature"].values[0]}))
 
-        #append results from different replicons (if multiple are present)
-        report_df = pandas.concat([report_df, pandas.DataFrame.from_dict([report_dict])],sort=False)
+
+        report_df = pandas.concat([report_df, pandas.DataFrame.from_dict([report_dict])],sort=False) #append results from different replicons (if multiple are present)
         lit_taxids_list = lit_taxids_list + lit_taxids
 
     report_df.fillna("-", inplace=True)
@@ -646,8 +631,7 @@ def getTaxonomyTree(taxids):
 
 def loadHostRangeDB():
     database_abs_path = os.path.dirname(os.path.abspath(__file__))+"/databases/"+"host_range_ncbirefseq_plasmidDB_latest.csv"
-    #print(database_abs_path)
-    data_obs_hr = pandas.read_csv(database_abs_path, sep=",", encoding="ISO-8859-1")
+    data_obs_hr = pandas.read_csv(database_abs_path, sep=",", encoding="ISO-8859-1",dtype={'Ref_cluster_id':str,'taxid':str})
     return data_obs_hr
 
 
@@ -815,24 +799,24 @@ def renderTree(tree,taxids,filename_prefix):
     # prettify the rendered tree providing the stats on the tree
     # annotate nodes of the tree
     for node in tree.traverse():
-        # print(node.features) #{'rank', 'common_name', 'support', 'sci_name', 'named_lineage', 'taxid', 'lineage', 'name', 'dist'}
-        # print(node.sci_name)
+        #print(node.features) #{'rank', 'common_name', 'support', 'sci_name', 'named_lineage', 'taxid', 'lineage', 'name', 'dist'}
+        #print(node.sci_name, node.taxid)
         # print(ref_taxids_df)
-        nhits = len([t for t in taxids if t == node.taxid])
-        # print("{}:{}".format(node.taxid,nhits))
+        nhits = len([t for t in taxids if t == str(node.taxid)])
+        #print("{}:{}".format(node.taxid,nhits))
         node.img_style['size'] = nhits
         node.img_style['fgcolor'] = "red"
         node.img_style['hz_line_color'] = "red"
         node.img_style['vt_line_color'] = "red"
         node.img_style['draw_descendants'] = True
         # print(node.img_style)
-        node.name = re.sub("_", "", node.sci_name) + "|taxid" + str(node.taxid) + "|" + str(
-            nhits) + "hits"  # Newick does not like spaces in labels
+        node.name = re.sub("_", "", node.sci_name) + "|taxid" + str(node.taxid) + "|" + str(nhits) + "hit(s)"  # Newick does not like spaces in labels
         # node.name=node.sci_name
         # print(len(node.name))
         # print(node.name, node.img_style)
         # node.set_style()
         # print(node.features)
+    #print(taxids);exit()
     # exit()
     # tree.show(tree_style=ts)
 
