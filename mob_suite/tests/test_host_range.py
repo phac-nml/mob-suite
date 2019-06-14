@@ -1,6 +1,6 @@
 from mob_suite.mob_host_range import getRefSeqHostRange, getLiteratureBasedHostRange, loadliteratureplasmidDB, \
     loadHostRangeDB, getTaxonomyTree, renderTree
-import pytest,os,sys
+import pytest,os
 import ete3, numpy
 
 

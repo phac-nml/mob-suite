@@ -58,13 +58,21 @@ def extract(fname,outdir):
 def main():
     default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--database_directory',
+    parser.add_argument(
+                        '-d', '--database_directory',
                         default=default_database_dir,
+                        required=False,
                         help='Directory to download databases to. Defaults to {}'.format(default_database_dir))
+    parser.add_argument(
+                        '-u', '--database_urls',
+                        default=None,
+                        required=False,
+                        nargs=1,
+                        type=str,
+                        help='URL to the databases zip file')
     args = parser.parse_args()
     logging = init_console_logger(2)
     logging.info('Initilizating databases...this will take some time')
-
 
     #Find available threads and use the maximum number available for mash sketch but cap it at 32
     num_threads = multiprocessing.cpu_count()
@@ -72,6 +80,7 @@ def main():
         num_threads = 32
 
     database_directory = os.path.abspath(args.database_directory)
+
 
     if not os.path.exists(database_directory):
         os.makedirs(database_directory)
@@ -82,13 +91,19 @@ def main():
     logging.info('Downloading databases...this will take some time')
 
 
-    db_mirrors = ['https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download',
-                  'https://ndownloader.figshare.com/articles/5841882/versions/1']
+    #db_mirrors = ['https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download',
+    #              'https://ndownloader.figshare.com/articles/5841882/versions/1']
+
+    if args.database_urls:
+        db_mirrors = args.database_urls
+    else:
+        db_mirrors = ['https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download',
+                      'https://ndownloader.figshare.com/articles/5841882/versions/1']
 
     for db_mirror in db_mirrors:
         logging.info('Trying mirror {}'.format(db_mirror))
         download_to_file(db_mirror, zip_file)
-        if os.path.exists(zip_file) and os.path.getsize(zip_file) > 50000:
+        if os.path.exists(zip_file):
             break   #do not try other mirror
 
     if (not os.path.isfile(zip_file)):
