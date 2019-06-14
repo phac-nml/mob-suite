@@ -70,7 +70,9 @@ def test_mob_typer_host_range_no_replicon_data():
     assert results_df["NCBI-HR-Name"].values[0] == "Gammaproteobacteria"
     assert results_df["PredictedMobility"].values[0] == "Mobilizable"
 
+#TODO
 #check that mobtyper has literature report part non-empty
+#check that database keys are functional
 
 
 # assert any([len(re.findall("order\tEnterobacterales",out)) >= 1 for out in output]) == True, "Something went wrong with host range prediction";

@@ -775,3 +775,7 @@ def main():
 # call main function
 if __name__ == '__main__':
     main()
+
+#TODO
+#Resolve empty aggregated reports bug
+#Plasmid size inflation with the same contigs

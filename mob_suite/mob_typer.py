@@ -6,6 +6,7 @@ import shutil
 import sys
 from argparse import (ArgumentParser, FileType)
 from mob_suite.version import __version__
+import mob_suite.mob_init
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 from mob_suite.wrappers import circlator
@@ -39,6 +40,7 @@ def init_console_logger(lvl):
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
+    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     parser = ArgumentParser(
         description="Mob Suite: Typing and reconstruction of plasmids from draft and complete assemblies version: {}".format(
             __version__))
@@ -117,6 +119,13 @@ def parse_args():
                                              'databases/orit.fas'))
     parser.add_argument('--host_range_detailed', required=False, help='Complete host range report with phylogeny stats', action='store_true',
                         default=False)
+    parser.add_argument('-d','--database_directory',default=default_database_dir,
+                        required=False,
+                        help='Directory you want to use for your databases. If the databases are not already '
+                             'downloaded, they will be downloaded automatically. Defaults to {}. '
+                             'If you change this from the default, will override --plasmid_mash_db, '
+                             '--plasmid_replicons, --plasmid_mob, --plasmid_mpf, and '
+                             '--plasmid_orit'.format(default_database_dir))
 
     return parser.parse_args()
 
@@ -133,6 +142,7 @@ def determine_mpf_type(hits):
 
 
 def main():
+    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     args = parse_args()
 
     if args.debug:
@@ -159,18 +169,31 @@ def main():
     if not isinstance(args.num_threads, int):
         logging.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
 
-
-    verify_init(logging)
+    database_dir = os.path.abspath(args.database_directory)
+    verify_init(logging,database_dir)
 
     # Script arguments
     input_fasta = args.infile
     out_dir = args.outdir
     num_threads = int(args.num_threads)
     keep_tmp = args.keep_tmp
-    mob_ref = args.plasmid_mob
-    mpf_ref = args.plasmid_mpf
-    orit_ref = args.plasmid_orit
-    mash_db = args.plasmid_mash_db
+
+    if database_dir == default_database_dir:
+        mob_ref = args.plasmid_mob
+        mpf_ref = args.plasmid_mpf
+        orit_ref = args.plasmid_orit
+        mash_db = args.plasmid_mash_db
+        replicon_ref = args.plasmid_replicons
+    else:
+        mob_ref = os.path.join(database_dir, 'mob.proteins.faa')
+        mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
+        orit_ref = os.path.join(database_dir, 'orit.fas')
+        mash_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas.msh')
+        replicon_ref = os.path.join(database_dir, 'rep.dna.fas')
+    #mob_ref = args.plasmid_mob
+    #mpf_ref = args.plasmid_mpf
+    #orit_ref = args.plasmid_orit
+    #mash_db = args.plasmid_mash_db
 
     tmp_dir = os.path.join(out_dir, '__tmp')
     file_id = os.path.basename(input_fasta)
@@ -258,8 +281,8 @@ def main():
 
     for db in needed_dbs:
         if (not os.path.isfile(db)):
-            logging.error('Error needed database missing "{}"'.format(db))
-            sys.exit(-1)
+            logging.info('Warning! Needed database missing "{}"'.format(db))
+            mob_suite.mob_init.main()
 
 
     if not os.path.isdir(tmp_dir):
@@ -319,7 +342,7 @@ def main():
 
     # Get closest neighbor by mash distance in the entire plasmid database
     m = mash()
-    mash_distances = dict()
+    #mash_distances = dict()
     mashfile_handle = open(mash_file, 'w')
     m.run_mash(mash_db, fixed_fasta, mashfile_handle)
     mash_results = m.read_mash(mash_file)
@@ -488,3 +511,5 @@ def main():
 if __name__ == '__main__':
     main()
 
+#TODO
+#Merge with the master branch features. Resolve discrepencies test all mob_init functions and keys, specifically databases dirs
