@@ -58,23 +58,26 @@ def write_fasta_dict(seqs, fasta_file):
     handle.close()
 
 def verify_init(logging,database_dir):
+    "Verify if all remote reference databases were download and unpacked"
     mob_init_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_init.py')
-    status_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases/status.txt')
+    status_file = os.path.join(database_dir, 'status.txt')
 
     if not os.path.isfile(status_file):
         logging.info('MOB-databases need to be initialized, this will take some time')
         p = Popen(['python', mob_init_path,'-d', database_dir],
-                  stdout=PIPE, stderr=PIPE,
+                  stdout=PIPE,
+                  stderr=PIPE,
                   shell=False)
 
         p.wait()
         stdout = p.stdout.read()
         stderr = "".join(p.stderr.read().decode("utf-8"))
 
-
+        #Verify if no errors were captured during the mob_init script run. Otherwise abort
         if len(re.findall("error",stderr)) != 0:
             print(stderr)
-            exit("Something went wrong with database download or unpacking.\nTry to manually download database from https://ndownloader.figshare.com/articles/5841882?private_link=a4c92dd84f17b2cefea6\nUnzip archive into MOB-Suite databases directory.")
+            exit(   "Something went wrong with database download or unpacking"
+                    "Check MOB-Suite databases directory and your Internet connection.")
 
         return stdout
 
@@ -198,7 +201,7 @@ def mob_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_res
 
 def repetitive_blast(input_fasta, ref_db, min_ident, min_cov, evalue, min_length, tmp_dir, blast_results_file,num_threads=1):
     blast_runner = BlastRunner(input_fasta, tmp_dir)
-    blast_runner.makeblastdb(ref_db, 'nucl')
+    #blast_runner.makeblastdb(ref_db, 'nucl')
     blast_runner.run_blast(query_fasta_path=input_fasta, blast_task='megablast', db_path=ref_db,
                            db_type='nucl', min_cov=min_cov, min_ident=min_ident, evalue=evalue,
                            blast_outfile=blast_results_file,
