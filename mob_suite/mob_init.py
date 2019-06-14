@@ -71,8 +71,8 @@ def main():
     if num_threads > 32:
         num_threads = 32
 
-    # For some reason absolute paths don't work - enforce absolute path.
-    database_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)),'databases/')
+    database_directory = os.path.abspath(args.database_directory)
+
     if not os.path.exists(database_directory):
         os.makedirs(database_directory)
     zip_file = os.path.join(database_directory,'data.zip')
@@ -81,6 +81,7 @@ def main():
     mash_db_file =  os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas.msh')
     logging.info('Downloading databases...this will take some time')
 
+
     db_mirrors = ['https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download',
                   'https://ndownloader.figshare.com/articles/5841882/versions/1']
 
@@ -88,7 +89,7 @@ def main():
         logging.info('Trying mirror {}'.format(db_mirror))
         download_to_file(db_mirror, zip_file)
         if os.path.exists(zip_file) and os.path.getsize(zip_file) > 50000:
-            break  # do not try other mirror
+            break   #do not try other mirror
 
     if (not os.path.isfile(zip_file)):
         logging.error('Downloading databases failed, please check your internet connection and retry')

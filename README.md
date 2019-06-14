@@ -6,8 +6,9 @@ bacteria to new niches through horizontal transmission of novel traits to differ
 backgrounds. The MOB-suite is designed to be a modular set of tools for the typing and
 reconstruction of plasmid sequences from WGS assemblies.
 
-The MOB-suite depends on a series of databases (replicons, MOB, mpf, plasmids) which are too large to be hosted in git-hub. They can be downloaded or updated by running `mob_init` or if running any of the tools for the first time, the databases will download and initialize automatically. However, they are quite large so the first run will take a long time depending on your connection and speed of your computer.
-The databases can be downloaded from figshare here: https://ndownloader.figshare.com/articles/5841882?private_link=a4c92dd84f17b2cefea6
+
+The MOB-suite depends on a series of databases which are too large to be hosted in git-hub. They can be downloaded or updated by running mob_init or if running any of the tools for the first time, the databases will download and initialize automatically. However, they are quite large so the first run will take a long time depending on your connection and speed of your computer.
+The databases can be downloaded from figshare here: https://ndownloader.figshare.com/articles/5841882/versions/1 and https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download
 
 ### MOB-init
 On first run of MOB-typer or MOB-recon, MOB-init should run to download the databases from figshare, sketch the databases and setup the blast databases. However, it can be run manually if the databases need to be re-initialized.
@@ -41,18 +42,30 @@ Provides information on plasmid reproductive host range and transfer rate using 
 + mash
 
 ## Installation
+We recommend MOB-Suite installation as a conda package due to large number of dependencies. The package is available through bioconda channel.
 
 ```
 % conda config --add channels defaults
 % conda config --add channels conda-forge
 % conda config --add channels bioconda
-% conda install blast amos mash circlator
+% conda install blast amos mash circlator mob_suite
 ```
 
 The MOB-suite uses the minimus2 pipeline from Circlator but there are some hardcoded links which need to be created in order for the tool to work correctly.
 After installing circlator and amos run the following as root.
  
 ```
+option 1: from https://github.com/sanger-pathogens/circlator/issues/65
+
+You will need to change ${CONDA_PREFIX}/bin/minimus2 for both SHOWCOORDS and DELTAFILTER
+
+Interestingly the two variables have also been hard coded, but fortunately using the ${CONDA_PREFIX} variable.
+
+Run the following line fixed the code whilst inside the environment.
+
+sed -i 's%/usr/local%${CONDA_PREFIX}%g' ${CONDA_PREFIX}/bin/minimus2
+
+option 2:
 % which show-coords 
 using the path above as "conda-show-coords-path"
 % ln -s conda-show-coords-path /usr/local/bin/show-coords
@@ -67,17 +80,29 @@ We recommend installing MOB-Suite via bioconda but you can install it via pip us
 % pip3 install mob_suite
 
 ```
+
 ### Conda
 
 To install MOB-Suite as a package inside a conda environment run the following command. All additional databases will be automatically downloaded by `mob_init.py`
 
 ```
-conda config --add channels bioconda
-conda install -c bioconda mob_suite
+% conda config --add channels bioconda
+% conda install -c bioconda mob_suite
 ```
 
 
 ## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and to predict mobility
+=======
+### Setuptools
+Clone this repository and install via setuptools. 
+
+```
+% git clone https://github.com/phac-nml/mob-suite.git
+% cd mob-suite
+% python setup.py install
+```
+
+## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and predict mobility
 
 You can perform plasmid typing using a fasta formated file containing a single plasmid represented by one or more contigs. Do not include multiple unrelated plasmids in the file as they will be treated as a single plasmid.
 
@@ -189,6 +214,7 @@ Use this tool only to update the plasmid databases or build a new one and should
 | mash_neighbor_cluster | MOB-cluster type of reference match |
 
 
+
 # MOB-recon report file format
 
 | field name    | description                           |
@@ -208,6 +234,28 @@ Use this tool only to update the plasmid databases or build a new one and should
 |LitPMIDs | PubMED articles identifiers linked to the query plasmid | 
 |LitPMIDsNumber | Number of PubMED articles identifiers reporting on the provided query plasmid |
 |LitClosestMashDist | MASH distance between the query plasmid and the closest literature plasmid (the lower the better) | 
+
+
+# blast report file format
+| field name | description|
+| -----------| -----------|
+| qseqid | query sequence id |
+| sseqid | subject sequence id |
+| qlen | query length |
+| slen | subject length |
+| qstart | match start query |
+| qend | match end query |
+| sstart | match subject start|
+| send | match subject end|
+| length | length of alignment|
+| mismatch | number of mismatches|
+| pident | identity|
+| qcovhsp | query coverage by hsp|
+| qcovs | query coverage by subject|
+| sstrand | strad of hit in subject|
+| evalue | evalue of match|
+| bitscore | bitscore of match |
+
 
 
 ## Contact

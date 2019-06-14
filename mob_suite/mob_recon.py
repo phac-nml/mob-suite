@@ -118,8 +118,12 @@ def parse_args():
                         default=default_database_dir,
                         required=False,
                         help='Directory you want to use for your databases. If the databases are not already '
+<<<<<<< HEAD
                              'downloaded, they will be downloaded automatically. Defaults to {}'.format(
                               default_database_dir))
+=======
+                             'downloaded, they will be downloaded automatically. Defaults to {}'.format(default_database_dir))
+>>>>>>> master
 
     return parser.parse_args()
 
@@ -153,9 +157,14 @@ def mcl_predict(blast_results_file, min_ident, min_cov, evalue, min_length, tmp_
     return mcl_clusters
 
 
+<<<<<<< HEAD
 def run_mob_typer(fasta_path, outdir, num_threads=1,database_dir=None):
     mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
 
+=======
+def run_mob_typer(fasta_path, outdir, num_threads=1, database_dir=None):
+    mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
+>>>>>>> master
     if database_dir is None:
         p = Popen(['python', mob_typer_path,
                    '--infile', fasta_path,
@@ -173,7 +182,10 @@ def run_mob_typer(fasta_path, outdir, num_threads=1,database_dir=None):
                    '--num_threads', str(num_threads)],
                   stdout=PIPE,
                   stderr=PIPE)
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
     p.wait()
     stdout = p.stdout.read()
     stderr = p.stderr.read()
@@ -308,11 +320,18 @@ def main():
     database_dir = os.path.abspath(args.database_directory)
     verify_init(logging, database_dir)
     status_file = os.path.join(database_dir, 'status.txt')
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
 
     if not os.path.isfile(status_file):
         logging.info('Warning! Needed databases have not been initialize please run mob_init and try again')
         mob_suite.mob_init.main()
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
 
     plasmid_files = dict()
     input_fasta = args.infile

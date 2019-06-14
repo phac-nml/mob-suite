@@ -170,13 +170,14 @@ def main():
         logging.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
 
     database_dir = os.path.abspath(args.database_directory)
-    verify_init(logging,database_dir)
 
+    verify_init(logging,database_dir)
     # Script arguments
     input_fasta = args.infile
     out_dir = args.outdir
     num_threads = int(args.num_threads)
     keep_tmp = args.keep_tmp
+
 
     if database_dir == default_database_dir:
         mob_ref = args.plasmid_mob
@@ -190,30 +191,27 @@ def main():
         orit_ref = os.path.join(database_dir, 'orit.fas')
         mash_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas.msh')
         replicon_ref = os.path.join(database_dir, 'rep.dna.fas')
-    #mob_ref = args.plasmid_mob
-    #mpf_ref = args.plasmid_mpf
-    #orit_ref = args.plasmid_orit
-    #mash_db = args.plasmid_mash_db
+
 
     tmp_dir = os.path.join(out_dir, '__tmp')
     file_id = os.path.basename(input_fasta)
     output_file_prefix = re.sub(r"\..*", "", file_id)  # remove file extension by matching everything  before dot
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
-    replicon_ref = args.plasmid_replicons
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')
     mob_blast_results = os.path.join(tmp_dir, 'mobtyper_blast_results.txt')
     mpf_blast_results = os.path.join(tmp_dir, 'mpf_blast_results.txt')
     orit_blast_results = os.path.join(tmp_dir, 'orit_blast_results.txt')
     if os.path.isfile(mob_blast_results):
-    	os.remove(mob_blast_results)
+        os.remove(mob_blast_results)
     if os.path.isfile(mpf_blast_results):
-    	os.remove(mpf_blast_results)
+        os.remove(mpf_blast_results)
     if os.path.isfile(orit_blast_results):
-    	os.remove(orit_blast_results)    
+        os.remove(orit_blast_results)
     if os.path.isfile(replicon_blast_results):
-    	os.remove(replicon_blast_results)     	
-    report_file = os.path.join(out_dir, 'mobtyper_' + output_file_prefix + '_report.txt')
-    mash_file = os.path.join(tmp_dir, 'mash_' + output_file_prefix + '.txt')
+        os.remove(replicon_blast_results)
+    report_file = os.path.join(out_dir, 'mobtyper_' + file_id + '_report.txt')
+    mash_file = os.path.join(tmp_dir, 'mash_' + file_id + '.txt')
+
 
     # Input numeric params
 
