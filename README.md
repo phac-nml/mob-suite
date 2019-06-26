@@ -217,10 +217,13 @@ Use this tool only to update the plasmid databases or build a new one and should
 
 # MOB-recon report file format
 
+The table describes output fields found in the `mobtyper_*_report.txt`, `*_literature_report.txt` and `mobtyper_aggregate_report.txt` 
+report files.
+
 | field name    | description                           |
 | --------------| --------------------------------------|
-| NCBI-HR-Rank  | NCBI RefSeq host range prediction expressed as a taxonomic rank  | 
-| NCBI-HR-Name  | NCBI RefSeq host range prediction expressed as a taxonomic scintific name                 |
+| NCBI-HR-Rank  | NCBI Nucleotide host range prediction expressed as a taxonomic rank  | 
+| NCBI-HR-Name  | NCBI Nucleotide host range prediction expressed as a taxonomic scintific name                 |
 |LitPredDBHRRank | Literature-based host range rank prediction (LiteratureDB) |
 |LitPredDBHRRankSciName| Literature-based host range  prediction expressed as taxanomic scientific name (LiteratureDB) |
 |LitRepHRRankInPubs | Literature-reported host range  expressed as taxanomic rank |

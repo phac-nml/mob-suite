@@ -39,21 +39,9 @@ args=ArgumentParser()
 
 #LOG = createLogger()
 def loadliteratureplasmidDB():
-    literatureplasmidDB = pandas.read_csv(os.path.dirname(os.path.abspath(__file__))+"/databases/host_range_literature_plasmidDB_latest.csv",
+    literatureplasmidDB = pandas.read_csv(os.path.dirname(os.path.abspath(__file__))+"/databases/host_range_literature_plasmidDB.csv",
                             sep=",",encoding = "ISO-8859-1",dtype={"PMID":str, "TransferRate":float, "Year":str,"Size":float})
 
-
-
-    #literature_knowledge.loc[:, "TransferRate"] = literature_knowledge.loc[:, "TransferRate"].astype(float)
-    # literature_knowledge.loc[:, "Size"] = literature_knowledge.loc[:, "Size"].astype(pandas.Int32Dtype())
-    #print(literatureplasmidDB["Size"])
-    #literatureplasmidDB.loc[literatureplasmidDB["Size"].isna() == False, "Size"] = literatureplasmidDB.loc[literatureplasmidDB["Size"].isna() == False, "Size"].astype(int)
-    #print(literatureplasmidDB["Size"])
-    #exit()
-    #literature_knowledge.loc[:, "Year"] = literature_knowledge.loc[:, "Year"].astype(
-    #    pandas.Int32Dtype())  # The lack of NaN rep in integer columns is a pandas "gotcha".
-    #literature_knowledge.loc[:, "PMID"] = literature_knowledge.loc[:, "PMID"].astype(
-    #    pandas.Int32Dtype())  # The lack of NaN rep in integer columns is a pandas "gotcha".
 
     return literatureplasmidDB
 
@@ -630,7 +618,7 @@ def getTaxonomyTree(taxids):
     return(tree)
 
 def loadHostRangeDB():
-    database_abs_path = os.path.dirname(os.path.abspath(__file__))+"/databases/"+"host_range_ncbirefseq_plasmidDB_latest.csv"
+    database_abs_path = os.path.dirname(os.path.abspath(__file__))+"/databases/"+"host_range_ncbirefseq_plasmidDB.csv"
     data_obs_hr = pandas.read_csv(database_abs_path, sep=",", encoding="ISO-8859-1",dtype={'Ref_cluster_id':str,'taxid':str})
     return data_obs_hr
 

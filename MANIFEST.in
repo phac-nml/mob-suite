@@ -2,7 +2,11 @@ include LICENSE
 include README.rst
 include MANIFEST.in
 include setup.py
-include mob_suite/databases/host_range_plasmidDB.csv
-include mob_suite/tests/TestData/AB040415.fasta
+include mob_suite/tests/TestData/*
+include mob_suite/tests/*.py
+include mob_suite/databases/host_range_ncbirefseq_plasmidDB.csv
+include mob_suite/databases/host_range_literature_plasmidDB.csv
+include mob_suite/databases/literature_mined_plasmid_seq*
+exclude mob-suite/mob_suite/tests/TestData/E_coli
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from mob_suite.version import __version__
 from collections import OrderedDict
-import logging, os, shutil, sys, operator
+import logging, os, shutil, sys, operator,re
 from subprocess import Popen, PIPE
 from argparse import (ArgumentParser, FileType)
 import mob_suite.mob_init
@@ -118,12 +118,8 @@ def parse_args():
                         default=default_database_dir,
                         required=False,
                         help='Directory you want to use for your databases. If the databases are not already '
-<<<<<<< HEAD
-                             'downloaded, they will be downloaded automatically. Defaults to {}'.format(
-                              default_database_dir))
-=======
                              'downloaded, they will be downloaded automatically. Defaults to {}'.format(default_database_dir))
->>>>>>> master
+
 
     return parser.parse_args()
 
@@ -157,19 +153,16 @@ def mcl_predict(blast_results_file, min_ident, min_cov, evalue, min_length, tmp_
     return mcl_clusters
 
 
-<<<<<<< HEAD
+
 def run_mob_typer(fasta_path, outdir, num_threads=1,database_dir=None):
     mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
 
-=======
-def run_mob_typer(fasta_path, outdir, num_threads=1, database_dir=None):
-    mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
->>>>>>> master
     if database_dir is None:
         p = Popen(['python', mob_typer_path,
                    '--infile', fasta_path,
                    '--outdir', outdir,
                    '--keep_tmp',
+                   '--host_range_detailed',
                    '--num_threads', str(num_threads)],
                   stdout=PIPE,
                   stderr=PIPE)
@@ -179,22 +172,32 @@ def run_mob_typer(fasta_path, outdir, num_threads=1, database_dir=None):
                    '--outdir', outdir,
                    '--keep_tmp',
                    '--database_directory', database_dir,
+                   '--host_range_detailed',
                    '--num_threads', str(num_threads)],
                   stdout=PIPE,
                   stderr=PIPE)
-<<<<<<< HEAD
 
-=======
->>>>>>> master
+    print(['python', mob_typer_path,
+     '--infile', fasta_path,
+     '--outdir', outdir,
+     '--keep_tmp',
+     '--num_threads', str(num_threads)])
     p.wait()
     stdout = p.stdout.read()
     stderr = p.stderr.read()
+    logging.info(stdout.decode("utf-8"))
+    logging.info(stderr.decode("utf-8"))
 
-    return stdout.decode("utf-8")
+    print(fasta_path)
+    with open(outdir+"/mobtyper_"+re.findall("plasmid.*",fasta_path)[0]+"_report.txt") as fp:
+        mob_typer_results = fp.readlines()
+    fp.close()
+
+    return mob_typer_results[1]
 
 
 def contig_blast(input_fasta, plasmid_db, min_ident, min_cov, evalue, min_length, tmp_dir, blast_results_file,
-                 num_threads=1, word_size=11):
+                 num_threads=1):
     blast_runner = None
     filtered_blast = os.path.join(tmp_dir, 'filtered_blast.txt')
     blast_runner = BlastRunner(input_fasta, tmp_dir)
@@ -320,20 +323,13 @@ def main():
     database_dir = os.path.abspath(args.database_directory)
     verify_init(logging, database_dir)
     status_file = os.path.join(database_dir, 'status.txt')
-<<<<<<< HEAD
-=======
 
->>>>>>> master
 
     if not os.path.isfile(status_file):
         logging.info('Warning! Needed databases have not been initialize please run mob_init and try again')
         mob_suite.mob_init.main()
-<<<<<<< HEAD
 
-=======
->>>>>>> master
-
-    plasmid_files = dict()
+    plasmid_files = []
     input_fasta = args.infile
     out_dir = args.outdir
     num_threads = args.num_threads
@@ -397,7 +393,6 @@ def main():
             sys.exit(-1)
 
     min_overlapp = int(args.min_overlap)
-
     min_length = int(args.min_length)
 
 
@@ -451,9 +446,9 @@ def main():
             logging.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
             sys.exit(-1)
 
-    min_overlapp = args.min_overlap
+    #min_overlapp = args.min_overlap
 
-    min_length = args.min_length
+    #min_length = args.min_length
 
     # Input Databases
     default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
@@ -737,7 +732,8 @@ def main():
                 os.rename(cluster_file, new_clust_file)
 
         if new_clust_file is not None:
-            plasmid_files[new_clust_file] = ''
+            plasmid_files.append(new_clust_file)
+
 
         for contig_id in clusters:
             found_replicon_string = ''
@@ -810,9 +806,17 @@ def main():
                            "relaxase_type(s)\trelaxase_type_accession(s)\t" \
                            "mpf_type\tmpf_type_accession(s)\t" \
                            "orit_type(s)\torit_accession(s)\tPredictedMobility\t" \
-                           "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\n"
+                           "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\t" \
+                           "NCBI-HR-rank\tNCBI-HR-Name\tLitRepHRPlasmClass\tLitPredDBHRRank\t" \
+                           "LitPredDBHRRankSciName\tLitRepHRRankInPubs\tLitRepHRNameInPubs\tLitMeanTransferRate\t" \
+                           "LitClosestRefAcc\tLitClosestRefDonorStrain\tLitClosestRefRecipientStrain" \
+                           "LitClosestRefTransferRate\tLitClosestConjugTemp\n"
+
         for file in plasmid_files:
-            mobtyper_results = mobtyper_results + "{}".format(run_mob_typer(file, out_dir, str(num_threads), database_dir=database_dir))
+            mobtyper_results = mobtyper_results + "{}".format(run_mob_typer(fasta_path=file,
+                                                                            outdir=out_dir,
+                                                                            num_threads=int(num_threads),
+                                                                            database_dir=database_dir))
         fh = open(mobtyper_results_file, 'w')
         fh.write(mobtyper_results)
         fh.close()

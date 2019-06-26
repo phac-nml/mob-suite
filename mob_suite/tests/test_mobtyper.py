@@ -61,7 +61,7 @@ def test_mob_typer_host_range_no_replicon_data():
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/AY603981.fasta",
         "--outdir", "run_test",
-        "--host_range"
+        "--host_range_detailed"
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
@@ -70,6 +70,14 @@ def test_mob_typer_host_range_no_replicon_data():
     assert results_df["NCBI-HR-Name"].values[0] == "Gammaproteobacteria"
     assert results_df["PredictedMobility"].values[0] == "Mobilizable"
 
+def test_mob_typer_broad_host_range_IncF():
+    args = [
+        "--infile", os.path.dirname(__file__) + "/TestData/IncF/ET4_Ecoli_plasmid_969.fasta",
+        "--outdir", "run_test",
+        "--host_range_detailed"
+    ]
+    sys.argv[1:] = args
+    mob_suite.mob_typer.main()
 #TODO
 #check that mobtyper has literature report part non-empty
 #check that database keys are functional

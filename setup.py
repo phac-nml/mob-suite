@@ -27,11 +27,11 @@ exec(open('mob_suite/version.py').read())
 setup(
     name='mob_suite',
     include_package_data=True,
-    version='1.5.0',
+    version='2.0.0',
     python_requires='>3.5.2',
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(exclude=['tests', 'databases']),
     url='https://github.com/phac-nml/mob-suite',
     license='GPLv3',
     author='James Robertson, Kyrylo Bessonov',
@@ -40,6 +40,7 @@ setup(
     keywords='Plasmids finding typing reconstruction',
     classifiers=classifiers,
     package_dir={'mob_suite':'mob_suite'},
+
 
     install_requires=[
         'numpy>=1.11.1',
