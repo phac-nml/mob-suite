@@ -253,7 +253,7 @@ def fix_fasta_header(in_fasta, out_fasta):
     fh = open(out_fasta, 'w')
     with open(in_fasta, "r") as handle:
         for record in SeqIO.parse(handle, "fasta"):
-            fh.write(">" + str(in_basename) + "|" + str(record.description).replace(' ', '_') + "\n" + str(
+            fh.write(">" + str(record.description).replace(' ', '_') + "\n" + str(
                 record.seq) + "\n")
     handle.close()
     fh.close()
