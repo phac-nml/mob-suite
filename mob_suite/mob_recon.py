@@ -157,6 +157,7 @@ def mcl_predict(blast_results_file, min_ident, min_cov, evalue, min_length, tmp_
 def run_mob_typer(fasta_path, outdir, num_threads=1,database_dir=None):
     mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
 
+    logging.info("Launching mob_typer to type recently reconstructed plasmids")
     if database_dir is None:
         p = Popen(['python', mob_typer_path,
                    '--infile', fasta_path,
@@ -165,7 +166,8 @@ def run_mob_typer(fasta_path, outdir, num_threads=1,database_dir=None):
                    '--host_range_detailed',
                    '--num_threads', str(num_threads)],
                   stdout=PIPE,
-                  stderr=PIPE)
+                  stderr=PIPE, universal_newlines=True
+                  )
     else:
         p = Popen(['python', mob_typer_path,
                    '--infile', fasta_path,
@@ -175,25 +177,25 @@ def run_mob_typer(fasta_path, outdir, num_threads=1,database_dir=None):
                    '--host_range_detailed',
                    '--num_threads', str(num_threads)],
                   stdout=PIPE,
-                  stderr=PIPE)
+                  stderr=PIPE, universal_newlines=True
+                  )
 
-    print(['python', mob_typer_path,
-     '--infile', fasta_path,
-     '--outdir', outdir,
-     '--keep_tmp',
-     '--num_threads', str(num_threads)])
-    p.wait()
-    stdout = p.stdout.read()
-    stderr = p.stderr.read()
-    logging.info(stdout.decode("utf-8"))
-    logging.info(stderr.decode("utf-8"))
+    (stdout, stderr) = p.communicate()
 
-    print(fasta_path)
-    with open(outdir+"/mobtyper_"+re.findall("plasmid.*",fasta_path)[0]+"_report.txt") as fp:
-        mob_typer_results = fp.readlines()
-    fp.close()
+    logging.info(stdout)
+    logging.info(stderr)
 
-    return mob_typer_results[1]
+    mob_typer_report_file = outdir + "/mobtyper_" + re.findall("plasmid.*", fasta_path)[0] + "_report.txt"
+    if os.path.exists(mob_typer_report_file):
+        with open(mob_typer_report_file ) as fp:
+            mob_typer_results = fp.readlines()[1:] #skip header of the mob_typer report file
+        fp.close()
+
+        return mob_typer_results
+    else:
+        logging.error("File {} does not exist. Perhaps there is an issue with the mob_typer or some dependencies are missing (e.g. ete3)".format(mob_typer_report_file))
+
+
 
 
 def contig_blast(input_fasta, plasmid_db, min_ident, min_cov, evalue, min_length, tmp_dir, blast_results_file,
@@ -299,6 +301,8 @@ def main():
 
     if args.debug:
         init_console_logger(3)
+    else:
+        init_console_logger(2)
     logging.info("MOB-recon v. {} ".format(__version__))
 
     if not args.outdir:
