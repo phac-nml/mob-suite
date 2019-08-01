@@ -157,7 +157,7 @@ def mcl_predict(blast_results_file, min_ident, min_cov, evalue, min_length, tmp_
 def run_mob_typer(fasta_path, outdir, num_threads=1,database_dir=None):
     mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
 
-    logging.info("Launching mob_typer to type recently reconstructed plasmids")
+    logging.info("Launching mob_typer to type recently reconstructed plasmid {}".format(fasta_path))
     if database_dir is None:
         p = Popen(['python', mob_typer_path,
                    '--infile', fasta_path,
@@ -184,11 +184,13 @@ def run_mob_typer(fasta_path, outdir, num_threads=1,database_dir=None):
 
     logging.info(stdout)
     logging.info(stderr)
+    p.wait()
 
     mob_typer_report_file = outdir + "/mobtyper_" + re.findall("plasmid.*", fasta_path)[0] + "_report.txt"
     if os.path.exists(mob_typer_report_file):
-        with open(mob_typer_report_file ) as fp:
-            mob_typer_results = fp.readlines()[1:] #skip header of the mob_typer report file
+        logging.info("Typing plasmid {}".format(fasta_path))
+        with open(mob_typer_report_file) as fp:
+            mob_typer_results = fp.readlines()[1] #skip header of the mob_typer plasmid report file
         fp.close()
 
         return mob_typer_results
