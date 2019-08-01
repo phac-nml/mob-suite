@@ -5,7 +5,7 @@ from mob_suite.blast import BlastReader
 import os, re
 from subprocess import Popen, PIPE
 import shutil,sys
-
+import logging
 
 def check_dependencies(logging):
     external_programs = ['blastn', 'makeblastdb', 'tblastn', 'circlator']
@@ -303,3 +303,15 @@ def calcFastaStats(fasta):
     }
 
 
+def init_console_logger(lvl):
+
+    LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+
+    logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
+    report_lvl = logging_levels[min(lvl, 3)]
+
+    logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
+    return logging
+
+
+default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')

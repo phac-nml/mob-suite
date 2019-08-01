@@ -50,15 +50,21 @@ def test_getRefSeqHostRange_replicon():
         assert stats_host_range_dict != {}, "Empty RefSeq host-range hits dictionary. Check the getRefSeqHostRange()"
 
     #test the no hits returned by the RefSeq host range prediction
-    with pytest.raises(Exception) as e:
-        getRefSeqHostRange(
+    #with pytest.raises(Exception) as e:
+    (returnhrrank, returnhrsciname, unique_ref_selected_taxids, ref_taxids_df, stats_host_range_dict) = getRefSeqHostRange(
             replicon_name_list=None,
             mob_cluster_id_list=None,
             relaxase_name_acc_list=None,
             relaxase_name_list=None,
             matchtype="exact",
             hr_obs_data=loadHostRangeDB())
-    assert str(e.value) == "Empty dataframe returned from RefSeq plasmid database", "Error message: "+str(e.value)
+    assert returnhrrank == "-", "Wronog value. Returned "+returnhrrank
+    assert returnhrsciname == "-", "Wronog value. Returned "+returnhrsciname
+    assert stats_host_range_dict == {},"Wrong value. Returned "+stats_host_range_dict
+    assert ref_taxids_df.empty == True
+
+
+    #assert str(e.value) == "Empty dataframe returned from RefSeq plasmid database", "Error message: "+str(e.value)
 
     #test when there are hits for RefSeq host-range search only (e.g. ColRNAI_rep_cluster_1857)
     getRefSeqHostRange(
@@ -117,6 +123,21 @@ def test_getHostrange_clusterID():
     assert convergance_rank == "family", "The host range rank is incorrect. Reported "+ convergance_rank
     assert converged_taxonomy_name == "Enterobacteriaceae", "The host range rank scientific name is incorrect. Reported " + converged_taxonomy_name
     assert unique_ref_selected_taxids != None, "Empty taxonomy id list."+unique_ref_selected_taxids+" Check search criteria"
+
+def test_getHostRange_cluster_and_replicon():
+    (convergance_rank, converged_taxonomy_name,
+     unique_ref_selected_taxids, ref_taxids_df,
+     stats_host_range_dict) = getRefSeqHostRange(replicon_name_list=['rep_cluster_101'],
+                                                 mob_cluster_id_list=[11171],  # Non-existing cluster
+                                                 relaxase_name_acc_list=None,
+                                                 relaxase_name_list=None,
+                                                 matchtype="loose_match",
+                                                 hr_obs_data=loadHostRangeDB())
+    print(convergance_rank, converged_taxonomy_name,
+     unique_ref_selected_taxids, ref_taxids_df,
+     stats_host_range_dict)
+
+
 
 def test_getHostrange_clusterIDs():
     """
@@ -253,5 +274,6 @@ def test_getTaxonomyTree_onLiteratureDB_and_Render():
     tree = getTaxonomyTree(taxids=lit_taxids)
     assert isinstance(tree,ete3.PhyloTree), "Class mismatch output by getTaxonomyTree(). Output class is "+type(tree).__name__
     renderTree(tree=tree, taxids=lit_taxids, filename_prefix="./run_test/run_test_literaturehostrange")
+
 
 

@@ -37,20 +37,3 @@ def test_download_databases_with_input_dir():
     check_file_hashesh(default_database_dir)
 
 
-def test_download_databases_with_custom_url():
-    default_database_dir = os.path.dirname(__file__) + "/run_test/databases"
-
-    test_db_urls = [    "https://ndownloader.figshare.com/articles/5841882/versions/1",
-                        "https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download"]
-    for test_db_url in test_db_urls:
-
-        args = [
-            "-d", default_database_dir,
-            "-u", test_db_url
-        ]
-        sys.argv[1:] = args
-
-        print("Testing "+test_db_url+"...")
-        mob_suite.mob_init.main()
-        check_file_hashesh(default_database_dir)
-

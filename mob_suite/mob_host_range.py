@@ -341,8 +341,8 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
 
 
     logging.debug("Inside getRefSeqHostRange()")
-    logging.debug("replicon_name_list:%s\nmob_cluster_id:%s\n%srelaxase_name_acc_list:%s\nrelaxase_name_list:%s\n",
-                  replicon_name_list,mob_cluster_id_list,relaxase_name_acc_list,relaxase_name_list,matchtype) #DEBUG
+    logging.debug("Replicon_name_list:{}\nMob_cluster_id:{}\nRelaxase_name_acc_list:{}\nRelaxase_name_list:{}\nMatch_typer:{}\n".format(
+                  replicon_name_list,mob_cluster_id_list,relaxase_name_acc_list,relaxase_name_list,matchtype)) #DEBUG
 
 
 
@@ -360,10 +360,9 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
             n_total_records_before = ref_taxids_df.shape[0]
             logging.debug("Replicon name: {} MOB-Cluster: {}\n".format(replicon_name, mob_cluster_id_list))
             ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, replicon_name, "Ref_rep_type(s)", matchtype="exact")])
-            logging.debug("Extracted records (replicon): {}".format(ref_taxids_df.shape[0] - n_total_records_before))
+            logging.debug("Extracted total records (replicon): {}".format(ref_taxids_df.shape[0] - n_total_records_before))
     if mob_cluster_id_list is not None:
         for mob_cluster_id in mob_cluster_id_list:
-            mob_cluster_id = str(mob_cluster_id)  # make sure clusterid is a string
             ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, mob_cluster_id, "Ref_cluster_id", matchtype="exact")])#must peform only exact match to DB
         logging.debug("Extracted total records (clusterid): {}".format(ref_taxids_df.shape[0]))
     if relaxase_name_acc_list is not None:
@@ -374,12 +373,13 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
         for relaxase_name in relaxase_name_list:
             ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, relaxase_name, "Ref_relaxase_type(s)", matchtype="exact")])
     if ref_taxids_df.empty:
-        logging.error("RefSeq Plasmid database returned no hits perhaps due to no search paramenters specified (i.e. replicon, mob_cluster_id, relaxase family, relaxase accession #).")
-        logging.error("Search parameters:\
-                       replicon name list: "+str(replicon_name_list)+"; mob_cluster_id: "+
+        logging.warning("RefSeq Plasmid database found no hits ...")
+        logging.warning("Search parameters:\n"+
+                      "replicon name list: "+str(replicon_name_list)+"; mob_cluster_id: "+
                        str(mob_cluster_id_list)+"; relaxase_name_acc_list: "+
                        str(relaxase_name_acc_list)+"; relaxase_name_list: "+str(relaxase_name_list)+";")
-        raise Exception("Empty dataframe returned from RefSeq plasmid database")
+        #print(ref_taxids_df)
+        #raise Exception("Empty dataframe returned from RefSeq plasmid database")
 
 
     #select subset of ref data based on criteria (e.g. replicon name)
@@ -428,8 +428,10 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
 
     unfiltered_n_ref_hits = ref_taxids_df.shape[0]
     #QC: remove uncultured reference database hits as they thend to inflate host range
-    select_vector=[True if len(re.findall("uncultured",line)) == 0 else False for line in ref_taxids_df["lineage_names"] ]
-    ref_taxids_df=ref_taxids_df[select_vector]
+
+    if ref_taxids_df.empty == False:
+        select_vector=[True if len(re.findall("uncultured",line)) == 0 else False for line in ref_taxids_df['lineage_names'] ]
+        ref_taxids_df=ref_taxids_df[select_vector]
 
 
     # Check if the search returned no results. Abort
@@ -437,8 +439,11 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
     logging.debug("QC removed {} hits (uncultured bacteria filter)".format(unfiltered_n_ref_hits - n_ref_rep_hits))
 
     if n_ref_rep_hits == 0:
-        logging.error("ERROR: No hits were found ...")
-        exit("ERROR: No plasmid reference database hits were found ... Try --loose_match parameter")
+        logging.warning("No plasmid reference database hits were found ...")
+        #exit("ERROR: No plasmid reference database hits were found ... Try --loose_match parameter")
+        convergance_rank="-"; converged_taxonomy_name="-"; unique_ref_selected_taxids="-";
+        ref_taxids_df=pandas.DataFrame(); stats_host_range_dict={}
+        return(convergance_rank, converged_taxonomy_name, unique_ref_selected_taxids, ref_taxids_df,stats_host_range_dict)
 
 
     #do some stats on the returned records
@@ -476,6 +481,7 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
     for lineage_record in taxonony_lineages_dict_list:
          for rank in stats_host_range_dict.keys():
              stats_host_range_dict[rank].append(lineage_record.get(rank))
+
     #
     #print(stats_host_range_dict)
 
@@ -635,6 +641,7 @@ def getHostRangeDBSubset(hr_obs_data, search_name, column_name, matchtype):
     """
     #print(matchtype,column_name,search_name,hr_obs_data.loc[0:5,column_name])
     selection_index = list()
+
     if matchtype == "exact":
         for item in hr_obs_data[column_name]:
             if str(item) == str(search_name):
@@ -657,7 +664,8 @@ def getHostRangeDBSubset(hr_obs_data, search_name, column_name, matchtype):
                 selection_index.append(False)
         return (hr_obs_data.loc[selection_index])
     else:
-        exit("No match type specified (could be either exact (--exact_match) or multi (--loose_match))")
+        logging.error("Incorrect match type specified (could be either exact (--exact_match) or multi (--loose_match))")
+        exit(1)
 
 #parse cml arguments if run as separate module
 def parse_args():

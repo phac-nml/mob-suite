@@ -12,7 +12,7 @@ def test_mob_recon_with_mob_typer_report():
     ]
     sys.argv[1:] = args
     mob_suite.mob_recon.main()
-    out_dir = "/run_test/mob_recon"
+
     mobtyper_results_file = os.path.dirname(__file__)+"/run_test/mob_recon/mobtyper_aggregate_report.txt"
     assert sum(1 for line in open(mobtyper_results_file)) == 4 , "Results file is empty, something went wrong"
 

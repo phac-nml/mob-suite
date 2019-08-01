@@ -2,26 +2,75 @@
 from mob_suite.version import __version__
 import os, pycurl, tarfile, zipfile, gzip, multiprocessing, sys
 import argparse
+import hashlib
+import json
+import functools
 from mob_suite.blast import BlastRunner
 from mob_suite.wrappers import mash
-from os import listdir
-from os.path import isfile, join
 import shutil
 import datetime
-import logging
 
-LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+from mob_suite.utils import default_database_dir, init_console_logger
 
-def init_console_logger(lvl):
-    logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
-    report_lvl = logging_levels[lvl]
+config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.json')
 
-    logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
-    return logging
+with open(config_path, 'r') as configfile:
+    config = json.load(configfile)
+
+def arguments():
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-d', '--database_directory',
+                        default=default_database_dir,
+                        help='Directory to download databases to. Defaults to {}'.format(
+                            default_database_dir))
+
+    parser.add_argument('-v', '--verbose',
+                        default=0,
+                        action='count',
+                        help='Set the verbosity level. Can by used multiple times')
+
+    args = parser.parse_args()
+
+    return args
 
 
-def download_to_file(url,file):
-    logging.info("Downloading database to "+file)
+def check_hash(filepath, hashsum):
+    """
+    Calculate the SHA256 of the given file and compare it to the known good
+    value. Returns True if the hashes match, and False if the file is missing or
+    the hashes do not match.
+
+    :param filepath: Path to the file
+    :param hashsum:  Expected SHA256 hash
+    :return: True if the hashes match, False otherwise
+    """
+
+    try:
+        with open(filepath, 'rb') as f:
+
+            sha = hashlib.sha256()
+            contents = f.read()
+            sha.update(contents)
+
+    except FileNotFoundError:
+
+        return False
+
+    h = sha.hexdigest()
+    return h == hashsum
+
+
+def download_to_file(url, file):
+    """
+    Downloads a file from a URL using curl.
+
+    :param url:  Source URL from which the file is downloaded
+    :param file: The destination file
+    :return: None
+    """
+
     with open(file, 'wb') as f:
         c = pycurl.Curl()
         # Redirects to https://www.python.org/.
@@ -33,113 +82,112 @@ def download_to_file(url,file):
         c.perform()
         c.close()
 
-def extract(fname,outdir):
-    if (fname.endswith("tar.gz")):
-        tar = tarfile.open(fname, "r:gz")
-        tar.extractall()
-        tar.close()
-    elif (fname.endswith("tar")):
-        tar = tarfile.open(fname, "r:")
-        tar.extractall(outdir)
-        tar.close()
-    elif(fname.endswith("zip")):
-        zip_ref = zipfile.ZipFile(fname, 'r')
-        zip_ref.extractall(outdir)
-        zip_ref.close()
-    elif(fname.endswith("gz")):
-        outfile = os.path.join(outdir,fname.replace('.gz',''))
-        with gzip.open(fname, 'rb') as f_in:
-            with open(outfile, 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-            f_in.close()
-            f_out.close()
-            os.remove(fname)
+
+def extract(fname, outdir):
+    """
+    Decompress a zip or gzip archive. Decompression method is selected based
+    on file extension. Following extraction, the original archive is deleted.
+
+    :param fname:  Path to the archive to be extracted
+    :param outdir: Directory into which the results are placed
+    :return: None
+    """
+
+    logger.info(f'Decompressing {fname}')
+
+    if fname.endswith(".zip"):
+
+        with zipfile.ZipFile(fname, 'r') as zip_ref:
+            zip_ref.extractall(outdir)
+
+    elif fname.endswith(".gz"):
+
+        outfile = os.path.join(outdir, fname.replace('.gz',''))
+
+        with gzip.open(fname, 'rb') as f_in, open(outfile, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+    os.remove(fname)
+
 
 def main():
-    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-                        '-d', '--database_directory',
-                        default=default_database_dir,
-                        required=False,
-                        help='Directory to download databases to. Defaults to {}'.format(default_database_dir))
-    parser.add_argument(
-                        '-u', '--database_urls',
-                        default=None,
-                        required=False,
-                        nargs=1,
-                        type=str,
-                        help='URL to the databases zip file')
-    args = parser.parse_args()
-    logging = init_console_logger(2)
-    logging.info('Initilizating databases...this will take some time')
 
-    #Find available threads and use the maximum number available for mash sketch but cap it at 32
-    num_threads = multiprocessing.cpu_count()
-    if num_threads > 32:
-        num_threads = 32
+
+    args = arguments()
+
+    global logger
+    logger = init_console_logger(args.verbose)
 
     database_directory = os.path.abspath(args.database_directory)
 
 
+    # Helper function to simplify adding database_directory to everything
+    prepend_db_dir = functools.partial(os.path.join, database_directory)
+
+    logger.info('Initializing databases...this will take some time')
+
+    # Find available threads and use the maximum number available for mash sketch but cap it at 32
+    num_threads = min(multiprocessing.cpu_count(), 32)
+
+
     if not os.path.exists(database_directory):
         os.makedirs(database_directory)
-    zip_file = os.path.join(database_directory,'data.zip')
-    plasmid_database_fasta_file = os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas')
-    repetitive_fasta_file = os.path.join(database_directory,'repetitive.dna.fas')
-    mash_db_file =  os.path.join(database_directory,'ncbi_plasmid_full_seqs.fas.msh')
-    logging.info('Downloading databases...this will take some time')
 
+    zip_file = prepend_db_dir('data.zip')
+    plasmid_database_fasta_file = prepend_db_dir('ncbi_plasmid_full_seqs.fas')
+    repetitive_fasta_file = prepend_db_dir('repetitive.dna.fas')
+    mash_db_file =  prepend_db_dir('ncbi_plasmid_full_seqs.fas.msh')
 
-    #db_mirrors = ['https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download',
-    #              'https://ndownloader.figshare.com/articles/5841882/versions/1']
+    logger.info('Downloading databases...this will take some time')
 
-    if args.database_urls:
-        db_mirrors = args.database_urls
-    else:
-        db_mirrors = ['https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download',
-                      'https://ndownloader.figshare.com/articles/5841882/versions/1']
+    for db_mirror in config['db_mirrors']:
 
-    for db_mirror in db_mirrors:
-        logging.info('Trying mirror {}'.format(db_mirror))
+        logger.info('Trying mirror {}'.format(db_mirror))
         download_to_file(db_mirror, zip_file)
-        if os.path.exists(zip_file):
+
+
+        if check_hash(zip_file, config['db_hash']):
             break   #do not try other mirror
 
-    if (not os.path.isfile(zip_file)):
-        logging.error('Downloading databases failed, please check your internet connection and retry')
+    else:  # no break
+        logger.error('Downloading databases failed, please check your internet connection and retry')
         sys.exit(-1)
-    else:
-        logging.info('Downloading databases successful, now building databases')
-    #download_to_file('https://ndownloader.figshare.com/articles/5841882?private_link=a4c92dd84f17b2cefea6',zip_file)
-    #if (not os.path.isfile(zip_file)):
-    #    logging.error('Downloading databases failed, please check your internet connection and retry')
-    #    sys.exit(-1)
-    #else:
-    #    logging.info('Downloading databases successful, now building databases')
-    extract(zip_file,database_directory)
-    os.remove(zip_file)
-    files = [f for f in listdir(database_directory) if isfile(join(database_directory, f))]
+
+
+    logger.info('Downloading databases successful, now building databases')
+
+    extract(zip_file, database_directory)
+
+    files = [prepend_db_dir(f)
+             for f in os.listdir(database_directory)
+             if f.endswith('.gz')]
 
     for file in files:
 
-        if file.endswith('gz'):
-            extract(os.path.join(database_directory,file), database_directory)
+        extract(file, database_directory)
 
-    #Initilize blast and mash daatabases
-    logging.info('Building repetive mask database')
+    #Initialize blast and mash databases
+    logger.info('Building repetitive mask database')
     blast_runner = BlastRunner(repetitive_fasta_file, database_directory)
     blast_runner.makeblastdb(repetitive_fasta_file, 'nucl')
-    logging.info('Building complete plasmid database')
+
+    logger.info('Building complete plasmid database')
     blast_runner = BlastRunner(plasmid_database_fasta_file, database_directory)
     blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl')
-    logging.info('Sketching complete plasmid database')
+
+    logger.info('Sketching complete plasmid database')
     mObj = mash()
-    mObj.mashsketch(plasmid_database_fasta_file,mash_db_file,num_threads=num_threads)
-    status_file = os.path.join(database_directory,'status.txt')
+    mObj.mashsketch(plasmid_database_fasta_file,
+                    mash_db_file,
+                    num_threads=num_threads)
+
+    status_file = prepend_db_dir('status.txt')
+
     with open(status_file, 'w') as f:
-        f.write("Download date: {}".format(datetime.datetime.today().strftime('%Y-%m-%d')))
-    f.close()
+        download_date = datetime.datetime.today().strftime('%Y-%m-%d')
+
+        f.write("Download date: {}".format(download_date))
+
 
 # call main function
 if __name__ == '__main__':
