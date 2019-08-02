@@ -1,7 +1,6 @@
 from mob_suite.mob_host_range import getRefSeqHostRange, getLiteratureBasedHostRange, loadliteratureplasmidDB, \
     loadHostRangeDB, getTaxonomyTree, renderTree
-import pytest,os
-import ete3, numpy
+import ete3, numpy, os
 
 
 #test the main function
@@ -266,14 +265,15 @@ def test_getTaxonomyTree_onRefSeqDB_and_Render():
     tree = getTaxonomyTree(taxids=unique_ref_selected_taxids)
     assert isinstance(tree, ete3.PhyloTree), "Class mismatch output by getTaxonomyTree(). Output class is " + type(tree).__name__
 
-    print(os.getcwd())
-    renderTree(tree=tree, taxids=unique_ref_selected_taxids, filename_prefix="./run_test/run_test_refseqhostrange")
+    if os.path.exists("run_test") == False:
+        os.mkdir("run_test")
+    renderTree(tree=tree, taxids=unique_ref_selected_taxids, filename_prefix="run_test/run_test_refseqhostrange")
 
 def test_getTaxonomyTree_onLiteratureDB_and_Render():
     report_df, lit_taxids = getLiteratureBasedHostRange(replicon_names=["IncP"],plasmid_lit_db=loadliteratureplasmidDB(),)
     tree = getTaxonomyTree(taxids=lit_taxids)
     assert isinstance(tree,ete3.PhyloTree), "Class mismatch output by getTaxonomyTree(). Output class is "+type(tree).__name__
-    renderTree(tree=tree, taxids=lit_taxids, filename_prefix="./run_test/run_test_literaturehostrange")
+    renderTree(tree=tree, taxids=lit_taxids, filename_prefix="run_test/run_test_literaturehostrange")
 
 
 

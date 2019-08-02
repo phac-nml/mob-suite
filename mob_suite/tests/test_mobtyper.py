@@ -4,8 +4,11 @@ import pandas
 
 
 #test the entire mob-typer + mob_host_range modules. AB040415 has multiple replicons (IncFIB,IncFII)
+#IncFIB,IncFII multi-plasmids
 def test_mob_typer_host_range_multi_replicon():
-    #IncFIB,IncFII multi-plasmids
+    if os.path.exists("run_test") == False:
+        os.mkdir("run_test")
+
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/AB040415.fasta",
         "--outdir", "run_test",
@@ -13,7 +16,7 @@ def test_mob_typer_host_range_multi_replicon():
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
-    results_df = pandas.read_csv("./run_test/mobtyper_AB040415_report.txt", sep="\t")
+    results_df = pandas.read_csv(os.path.dirname(__file__)+"/run_test/mobtyper_AB040415.fasta_report.txt", sep="\t")
 
     assert results_df["NCBI-HR-rank"].values[0] == "order"
     assert results_df["NCBI-HR-Name"].values[0] == "Enterobacterales"
@@ -25,9 +28,6 @@ def test_mob_typer_host_range_multi_replicon():
     assert results_df["LitPMIDsNumber"].values[0]  == 5
 
 
-
-
-
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/AB011548.fasta",
         "--outdir", "run_test",
@@ -35,7 +35,8 @@ def test_mob_typer_host_range_multi_replicon():
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
-    results_df = pandas.read_csv("./run_test/mobtyper_AB011548_report.txt", sep="\t")
+
+    results_df = pandas.read_csv(os.path.dirname(__file__)+"/run_test/mobtyper_AB011548.fasta_report.txt", sep="\t")
     assert results_df["NCBI-HR-rank"].values[0] == "superkingdom"
     assert results_df["NCBI-HR-Name"].values[0] == "Bacteria"
     assert results_df["PredictedMobility"].values[0] == "Mobilizable"
@@ -52,7 +53,7 @@ def test_mob_typer_host_range_multi_replicon_KU295134():
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
-    results_df = pandas.read_csv("./run_test/mobtyper_KU295134_report.txt", sep="\t")
+    results_df = pandas.read_csv(os.path.dirname(__file__)+"/run_test/mobtyper_KU295134.fasta_report.txt", sep="\t")
 
 
     assert results_df["NCBI-HR-rank"].values[0] == "class"
@@ -67,9 +68,10 @@ def test_mob_typer_host_range_no_replicon_data():
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
-    results_df = pandas.read_csv("./run_test/mobtyper_AY603981_report.txt", sep="\t")
-    assert results_df["NCBI-HR-rank"].values[0] == "class"
-    assert results_df["NCBI-HR-Name"].values[0] == "Gammaproteobacteria"
+    results_df = pandas.read_csv(os.path.dirname(__file__)+"/run_test/mobtyper_AY603981.fasta_report.txt", sep="\t")
+    print(results_df)
+    assert results_df["NCBI-HR-rank"].values[0] == "genus"
+    assert results_df["NCBI-HR-Name"].values[0] == "Pseudomonas"
     assert results_df["PredictedMobility"].values[0] == "Mobilizable"
 
 def test_mob_typer_broad_host_range_IncF():
@@ -80,16 +82,3 @@ def test_mob_typer_broad_host_range_IncF():
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
-#TODO
-#check that mobtyper has literature report part non-empty
-#check that database keys are functional
-
-
-# assert any([len(re.findall("order\tEnterobacterales",out)) >= 1 for out in output]) == True, "Something went wrong with host range prediction";
-# mob_typer -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET11_Ecoli_plasmid_529.fasta -o run_test --host_range_detailed
-# mob_typer -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET5_Ecoli_plasmid_973.fasta -o run_test --host_range
-# mob_typer -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET4_Ecoli_plasmid_969.fasta -o run_test --host_range
-# mob_typer -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/AB040415.fasta -o run_test --host_range
-# mob_typer -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/AY603981.fasta -o run_test --host_range #no replicons
-# mob_typer -i /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/AB011548.fasta -o run_test --host_range_detailed
-# cp  *.py /Users/kirill/miniconda/envs/mob_suite_test/lib/python3.6/site-packages/mob_suite/

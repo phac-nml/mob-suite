@@ -2,7 +2,7 @@ import mob_suite.mob_init
 import os,sys, hashlib,shutil
 
 #"repetitive.dna.fas.nin"
-def check_file_hashesh(default_database_dir):
+def check_file_hash(default_database_dir):
     file_ref_list = ["repetitive.dna.fas.nin",
                        "ncbi_plasmid_full_seqs.fas.msh",
                        "repetitive.dna.fas",
@@ -27,13 +27,17 @@ def cleanup(full_path_file):
     os.remove(full_path_file)
 
 def test_download_databases_with_input_dir():
-    default_database_dir = os.path.dirname(__file__) + "/run_test/databases"
+
+    if os.path.exists("run_test") == False:
+        os.mkdir("run_test")
+
+    database_dir = os.path.dirname(__file__) + "/run_test/databases"
     args = [
-        "-d", default_database_dir,
+        "-d", database_dir,
     ]
     sys.argv[1:] = args
 
     mob_suite.mob_init.main()
-    check_file_hashesh(default_database_dir)
+    check_file_hash(database_dir)
 
 

@@ -154,13 +154,13 @@ def mcl_predict(blast_results_file, min_ident, min_cov, evalue, min_length, tmp_
 
 
 
-def run_mob_typer(fasta_path, outdir, num_threads=1,database_dir=None):
+def run_mob_typer(plasmid_file_abs_path, outdir, num_threads=1,database_dir=None):
     mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
 
-    logging.info("Launching mob_typer to type recently reconstructed plasmid {}".format(fasta_path))
+    logging.info("Launching mob_typer to type recently reconstructed plasmid {}".format(plasmid_file_abs_path))
     if database_dir is None:
         p = Popen(['python', mob_typer_path,
-                   '--infile', fasta_path,
+                   '--infile', plasmid_file_abs_path,
                    '--outdir', outdir,
                    '--keep_tmp',
                    '--host_range_detailed',
@@ -170,7 +170,7 @@ def run_mob_typer(fasta_path, outdir, num_threads=1,database_dir=None):
                   )
     else:
         p = Popen(['python', mob_typer_path,
-                   '--infile', fasta_path,
+                   '--infile', plasmid_file_abs_path,
                    '--outdir', outdir,
                    '--keep_tmp',
                    '--database_directory', database_dir,
@@ -180,15 +180,22 @@ def run_mob_typer(fasta_path, outdir, num_threads=1,database_dir=None):
                   stderr=PIPE, universal_newlines=True
                   )
 
-    (stdout, stderr) = p.communicate()
+    for stdout_line in iter(p.stdout.readline, ""):
+        logging.info(stdout_line)
+    p.stdout.close()
 
-    logging.info(stdout)
-    logging.info(stderr)
-    p.wait()
+    for stderr_line in iter(p.stderr.readline, ""):
+        logging.error(stderr_line)
+    p.stderr.close()
 
-    mob_typer_report_file = outdir + "/mobtyper_" + re.findall("plasmid.*", fasta_path)[0] + "_report.txt"
+    return_code = p.wait()
+    if return_code == 1:
+        logging.error("Mob_typer return code {}".format(return_code))
+        raise Exception("MOB_typer could not type {}".format(plasmid_file_abs_path))
+
+    mob_typer_report_file = outdir + "/mobtyper_" + os.path.basename(plasmid_file_abs_path) + "_report.txt"
     if os.path.exists(mob_typer_report_file):
-        logging.info("Typing plasmid {}".format(fasta_path))
+        logging.info("Typing plasmid {}".format(os.path.basename(plasmid_file_abs_path)))
         with open(mob_typer_report_file) as fp:
             mob_typer_results = fp.readlines()[1] #skip header of the mob_typer plasmid report file
         fp.close()
@@ -314,7 +321,7 @@ def main():
     if not args.infile:
         logging.error('Error, no fasta specified, please specify one')
         sys.exit(-1)
-
+    print()
     if not os.path.isfile(args.infile):
         logging.error('Error, input fasta file does not exist: "{}"'.format(args.infile))
         sys.exit(-1)
@@ -778,7 +785,8 @@ def main():
             if contig_id in repetitive_dna:
                 rep_dna_info = repetitive_dna[contig_id]
 
-            results_fh.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(file_id, cluster, contig_id,
+            results_fh.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(re.sub("\.(fasta|fa|fas){1,1}","",file_id),
+                                                                                       cluster, contig_id,
                                                                                        len(clusters[contig_id]),
                                                                                        contig_status,
                                                                                        found_replicon_string,
@@ -818,8 +826,8 @@ def main():
                            "LitClosestRefAcc\tLitClosestRefDonorStrain\tLitClosestRefRecipientStrain" \
                            "LitClosestRefTransferRate\tLitClosestConjugTemp\n"
 
-        for file in plasmid_files:
-            mobtyper_results = mobtyper_results + "{}".format(run_mob_typer(fasta_path=file,
+        for plasmid_file_abs_path in plasmid_files:
+            mobtyper_results = mobtyper_results + "{}".format(run_mob_typer(plasmid_file_abs_path=plasmid_file_abs_path,
                                                                             outdir=out_dir,
                                                                             num_threads=int(num_threads),
                                                                             database_dir=database_dir))

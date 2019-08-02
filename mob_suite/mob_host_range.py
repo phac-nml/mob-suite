@@ -680,6 +680,9 @@ def parse_args():
     parser.add_argument('--host_range_detailed', required=False, help='Complete host range report with phylogeny stats',
                         action='store_true',
                         default=False)
+    #parser.add_argument('--render_tree_image', required=False, help='Render host range phylogenetic tree in PNG format (requires running X11 server)',
+    #                    action='store_true',
+    #                    default=False)
     parser.add_argument('--outdir', action='store', required=True, help='Output files name prefix')
     parser.add_argument('--inputseq', action='store', required=False, help='Single plasmid sequence in FASTA format (optional)')
     parser.add_argument('--debug', required=False, help='Show debug detailed information (optional)', action='store_true')
@@ -817,7 +820,9 @@ def renderTree(tree,taxids,filename_prefix):
     # tree.show(tree_style=ts)
 
     # write an image
-    tree.render(filename_prefix+"phylogeny_tree.png", dpi=2800, w=2000, tree_style=ts)
+    #if args.render_tree_image:
+    #tree.render(filename_prefix+"phylogeny_tree.png", dpi=2800, w=2000, tree_style=ts)
+
     with open(file=filename_prefix+ "asci_tree.txt", mode="w") as fp:
         fp.write(tree.get_ascii(attributes=["rank", "sci_name"]))
     logging.info("Wrote ASCII host range tree into {}".format(filename_prefix + "asci_tree.txt"))

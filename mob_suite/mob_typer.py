@@ -144,7 +144,7 @@ def determine_mpf_type(hits):
 def main():
     default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     args = parse_args()
-
+    print(args)
     if args.debug:
         init_console_logger(3)
     else:
@@ -195,7 +195,8 @@ def main():
 
     tmp_dir = os.path.join(out_dir, '__tmp')
     file_id = os.path.basename(input_fasta)
-    output_file_prefix = re.sub(r"\..*", "", file_id)  # remove file extension by matching everything  before dot
+    #output_file_prefix = re.sub(r"\..*", "", file_id)  # remove file extension by matching everything  before dot
+
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')
     mob_blast_results = os.path.join(tmp_dir, 'mobtyper_blast_results.txt')
@@ -352,7 +353,7 @@ def main():
     if args.host_range_detailed and found_replicons:
         (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
             replicon_name_list=list(found_replicons.values()),
-            mob_cluster_id_list=mash_top_hit['clustid'],
+            mob_cluster_id_list=[mash_top_hit['clustid']],
             relaxase_name_acc_list=None,
             relaxase_name_list=None,
             matchtype="loose_match",hr_obs_data = loadHostRangeDB())
@@ -361,7 +362,7 @@ def main():
         refseqtree = getTaxonomyTree(taxids) #refseq tree
         renderTree(
                    tree=refseqtree, taxids=taxids,
-                   filename_prefix=args.outdir+"/"+output_file_prefix+"_refseqhostrange_")
+                   filename_prefix=args.outdir+"/"+file_id+"_refseqhostrange_")
 
         #get literature report summary dataframe (might be more than 1 row if multiple replicons are present)
         host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(
@@ -375,12 +376,12 @@ def main():
             littree = getTaxonomyTree(littaxids) #get literature tree
             renderTree(
                        tree=littree, taxids=littaxids ,
-                       filename_prefix=args.outdir+"/"+output_file_prefix+ "_literaturehostrange_")
+                       filename_prefix=args.outdir+"/"+file_id+ "_literaturehostrange_")
 
 
         #write hostrange reports
-        writeOutHostRangeReports(filename_prefix = args.outdir+"/"+output_file_prefix,
-                                 samplename=output_file_prefix,
+        writeOutHostRangeReports(filename_prefix = args.outdir+"/"+file_id,
+                                 samplename=file_id,
                                  replicon_name_list = list(found_replicons.values()),
                                  mob_cluster_id_list = [mash_top_hit['clustid']],
                                  relaxase_name_acc_list = None,
@@ -392,7 +393,7 @@ def main():
     elif args.host_range_detailed and found_mob: #by MOB_accession numbers
         (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
                                                                                                                     replicon_name_list=None,
-                                                                                                                    mob_cluster_id_list=mash_top_hit['clustid'],
+                                                                                                                    mob_cluster_id_list=[mash_top_hit['clustid']],
                                                                                                                     relaxase_name_acc_list=found_mob.keys(),
                                                                                                                     relaxase_name_list=None,
                                                                                                                     matchtype="loose_match", hr_obs_data=loadHostRangeDB())
@@ -400,10 +401,10 @@ def main():
         refseqtree = getTaxonomyTree(taxids)  # refseq tree
         renderTree(
                     tree=refseqtree, taxids=taxids,
-                    filename_prefix=args.outdir + "/" + output_file_prefix + "_refseqhostrange_")
+                    filename_prefix=args.outdir + "/" + file_id + "_refseqhostrange_")
 
-        writeOutHostRangeReports(filename_prefix=args.outdir + "/" + output_file_prefix,
-                                 samplename=output_file_prefix,
+        writeOutHostRangeReports(filename_prefix=args.outdir + "/" + file_id,
+                                 samplename=file_id,
                                  replicon_name_list=None,
                                  mob_cluster_id_list=[mash_top_hit['clustid']],
                                  relaxase_name_acc_list=None,
@@ -457,7 +458,7 @@ def main():
         predicted_mobility = 'Conjugative'
 
 
-    main_report_data_dict=collections.OrderedDict({"file_id":file_id, "num_contigs":stats['num_seq'], "total_length": stats['size'], "gc":stats['gc_content'],
+    main_report_data_dict=collections.OrderedDict({"file_id":re.sub("\.(fasta|fa|fas){1,1}","",file_id), "num_contigs":stats['num_seq'], "total_length": stats['size'], "gc":stats['gc_content'],
                            "rep_type(s)": rep_types, "rep_type_accession(s)": rep_acs, "relaxase_type(s)":mob_types,
                            "relaxase_type_accession(s)": mob_acs, "mpf_type": mpf_type, "mpf_type_accession(s)": mpf_acs,
                            "orit_type(s)": orit_types, "orit_accession(s)": orit_acs, "PredictedMobility": predicted_mobility,
