@@ -1,7 +1,10 @@
 from mob_suite.mob_host_range import getRefSeqHostRange, getLiteratureBasedHostRange, loadliteratureplasmidDB, \
     loadHostRangeDB, getTaxonomyTree, renderTree
-import ete3, numpy, os
+import ete3, numpy, os, logging
 
+logger=logging.getLogger()
+LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG)
 
 #test the main function
 def test_loadliteratureHostRangeDB():

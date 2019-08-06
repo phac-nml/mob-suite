@@ -1,5 +1,9 @@
 import mob_suite.mob_init
-import os,sys, hashlib,shutil
+import os,sys, logging
+
+logger=logging.getLogger()
+LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG)
 
 #"repetitive.dna.fas.nin"
 def check_file_hash(default_database_dir):
@@ -31,7 +35,7 @@ def test_download_databases_with_input_dir():
     if os.path.exists("run_test") == False:
         os.mkdir("run_test")
 
-    database_dir = os.path.dirname(__file__) + "/run_test/databases"
+    database_dir = "run_test/databases"
     args = [
         "-d", database_dir,
     ]

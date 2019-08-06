@@ -12,9 +12,10 @@ build:
 source:
   #path: /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite
   #url: https://github.com/phac-nml/mob-suite/archive/{{ version }}.tar.gz
+  #sha256: d67d64a70615b908f599723651d44ae52367c01963795fdf07b9bcbbb3f787a0
   git_url: https://github.com/phac-nml/mob-suite.git
   git_rev: master
-  #sha256: d67d64a70615b908f599723651d44ae52367c01963795fdf07b9bcbbb3f787a0
+
 
 
 requirements:
@@ -46,7 +47,7 @@ test:
     - "mob_typer -h"
     - "mob_recon -h"
     - "mob_hostrange -h"
-    - "pytest mob_suite/tests/test_mobtyper.py"
+    - "pytest -s mob_suite/tests/test_mobtyper.py"
 
 about:
   home: https://github.com/phac-nml/mob-suite
