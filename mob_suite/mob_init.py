@@ -9,9 +9,10 @@ from mob_suite.blast import BlastRunner
 from mob_suite.wrappers import mash
 import shutil
 import datetime
-
+import time #waiting for other processes
 from mob_suite.utils import default_database_dir, init_console_logger
 
+logger = init_console_logger(3)
 config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.json')
 
 with open(config_path, 'r') as configfile:
@@ -36,14 +37,14 @@ def arguments():
     return args
 
 
-def check_hash(filepath, hashsum):
+def check_hash(filepath, hashsums):
     """
     Calculate the SHA256 of the given file and compare it to the known good
     value. Returns True if the hashes match, and False if the file is missing or
     the hashes do not match.
 
     :param filepath: Path to the file
-    :param hashsum:  Expected SHA256 hash
+    :param hashsums:  Expected SHA256 hashes (given different database versions)
     :return: True if the hashes match, False otherwise
     """
 
@@ -58,8 +59,8 @@ def check_hash(filepath, hashsum):
 
         return False
 
-    h = sha.hexdigest()
-    return h == hashsum
+    h_obs = sha.hexdigest()
+    return any([refhash == h_obs for refhash in hashsums])
 
 
 def download_to_file(url, file):
@@ -111,21 +112,38 @@ def extract(fname, outdir):
 
 
 def main():
-
-
     args = arguments()
 
-    global logger
-    logger = init_console_logger(args.verbose)
 
     database_directory = os.path.abspath(args.database_directory)
-
-
     # Helper function to simplify adding database_directory to everything
     prepend_db_dir = functools.partial(os.path.join, database_directory)
 
-    logger.info('Initializing databases...this will take some time')
+    lockfilepath=os.path.join(database_directory,".lock")
+    status_file = prepend_db_dir('status.txt')
 
+    if os.path.exists(lockfilepath) == False:
+        logger.info("Placed lock file found at {}".format(lockfilepath))
+        open(file=lockfilepath, mode="w").close()
+    else:
+        while os.path.exists(lockfilepath):
+            elapsed_time = time.time() - os.path.getmtime(lockfilepath)
+            logger.info("Lock file found at {}. Waiting for other processes to finish database init ...".format(lockfilepath))
+            logger.info("Elapsed time {} min. Will continue processing at 10 min mark.".format(int(elapsed_time/60)))
+            if elapsed_time >= 600:
+                logger.info("Elapsed time {} min. Assuming previous process completed init steps. Continue ...".format(int(elapsed_time/60)))
+                try: #if previous process failed, no processes are running and > 10 min passed since the lock was created
+                    os.remove(lockfilepath)
+                except:
+                    pass
+                break
+            time.sleep(60)
+        logger.info("Lock file removed. Assuming init process completed successfully")
+        return 0
+
+
+
+    logger.info('Initializing databases...this will take some time')
     # Find available threads and use the maximum number available for mash sketch but cap it at 32
     num_threads = min(multiprocessing.cpu_count(), 32)
 
@@ -141,16 +159,22 @@ def main():
     logger.info('Downloading databases...this will take some time')
 
     for db_mirror in config['db_mirrors']:
-
-        logger.info('Trying mirror {}'.format(db_mirror))
-        download_to_file(db_mirror, zip_file)
-
+        try:
+            logger.info('Trying mirror {}'.format(db_mirror))
+            download_to_file(db_mirror, zip_file)
+        except Exception as e:
+            logger.error("Download failed with error {}".format(str(e)))
+            os.remove(lockfilepath)
+            sys.exit(-1)
 
         if check_hash(zip_file, config['db_hash']):
             break   #do not try other mirror
+        else:
+            logger.info("Checksum for data.zip did not coincide with the reference hash value {}".format(config['db_hash']))
+
 
     else:  # no break
-        logger.error('Downloading databases failed, please check your internet connection and retry')
+        logger.error('Downloading databases (data.zip) failed (all mirrors tried), please check your internet connection and retry')
         sys.exit(-1)
 
 
@@ -167,27 +191,40 @@ def main():
         extract(file, database_directory)
 
     #Initialize blast and mash databases
-    logger.info('Building repetitive mask database')
-    blast_runner = BlastRunner(repetitive_fasta_file, database_directory)
-    blast_runner.makeblastdb(repetitive_fasta_file, 'nucl')
+    try:
+        logger.info('Building repetitive mask database')
+        blast_runner = BlastRunner(repetitive_fasta_file, database_directory)
+        blast_runner.makeblastdb(repetitive_fasta_file, 'nucl')
 
-    logger.info('Building complete plasmid database')
-    blast_runner = BlastRunner(plasmid_database_fasta_file, database_directory)
-    blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl')
+        logger.info('Building complete plasmid database')
+        blast_runner = BlastRunner(plasmid_database_fasta_file, database_directory)
+        blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl')
 
-    logger.info('Sketching complete plasmid database')
-    mObj = mash()
-    mObj.mashsketch(plasmid_database_fasta_file,
-                    mash_db_file,
-                    num_threads=num_threads)
+        logger.info('Sketching complete plasmid database')
+        mObj = mash()
+        mObj.mashsketch(plasmid_database_fasta_file,
+                        mash_db_file,
+                        num_threads=num_threads)
+    except Exception as e:
+        logger.error('Downloading databases failed, please check your internet connection and retry')
+        logger.error("Process failed with error {}".format(e))
+        os.remove(lockfilepath)
+        sys.exit(-1)
 
-    status_file = prepend_db_dir('status.txt')
+    try:
+        #init ete3 taxonomy database too
+        os.system('python -c "from ete3 import NCBITaxa; ncbi = NCBITaxa(); ncbi.update_taxonomy_database()"')
+    except Exception as e:
+        logger.error("Init of ete3 library failed with error {}".format(e))
+        os.remove(lockfilepath)
+        sys.exit(-1)
 
     with open(status_file, 'w') as f:
         download_date = datetime.datetime.today().strftime('%Y-%m-%d')
-
         f.write("Download date: {}".format(download_date))
-
+        os.remove(lockfilepath)
+    logger.info("MOB init completed successfully")
+    return 0
 
 # call main function
 if __name__ == '__main__':

@@ -3,22 +3,23 @@ from Bio.SeqUtils import GC
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 import os, re
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 import shutil,sys
 import logging
 
-def check_dependencies(logging):
+
+def check_dependencies(logger):
     external_programs = ['blastn', 'makeblastdb', 'tblastn', 'circlator']
     missing = 0
     for program in external_programs:
         path = shutil.which(program)
         if path is None:
             missing += 1
-            logging.error("ERROR: Missing program: {}".format(program,))
+            logger.error("ERROR: Missing program: {}".format(program,))
         else:
-            logging.info("SUCCESS: Found program {} at {}".format(program,path))
+            logger.info("SUCCESS: Found program {} at {}".format(program,path))
     if missing > 0 :
-        logging.error("Error, you are missing needed programs for mob-suite, please install them and retry")
+        logger.error("Error, you are missing needed programs for mob-suite, please install them and retry")
         sys.exit(-1)
 
 
@@ -58,30 +59,26 @@ def write_fasta_dict(seqs, fasta_file):
     handle.close()
 
 
-def verify_init(logging, database_dir):
+def verify_init(logger, database_dir):
     mob_init_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_init.py')
     status_file = os.path.join(database_dir, 'status.txt')
     if not os.path.isfile(status_file):
-        logging.info('MOB-databases need to be initialized, this will take some time')
+        logger.info('MOB-databases need to be initialized, this will take some time')
         p = Popen(['python', mob_init_path, '-d', database_dir],
-
                   stdout=PIPE,
                   stderr=PIPE,
                   shell=False)
 
-        p.wait()
-        stdout = p.stdout.read()
-        stderr = "".join(p.stderr.read().decode("utf-8"))
+        stdout,stderr = p.communicate()
+        print(stdout.decode(), stderr.decode()) #After completion print both streams
+        return_code = p.returncode
+        logger.info("Return code {}".format(return_code))
 
         #Verify if no errors were captured during the mob_init script run. Otherwise abort
-        if len(re.findall("error",stderr)) != 0:
-            print(stderr)
-            exit(   "Something went wrong with database download or unpacking"
-                    "Check MOB-Suite databases directory and your Internet connection.")
-
-        return stdout
-
-
+        if len(re.findall("error",stderr.decode())) != 0 or return_code != 0:
+            logger.error(   "Something went wrong with database download or unpacking"
+                            "Check MOB-Suite databases directory and your Internet connection.")
+            exit(-1)
 
 
 def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_start_col,contig_end_col,bitscore_col):
@@ -311,7 +308,7 @@ def init_console_logger(lvl):
     report_lvl = logging_levels[min(lvl, 3)]
 
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
-    return logging
+    return logging.getLogger(__name__)
 
 
 default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')

@@ -6,7 +6,7 @@ pandas.set_option('display.width', 1000)
 import subprocess
 from argparse import ArgumentParser
 from collections import Counter,OrderedDict
-from ete3 import NCBITaxa, TreeStyle
+from ete3 import NCBITaxa
 
 
 #pandas.options.display.float_format = '{:.1E}'.format #render scientific notation
@@ -151,7 +151,7 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
                          "LiteratureMinTransferRateRange": LiteratureMinTransferRateRange,
                          "LiteratureMaxTransferRateRange": LiteratureMaxTransferRateRange,
                          "LiteratureMeanTransferRateRange": LiteratureMeanTransferRateRange,
-                         "LiteraturePMIDs": ";".join(set([str(int(i)) for i in literature_knowledge.loc[:, "PMID"] if pandas.isna(i) == False])),
+                         "LiteraturePMIDs": ";".join(sorted(set([str(int(i)) for i in literature_knowledge.loc[:, "PMID"] if pandas.isna(i) == False]))),
                          "LiteraturePublicationsNumber": len(set(literature_knowledge.loc[literature_knowledge["PMID"].isna() == False, "PMID"]))})
 
         #if input plasmid sequence is provided, do additional closest match based on the sequence similarity and append to the general report
@@ -759,7 +759,7 @@ def main():
 
     if len(taxids) > 0 and args.host_range_detailed:
         treeRefSeq = getTaxonomyTree(taxids)  # get a phylogenetic tree
-        renderTree(tree=treeRefSeq, taxids=taxids,
+        renderTree(tree=treeRefSeq,
                    filename_prefix=args.outdir + "/mob_hostrange_" + args.outdir + "_refseqhostrange_")
 
     #get literature based host range for each replicon
@@ -769,7 +769,7 @@ def main():
         lit_report, littaxids = getLiteratureBasedHostRange(args.replicon_name, loadliteratureplasmidDB())
     if lit_report.empty == False and args.host_range_detailed:
         treeLiterature = getTaxonomyTree(littaxids)
-        renderTree(tree=treeLiterature,taxids=littaxids,
+        renderTree(tree=treeLiterature,
                    filename_prefix=args.outdir+"/mob_hostrange_"+args.outdir+"_literaturehostrange_")
 
 
@@ -785,44 +785,7 @@ def main():
 
     logging.info("Host Range module run is complete!")
 
-def renderTree(tree,taxids,filename_prefix):
-    ts = TreeStyle()
-    ts.show_leaf_name = False
-    ts.show_scale = False
-    ts.show_branch_length = False
-
-    # print(dir(ts))
-    # print(tree.get_ascii(attributes=["sci_name"]))
-
-    # pandas.DataFrame.to_csv(ref_taxids_df, "/Users/kirill/WORK/MOBSuiteHostRange2018/selected_df.csv")
-
-    # prettify the rendered tree providing the stats on the tree
-    # annotate nodes of the tree
-    for node in tree.traverse():
-        #print(node.features) #{'rank', 'common_name', 'support', 'sci_name', 'named_lineage', 'taxid', 'lineage', 'name', 'dist'}
-        #print(node.sci_name, node.taxid)
-        # print(ref_taxids_df)
-        nhits = len([t for t in taxids if t == str(node.taxid)])
-        #print("{}:{}".format(node.taxid,nhits))
-        node.img_style['size'] = nhits
-        node.img_style['fgcolor'] = "red"
-        node.img_style['hz_line_color'] = "red"
-        node.img_style['vt_line_color'] = "red"
-        node.img_style['draw_descendants'] = True
-        # print(node.img_style)
-        node.name = re.sub("_", "", node.sci_name) + "|taxid" + str(node.taxid) + "|" + str(nhits) + "hit(s)"  # Newick does not like spaces in labels
-        # node.name=node.sci_name
-        # print(len(node.name))
-        # print(node.name, node.img_style)
-        # node.set_style()
-        # print(node.features)
-    #print(taxids);exit()
-    # exit()
-    # tree.show(tree_style=ts)
-
-    # write an image
-    #if args.render_tree_image:
-    #tree.render(filename_prefix+"phylogeny_tree.png", dpi=2800, w=2000, tree_style=ts)
+def renderTree(tree,filename_prefix):
 
     with open(file=filename_prefix+ "asci_tree.txt", mode="w") as fp:
         fp.write(tree.get_ascii(attributes=["rank", "sci_name"]))

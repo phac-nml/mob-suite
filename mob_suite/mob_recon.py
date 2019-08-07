@@ -127,9 +127,8 @@ def parse_args():
 def init_console_logger(lvl):
     logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
     report_lvl = logging_levels[lvl]
-
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
-
+    return logging.getLogger(__name__)
 
 def mcl_predict(blast_results_file, min_ident, min_cov, evalue, min_length, tmp_dir):
     if os.path.getsize(blast_results_file) == 0:
@@ -157,7 +156,8 @@ def mcl_predict(blast_results_file, min_ident, min_cov, evalue, min_length, tmp_
 def run_mob_typer(plasmid_file_abs_path, outdir, num_threads=1,database_dir=None):
     mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
 
-    logging.info("Launching mob_typer to type recently reconstructed plasmid {}".format(plasmid_file_abs_path))
+    logger = logging.getLogger(__name__)
+    logger.info("Launching mob_typer to type recently reconstructed plasmid {}".format(plasmid_file_abs_path))
     if database_dir is None:
         p = Popen(['python', mob_typer_path,
                    '--infile', plasmid_file_abs_path,
@@ -181,28 +181,28 @@ def run_mob_typer(plasmid_file_abs_path, outdir, num_threads=1,database_dir=None
                   )
 
     for stdout_line in iter(p.stdout.readline, ""):
-        logging.info(stdout_line)
+       print(stdout_line)
     p.stdout.close()
 
     for stderr_line in iter(p.stderr.readline, ""):
-        logging.error(stderr_line)
+       print(stderr_line)
     p.stderr.close()
 
     return_code = p.wait()
     if return_code == 1:
-        logging.error("Mob_typer return code {}".format(return_code))
+        logger.error("Mob_typer return code {}".format(return_code))
         raise Exception("MOB_typer could not type {}".format(plasmid_file_abs_path))
 
     mob_typer_report_file = outdir + "/mobtyper_" + os.path.basename(plasmid_file_abs_path) + "_report.txt"
     if os.path.exists(mob_typer_report_file):
-        logging.info("Typing plasmid {}".format(os.path.basename(plasmid_file_abs_path)))
+        logger.info("Typing plasmid {}".format(os.path.basename(plasmid_file_abs_path)))
         with open(mob_typer_report_file) as fp:
             mob_typer_results = fp.readlines()[1] #skip header of the mob_typer plasmid report file
         fp.close()
 
         return mob_typer_results
     else:
-        logging.error("File {} does not exist. Perhaps there is an issue with the mob_typer or some dependencies are missing (e.g. ete3)".format(mob_typer_report_file))
+        logger.error("File {} does not exist. Perhaps there is an issue with the mob_typer or some dependencies are missing (e.g. ete3)".format(mob_typer_report_file))
 
 
 
@@ -309,38 +309,40 @@ def main():
     args = parse_args()
 
     if args.debug:
-        init_console_logger(3)
+        logger = init_console_logger(3)
     else:
-        init_console_logger(2)
-    logging.info("MOB-recon v. {} ".format(__version__))
+        logger = init_console_logger(2)
+
+    logger.info("MOB-recon v. {} ".format(__version__))
+
 
     if not args.outdir:
-        logging.error('Error, no output directory specified, please specify one')
+        logger.error('Error, no output directory specified, please specify one')
         sys.exit(-1)
 
     if not args.infile:
-        logging.error('Error, no fasta specified, please specify one')
+        logger.error('Error, no fasta specified, please specify one')
         sys.exit(-1)
     print()
     if not os.path.isfile(args.infile):
-        logging.error('Error, input fasta file does not exist: "{}"'.format(args.infile))
+        logger.error('Error, input fasta file does not exist: "{}"'.format(args.infile))
         sys.exit(-1)
 
-    logging.info('Processing fasta file {}'.format(args.infile))
-    logging.info('Analysis directory {}'.format(args.outdir))
+    logger.info('Processing fasta file {}'.format(args.infile))
+    logger.info('Analysis directory {}'.format(args.outdir))
 
     if not os.path.isdir(args.outdir):
         os.mkdir(args.outdir, 0o755)
 
     # Check that the needed databases have been initialized
     database_dir = os.path.abspath(args.database_directory)
-    verify_init(logging, database_dir)
+    verify_init(logger, database_dir)
     status_file = os.path.join(database_dir, 'status.txt')
 
 
-    if not os.path.isfile(status_file):
-        logging.info('Warning! Needed databases have not been initialize please run mob_init and try again')
-        mob_suite.mob_init.main()
+    #if not os.path.isfile(status_file):
+    #    logger.info('Warning! Needed databases have not been initialize please run mob_init and try again')
+    #    mob_suite.mob_init.main()
 
     plasmid_files = []
     input_fasta = args.infile
@@ -368,10 +370,10 @@ def main():
     for param in idents:
         value = float(idents[param])
         if value < 60:
-            logging.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
+            logger.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
             sys.exit(-1)
         if value > 100:
-            logging.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
+            logger.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
             sys.exit(-1)
 
     min_rep_cov = float(args.min_rep_cov)
@@ -385,10 +387,10 @@ def main():
     for param in covs:
         value = float(covs[param])
         if value < 60:
-            logging.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
+            logger.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
             sys.exit(-1)
         if value > 100:
-            logging.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
+            logger.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
             sys.exit(-1)
 
     min_rep_evalue = float(args.min_rep_evalue)
@@ -402,7 +404,7 @@ def main():
     for param in evalues:
         value = float(evalues[param])
         if value > 1:
-            logging.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
+            logger.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
             sys.exit(-1)
 
     min_overlapp = int(args.min_overlap)
@@ -422,10 +424,10 @@ def main():
     for param in idents:
         value = idents[param]
         if value < 60:
-            logging.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
+            logger.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
             sys.exit(-1)
         if value > 100:
-            logging.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
+            logger.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
             sys.exit(-1)
 
     min_rep_cov = float(args.min_rep_cov)
@@ -439,10 +441,10 @@ def main():
     for param in covs:
         value = covs[param]
         if value < 60:
-            logging.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
+            logger.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
             sys.exit(-1)
         if value > 100:
-            logging.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
+            logger.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
             sys.exit(-1)
 
     min_rep_evalue = float(args.min_rep_evalue)
@@ -456,7 +458,7 @@ def main():
     for param in evalues:
         value = evalues[param]
         if value > 1:
-            logging.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
+            logger.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
             sys.exit(-1)
 
     #min_overlapp = args.min_overlap
@@ -479,13 +481,13 @@ def main():
         repetitive_mask_file = os.path.join(database_dir, 'repetitive.dna.fas')
 
 
-    check_dependencies(logging)
+    check_dependencies(logger)
 
     needed_dbs = [plasmid_ref_db, replicon_ref, mob_ref, mash_db, repetitive_mask_file,"{}.nin".format(repetitive_mask_file)]
 
     for db in needed_dbs:
         if (not os.path.isfile(db)):
-            logging.error('Error needed database missing "{}"'.format(db))
+            logger.error('Error needed database missing "{}"'.format(db))
             sys.exit(-1)
 
     contig_report_file = os.path.join(out_dir, 'contig_report.txt')
@@ -499,42 +501,42 @@ def main():
     unicycler_contigs = args.unicycler_contigs
 
     if not isinstance(args.num_threads, int):
-        logging.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
+        logger.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
 
-    logging.info('Creating tmp working directory {}'.format(tmp_dir))
+    logger.info('Creating tmp working directory {}'.format(tmp_dir))
 
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir, 0o755)
 
-    logging.info('Writing cleaned header input fasta file from {} to {}'.format(input_fasta, fixed_fasta))
+    logger.info('Writing cleaned header input fasta file from {} to {}'.format(input_fasta, fixed_fasta))
     fix_fasta_header(input_fasta, fixed_fasta)
     contig_seqs = read_fasta_dict(fixed_fasta)
 
-    logging.info('Running replicon blast on {}'.format(replicon_ref))
+    logger.info('Running replicon blast on {}'.format(replicon_ref))
     replicon_contigs = getRepliconContigs(
         replicon_blast(replicon_ref, fixed_fasta, min_rep_ident, min_rep_cov, min_rep_evalue, tmp_dir,
                        replicon_blast_results,
                        num_threads=num_threads))
 
-    logging.info('Running relaxase blast on {}'.format(mob_ref))
+    logger.info('Running relaxase blast on {}'.format(mob_ref))
     mob_contigs = getRepliconContigs(
         mob_blast(mob_ref, fixed_fasta, min_mob_ident, min_mob_cov, min_mob_evalue, tmp_dir, mob_blast_results,
                   num_threads=num_threads))
 
-    logging.info('Running contig blast on {}'.format(plasmid_ref_db))
+    logger.info('Running contig blast on {}'.format(plasmid_ref_db))
     contig_blast(fixed_fasta, plasmid_ref_db, min_con_ident, min_con_cov, min_con_evalue, min_length,
                  tmp_dir, contig_blast_results)
 
     pcl_clusters = contig_blast_group(filtered_blast, min_overlapp)
 
-    logging.info('Running repetitive contig masking blast on {}'.format(mob_ref))
+    logger.info('Running repetitive contig masking blast on {}'.format(mob_ref))
     repetitive_contigs = repetitive_blast(fixed_fasta, repetitive_mask_file, min_rpp_ident, min_rpp_cov, min_rpp_evalue,
                                           min_length, tmp_dir,
                                           repetitive_blast_results, num_threads=num_threads)
 
     circular_contigs = dict()
 
-    logging.info('Running circlator minimus2 on {}'.format(fixed_fasta))
+    logger.info('Running circlator minimus2 on {}'.format(fixed_fasta))
     if run_circlator:
         circular_contigs = circularize(fixed_fasta, minimus_prefix)
 

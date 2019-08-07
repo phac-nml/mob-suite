@@ -1,5 +1,4 @@
-import mob_suite.mob_init
-import os,sys, logging
+import os,sys, logging,  subprocess,time
 
 logger=logging.getLogger()
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
@@ -41,7 +40,31 @@ def test_download_databases_with_input_dir():
     ]
     sys.argv[1:] = args
 
-    mob_suite.mob_init.main()
-    check_file_hash(database_dir)
+def test_concurrent_init():
+
+
+    p1 = subprocess.Popen(['python', '../mob_init.py', '-v', '-d' 'run_test/databases'],
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT,
+                           shell=False
+                           )
+    print("Strated process 1  ...")
+    time.sleep(10)
+
+    p2 = subprocess.Popen(['python', '../mob_init.py', '-v', '-d' 'run_test/databases'],
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT,
+                           shell=False)
+    print("Strated process 2  ...")
+
+    p1stdout, p1stderr = p1.communicate()
+    p2stdout, p2stderr = p2.communicate()
+    print("Process 1", p1stdout.decode())
+    print("Process 2", p2stdout.decode())
+    assert "completed successfully" in p1stdout.decode()
+    assert "completed successfully" in p2stdout.decode()
+
+
+
 
 

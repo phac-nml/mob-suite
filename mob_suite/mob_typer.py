@@ -36,6 +36,7 @@ def init_console_logger(lvl):
     logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
     report_lvl = logging_levels[lvl]
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
+    return logging.getLogger(__name__)
 
 
 def parse_args():
@@ -144,34 +145,35 @@ def determine_mpf_type(hits):
 def main():
     default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     args = parse_args()
-    print(args)
+
     if args.debug:
-        init_console_logger(3)
+        logger = init_console_logger(3)
     else:
-        init_console_logger(2)
-    logging.info('Running Mob-typer v. {}'.format(__version__))
+        logger = init_console_logger(2)
+
+    logger.info('Running Mob-typer v. {}'.format(__version__))
 
     if not args.outdir:
-        logging.info('Error, no output directory specified, please specify one')
+        logger.info('Error, no output directory specified, please specify one')
         sys.exit()
 
     if not args.infile:
-        logging.info('Error, no fasta specified, please specify one')
+        logger.info('Error, no fasta specified, please specify one')
         sys.exit()
 
     if not os.path.isfile(args.infile):
-        logging.info('Error, fasta file does not exist')
+        logger.info('Error, fasta file does not exist')
         sys.exit()
 
     if not os.path.isdir(args.outdir):
         os.mkdir(args.outdir, 0o755)
 
     if not isinstance(args.num_threads, int):
-        logging.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
+        logger.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
 
     database_dir = os.path.abspath(args.database_directory)
 
-    verify_init(logging,database_dir)
+    verify_init(logger,database_dir)
     # Script arguments
     input_fasta = args.infile
     out_dir = args.outdir
@@ -228,10 +230,10 @@ def main():
         value = float(idents[param])
 
         if value < 60:
-            logging.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
+            logger.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
             sys.exit(-1)
         if value > 100:
-            logging.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
+            logger.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
             sys.exit(-1)
 
 
@@ -250,10 +252,10 @@ def main():
         value = float(covs[param])
 
         if value < 60:
-            logging.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
+            logger.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
             sys.exit(-1)
         if value > 100:
-            logging.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
+            logger.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
             sys.exit(-1)
 
 
@@ -270,17 +272,17 @@ def main():
         value = float(evalues[param])
 
         if value > 1:
-            logging.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
+            logger.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
             sys.exit(-1)
 
 
-    check_dependencies(logging)
+    check_dependencies(logger)
 
     needed_dbs = [replicon_ref, mob_ref, mash_db, mpf_ref]
 
     for db in needed_dbs:
         if (not os.path.isfile(db)):
-            logging.info('Warning! Needed database missing "{}"'.format(db))
+            logger.info('Warning! Needed database missing "{}"'.format(db))
             mob_suite.mob_init.main()
 
 
@@ -290,7 +292,7 @@ def main():
     fix_fasta_header(input_fasta, fixed_fasta)
 
     # run individual marker blasts
-    logging.info('Running replicon blast on {}'.format(replicon_ref))
+    logger.info('Running replicon blast on {}'.format(replicon_ref))
     replicon_contigs = getRepliconContigs(
         replicon_blast(replicon_ref, fixed_fasta, min_rep_ident, min_rep_cov, min_rep_evalue, tmp_dir, replicon_blast_results,
                        num_threads=num_threads))
@@ -304,7 +306,7 @@ def main():
     #print("These replicons are found")
     #print(list(found_replicons.values()))
 
-    logging.info('Running relaxase blast on {}'.format(mob_ref))
+    logger.info('Running relaxase blast on {}'.format(mob_ref))
 
     mob_contigs = getRepliconContigs(
         mob_blast(mob_ref, fixed_fasta, min_mob_ident, min_mob_cov, min_mob_evalue, tmp_dir, mob_blast_results, num_threads=num_threads))
@@ -317,7 +319,7 @@ def main():
     #print (list(found_mob.values()))
 
 
-    logging.info('Running mpf blast on {}'.format(mob_ref))
+    logger.info('Running mpf blast on {}'.format(mob_ref))
     mpf_contigs = getRepliconContigs(
         mob_blast(mpf_ref, fixed_fasta, min_mpf_ident, min_mpf_cov, min_mpf_evalue, tmp_dir, mpf_blast_results, num_threads=num_threads))
     found_mpf = dict()
@@ -328,7 +330,7 @@ def main():
 
     # print(found_mpf)
 
-    logging.info('Running orit blast on {}'.format(replicon_ref))
+    logger.info('Running orit blast on {}'.format(replicon_ref))
     orit_contigs = getRepliconContigs(
         replicon_blast(orit_ref, fixed_fasta, min_ori_ident, min_ori_cov, min_ori_evalue, tmp_dir, orit_blast_results,
                        num_threads=num_threads))
@@ -361,7 +363,7 @@ def main():
 
         refseqtree = getTaxonomyTree(taxids) #refseq tree
         renderTree(
-                   tree=refseqtree, taxids=taxids,
+                   tree=refseqtree,
                    filename_prefix=args.outdir+"/"+file_id+"_refseqhostrange_")
 
         #get literature report summary dataframe (might be more than 1 row if multiple replicons are present)
@@ -375,7 +377,7 @@ def main():
         if littaxids:
             littree = getTaxonomyTree(littaxids) #get literature tree
             renderTree(
-                       tree=littree, taxids=littaxids ,
+                       tree=littree,
                        filename_prefix=args.outdir+"/"+file_id+ "_literaturehostrange_")
 
 
@@ -400,7 +402,7 @@ def main():
 
         refseqtree = getTaxonomyTree(taxids)  # refseq tree
         renderTree(
-                    tree=refseqtree, taxids=taxids,
+                    tree=refseqtree,
                     filename_prefix=args.outdir + "/" + file_id + "_refseqhostrange_")
 
         writeOutHostRangeReports(filename_prefix=args.outdir + "/" + file_id,
@@ -501,7 +503,7 @@ def main():
     main_report_mobtyper_df.to_csv(report_file, sep="\t", mode="w",encoding="UTF-8",index=False)
     if not keep_tmp:
         shutil.rmtree(tmp_dir)
-    logging.info("Run completed")
+    logger.info("Run completed")
 
     #print("{}".format(string))
 

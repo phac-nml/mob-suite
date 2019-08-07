@@ -2,6 +2,6 @@
     "db_mirrors": ["https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download",
                    "https://ndownloader.figshare.com/articles/5841882/versions/1"],
 
-    "db_hash": "948f237b70c6469628026267cfb5785f8c2d0fe4f5afa3134ac829932bf581a9"
+    "db_hash": ["92a9008caa2bbc273bdb9cb76c5df001f25d71be819fa85a19f7e6d13e56073c"]
 
 }
