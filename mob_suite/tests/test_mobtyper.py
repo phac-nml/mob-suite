@@ -8,6 +8,21 @@ logger=logging.getLogger()
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG)
 
+
+def test_mob_typer_IncX1():
+    args = [
+        "--infile", os.path.dirname(__file__) + "/TestData/IncX/IncX1.fasta",
+        "--outdir", "run_test",
+        "--host_range_detailed",
+        "--debug"
+    ]
+    sys.argv[1:] = args
+    mob_suite.mob_typer.main()
+    results_df = pandas.read_csv("run_test/mobtyper_IncX1.fasta_report.txt", sep="\t")
+    print(results_df)
+    assert results_df["LitPMIDs"].values[0] == "21625636;22470007"
+
+
 def create_output_dir():
     if os.path.exists("run_test") == False:
         os.mkdir("run_test")

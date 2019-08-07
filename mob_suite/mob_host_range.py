@@ -176,9 +176,10 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
             if literature_closest_seq_hit_df.empty:
                 raise Exception("Literature top hit search failed! Check mash top hit return from the getClosestLiteratureRefPlasmid()")
 
-            #print(literature_closest_seq_hit_df)
+
             if literature_closest_seq_hit_df.shape[0] != 1:
-                raise Exception("Literature top hit dataframe returned more than a single hit ... Expecting a single top hit.")
+                print(literature_closest_seq_hit_df)
+                logging.warning("Literature top hit dataframe returned more than a single hit ... Expecting a single top hit.Some entries have multiple hits.")
 
             #additional fields
             report_dict.update(
