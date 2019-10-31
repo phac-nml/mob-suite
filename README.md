@@ -27,19 +27,33 @@ This tool reconstructs individual plasmid sequences from draft genome assemblies
 Provides in silico predictions of the replicon family, relaxase type, mate-pair formation type and predicted transferability of the plasmid
 
 ### MOB-hostrange
-Provides information on plasmid reproductive host range and transfer rate using both sequencing and experimental data from public databases (NCBI) and publications (PubMED). The predicted host range represents a range of putative hosts where a given plasmid can stably replicate and be maintained by the host. Transfer rate prediction is based on the experiemental evidence reported in the survayed literature.
+Provides information on plasmid reproductive host range and transfer rate using both sequencing and experimental data from public databases (NCBI) and publications (PubMED). 
+The predicted host range represents a range of putative hosts where a given plasmid can stably replicate and be maintained by the host. 
+The host range module makes no source attribution predictions of a plasmid.
+
+The host range and the transfer rate predictions are based on the experimental evidence reported in the surveyed literature.
+Currently the host range is predicted based on two databases: NCBI Nucleotide plasmid database of 11856 records and literature curated plasmid database containing 313 records. 
+The outputs are text reports and phylogenetic trees rendered in Newick and PNG image formats. This allows for easy visualization and data interpretation.
 
 
 ## Installation ##
 
 ## Requires
 + Python v. 3.6 +
++ ete3 >= 3
++ biopython >= 1.70
++ pytables  >= 3.3
++ pycurl >= 7.43
++ pyqt  >= 5
++ numpy >= 1.11.1
++ scipy >= 1.1
 
 ## Dependencies
 
 + blast+ v. 2.3.0
 + circlator
 + mash
+
 
 ## Installation
 We recommend MOB-Suite installation as a conda package due to large number of dependencies. The package is available through bioconda channel.
@@ -48,7 +62,8 @@ We recommend MOB-Suite installation as a conda package due to large number of de
 % conda config --add channels defaults
 % conda config --add channels conda-forge
 % conda config --add channels bioconda
-% conda install blast amos mash circlator mob_suite
+% conda install blast amos mash circlator
+% conda install -c bioconda mob_suite
 ```
 
 The MOB-suite uses the minimus2 pipeline from Circlator but there are some hardcoded links which need to be created in order for the tool to work correctly.
@@ -81,15 +96,22 @@ We recommend installing MOB-Suite via bioconda but you can install it via pip us
 
 ```
 
-### Conda
-
-To install MOB-Suite as a package inside a conda environment run the following command. All additional databases will be automatically downloaded by `mob_init.py`
+### Docker image
+A docker image is also available at [https://hub.docker.com/r/kbessonov/mob_suite](https://hub.docker.com/r/kbessonov/mob_suite)
+```
+% docker pull kbessonov/mob_suite:2.0.0 
+% docker run --rm -v $(pwd):/mnt/ "kbessonov/mob_suite:2.0.0 " mob_recon -i /mnt/*.fasta -t -o /mnt/mob_recon_output
 
 ```
-% conda config --add channels bioconda
-% conda install -c bioconda mob_suite
-```
 
+### Singularity image
+A singularity image could be built via singularity recipe donated by Eric Deveaud. 
+The recipe (`recipe.singularity`) is located in the singularity folder of this repository. 
+The docker image section also has instructions on how to create singularity image from a docker image.
+
+```bash
+% singularity build mobsuite.simg recipe.singularity
+```
 
 ## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and to predict mobility
 =======
@@ -215,7 +237,7 @@ Use this tool only to update the plasmid databases or build a new one and should
 
 
 
-# MOB-recon report file format
+# MOB-hostrange report file format
 
 The table describes output fields found in the `mobtyper_*_report.txt`, `*_literature_report.txt` and `mobtyper_aggregate_report.txt` 
 report files.
