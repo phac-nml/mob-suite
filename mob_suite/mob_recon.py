@@ -825,7 +825,7 @@ def main():
                            "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\t" \
                            "NCBI-HR-rank\tNCBI-HR-Name\tLitRepHRPlasmClass\tLitPredDBHRRank\t" \
                            "LitPredDBHRRankSciName\tLitRepHRRankInPubs\tLitRepHRNameInPubs\tLitMeanTransferRate\t" \
-                           "LitClosestRefAcc\tLitClosestRefDonorStrain\tLitClosestRefRecipientStrain" \
+                           "LitClosestRefAcc\tLitClosestRefDonorStrain\tLitClosestRefRecipientStrain\t" \
                            "LitClosestRefTransferRate\tLitClosestConjugTemp\n"
 
         for plasmid_file_abs_path in plasmid_files:
