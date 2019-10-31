@@ -3,7 +3,7 @@ import os,sys
 import pandas
 import logging
 
-
+TEST_ROOT = os.path.dirname(__file__)
 logger=logging.getLogger()
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG)
@@ -18,7 +18,7 @@ def test_mob_typer_IncX1():
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
-    results_df = pandas.read_csv("run_test/mobtyper_IncX1.fasta_report.txt", sep="\t")
+    results_df = pandas.read_csv(os.path.join(TEST_ROOT,"run_test/mobtyper_IncX1.fasta_report.txt"), sep="\t")
     print(results_df)
     assert results_df["LitPMIDs"].values[0] == "21625636;22470007"
 
@@ -42,7 +42,7 @@ def test_mob_typer_host_range_multi_replicon():
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
-    results_df = pandas.read_csv("run_test/mobtyper_AB040415.fasta_report.txt", sep="\t")
+    results_df = pandas.read_csv(os.path.join(TEST_ROOT,"run_test/mobtyper_AB040415.fasta_report.txt"), sep="\t")
 
     assert results_df["NCBI-HR-rank"].values[0] == "order"
     assert results_df["NCBI-HR-Name"].values[0] == "Enterobacterales"
@@ -62,7 +62,7 @@ def test_mob_typer_host_range_multi_replicon():
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
 
-    results_df = pandas.read_csv("run_test/mobtyper_AB011548.fasta_report.txt", sep="\t")
+    results_df = pandas.read_csv(os.path.join(TEST_ROOT,"run_test/mobtyper_AB011548.fasta_report.txt"), sep="\t")
     assert results_df["NCBI-HR-rank"].values[0] == "superkingdom"
     assert results_df["NCBI-HR-Name"].values[0] == "Bacteria"
     assert results_df["PredictedMobility"].values[0] == "Mobilizable"
@@ -84,7 +84,7 @@ def test_mob_typer_host_range_multi_replicon_KU295134():
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
-    results_df = pandas.read_csv("run_test/mobtyper_KU295134.fasta_report.txt", sep="\t")
+    results_df = pandas.read_csv(os.path.join(TEST_ROOT,"run_test/mobtyper_KU295134.fasta_report.txt"), sep="\t")
 
 
     assert results_df["NCBI-HR-rank"].values[0] == "class"
@@ -104,8 +104,8 @@ def test_mob_typer_host_range_no_replicon_data():
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
-    results_df = pandas.read_csv("run_test/mobtyper_AY603981.fasta_report.txt", sep="\t")
-    print(results_df)
+    results_df = pandas.read_csv(os.path.join(TEST_ROOT,"run_test/mobtyper_AY603981.fasta_report.txt"), sep="\t")
+
     assert results_df["NCBI-HR-rank"].values[0] == "genus"
     assert results_df["NCBI-HR-Name"].values[0] == "Pseudomonas"
     assert results_df["PredictedMobility"].values[0] == "Mobilizable"
@@ -123,7 +123,7 @@ def test_mob_typer_broad_host_range_IncF():
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
-    results_df = pandas.read_csv("run_test/mobtyper_ET4_Ecoli_plasmid_969.fasta_report.txt", sep="\t")
+    results_df = pandas.read_csv(os.path.join(TEST_ROOT,"run_test/mobtyper_ET4_Ecoli_plasmid_969.fasta_report.txt"), sep="\t")
     print(results_df)
     assert results_df["NCBI-HR-rank"].values[0] == "order"
     assert results_df["NCBI-HR-Name"].values[0] == "Enterobacterales"

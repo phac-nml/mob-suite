@@ -105,13 +105,6 @@ def test_getRefSeqHostRange_multireplicon():
             matchtype=matchtype,
             hr_obs_data=loadHostRangeDB())
 
-def test_check_data_types_in_literature_host_range_reporting_dataframe():
-    """
-    Test if all columns match the data type (int, str, etc.)
-    :return:
-    """
-
-
 
 def test_getHostrange_clusterID():
     (convergance_rank, converged_taxonomy_name,

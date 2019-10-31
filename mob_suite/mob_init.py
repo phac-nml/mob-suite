@@ -124,17 +124,20 @@ def main():
 
     if os.path.exists(lockfilepath) == False:
         logger.info("Placed lock file found at {}".format(lockfilepath))
-        open(file=lockfilepath, mode="w").close()
+        try:
+            open(file=lockfilepath, mode="w").close()
+        except:
+            pass
     else:
         while os.path.exists(lockfilepath):
             elapsed_time = time.time() - os.path.getmtime(lockfilepath)
             logger.info("Lock file found at {}. Waiting for other processes to finish database init ...".format(lockfilepath))
             logger.info("Elapsed time {} min. Will continue processing at 10 min mark.".format(int(elapsed_time/60)))
-            if elapsed_time >= 600:
-                logger.info("Elapsed time {} min. Assuming previous process completed init steps. Continue ...".format(int(elapsed_time/60)))
+            if elapsed_time >= 1000:
+                logger.info("Elapsed time {} min. Assuming previous process completed all init steps. Continue ...".format(int(elapsed_time/60)))
                 try: #if previous process failed, no processes are running and > 10 min passed since the lock was created
                     os.remove(lockfilepath)
-                except:
+                except: #continue if file was removed by other process
                     pass
                 break
             time.sleep(60)
@@ -212,7 +215,7 @@ def main():
         sys.exit(-1)
 
     try:
-        #init ete3 taxonomy database too
+        logger.info("Init ete3 library ...")
         os.system('python -c "from ete3 import NCBITaxa; ncbi = NCBITaxa(); ncbi.update_taxonomy_database()"')
     except Exception as e:
         logger.error("Init of ete3 library failed with error {}".format(e))

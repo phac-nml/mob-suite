@@ -1,5 +1,8 @@
 import os,sys, logging,  subprocess,time
 
+TEST_ROOT = os.path.dirname(__file__)
+PACKAGE_DIR = os.path.abspath(os.path.join(TEST_ROOT,"../"))
+
 logger=logging.getLogger()
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG)
@@ -43,26 +46,27 @@ def test_download_databases_with_input_dir():
 def test_concurrent_init():
 
 
-    p1 = subprocess.Popen(['python', '../mob_init.py', '-v', '-d' 'run_test/databases'],
+    p1 = subprocess.Popen(['python', os.path.join(PACKAGE_DIR,'mob_init.py'), '-v', '-d' 'run_test/databases'],
                            stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT,
+                           stderr=subprocess.PIPE,
                            shell=False
                            )
     print("Strated process 1  ...")
     time.sleep(10)
 
-    p2 = subprocess.Popen(['python', '../mob_init.py', '-v', '-d' 'run_test/databases'],
+    p2 = subprocess.Popen(['python', os.path.join(PACKAGE_DIR,'mob_init.py'), '-v', '-d' 'run_test/databases'],
                            stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT,
+                           stderr=subprocess.PIPE,
                            shell=False)
     print("Strated process 2  ...")
+    time.sleep(100); p2.kill()
 
     p1stdout, p1stderr = p1.communicate()
     p2stdout, p2stderr = p2.communicate()
-    print("Process 1", p1stdout.decode())
-    print("Process 2", p2stdout.decode())
-    assert "completed successfully" in p1stdout.decode()
-    assert "completed successfully" in p2stdout.decode()
+    print("Process 1 stdout steam", p1stdout.decode(),"Process 1 stderr steam", p1stderr.decode())
+    print("Process 2 stdout steam", p2stdout.decode(), "Process 2 stderr steam", p2stderr.decode())
+    assert "MOB init completed successfully" in p1stderr.decode()
+    assert "Lock file found" in p2stderr.decode()
 
 
 
