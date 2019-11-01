@@ -37,11 +37,13 @@ def arguments():
     return args
 
 
-def check_hash(filepath, hashsums):
+def check_hash_or_size(filepath, hashsums):
     """
     Calculate the SHA256 of the given file and compare it to the known good
     value. Returns True if the hashes match, and False if the file is missing or
     the hashes do not match.
+    Otherwise uses minimum file size of >= 215 MB
+    FigShare mirror returns non hash identical files for some reason
 
     :param filepath: Path to the file
     :param hashsums:  Expected SHA256 hashes (given different database versions)
@@ -50,17 +52,19 @@ def check_hash(filepath, hashsums):
 
     try:
         with open(filepath, 'rb') as f:
-
             sha = hashlib.sha256()
             contents = f.read()
             sha.update(contents)
 
     except FileNotFoundError:
-
         return False
 
     h_obs = sha.hexdigest()
-    return any([refhash == h_obs for refhash in hashsums])
+    logger.info("Download data.zip sha256 checksum is {}".format(h_obs))
+    logger.info("Download data.zip size in bytes is {}".format(os.path.getsize(filepath)))
+    hash_check_bool = any([refhash == h_obs for refhash in hashsums])
+    size_check_bool = (os.path.getsize(filepath) >= 225377917)
+    return any([hash_check_bool, size_check_bool])
 
 
 def download_to_file(url, file):
@@ -116,6 +120,13 @@ def main():
 
 
     database_directory = os.path.abspath(args.database_directory)
+    print(os.getcwd())
+
+    if os.path.exists(database_directory) == False:
+        os.mkdir(database_directory)
+    else:
+        logger.info("Database directory folder already exists at {}".format(database_directory))
+
     # Helper function to simplify adding database_directory to everything
     prepend_db_dir = functools.partial(os.path.join, database_directory)
 
@@ -123,10 +134,12 @@ def main():
     status_file = prepend_db_dir('status.txt')
 
     if os.path.exists(lockfilepath) == False:
-        logger.info("Placed lock file found at {}".format(lockfilepath))
         try:
             open(file=lockfilepath, mode="w").close()
-        except:
+            logger.info("Placed lock file at {}".format(lockfilepath))
+        except Exception as e:
+            logger.info("Failed to place lock file at {}".format(lockfilepath))
+            logger.error("{}".format(e))
             pass
     else:
         while os.path.exists(lockfilepath):
@@ -140,7 +153,7 @@ def main():
                 except: #continue if file was removed by other process
                     pass
                 break
-            time.sleep(60)
+            time.sleep(60) #recheck every 1 min if lock file was removed
         logger.info("Lock file removed. Assuming init process completed successfully")
         return 0
 
@@ -166,19 +179,15 @@ def main():
             logger.info('Trying mirror {}'.format(db_mirror))
             download_to_file(db_mirror, zip_file)
         except Exception as e:
-            logger.error("Download failed with error {}".format(str(e)))
+            logger.error("Download failed with error {}. Removing lock file".format(str(e)))
             os.remove(lockfilepath)
             sys.exit(-1)
 
-        if check_hash(zip_file, config['db_hash']):
+        #FigShare checksums are not reliable. More issues than benefits of integrity
+        if check_hash_or_size(zip_file, config['db_hash']):
             break   #do not try other mirror
         else:
-            logger.info("Checksum for data.zip did not coincide with the reference hash value {}".format(config['db_hash']))
-
-
-    else:  # no break
-        logger.error('Downloading databases (data.zip) failed (all mirrors tried), please check your internet connection and retry')
-        sys.exit(-1)
+            logger.info("Checksum or file size for data.zip did not coincide with the reference hash values {}".format(config['db_hash']))
 
 
     logger.info('Downloading databases successful, now building databases')
@@ -210,7 +219,7 @@ def main():
                         num_threads=num_threads)
     except Exception as e:
         logger.error('Downloading databases failed, please check your internet connection and retry')
-        logger.error("Process failed with error {}".format(e))
+        logger.error("Process failed with error {}. Removing lock file".format(e))
         os.remove(lockfilepath)
         sys.exit(-1)
 
@@ -218,14 +227,17 @@ def main():
         logger.info("Init ete3 library ...")
         os.system('python -c "from ete3 import NCBITaxa; ncbi = NCBITaxa(); ncbi.update_taxonomy_database()"')
     except Exception as e:
-        logger.error("Init of ete3 library failed with error {}".format(e))
+        logger.error("Init of ete3 library failed with error {}. Removing lock file".format(e))
         os.remove(lockfilepath)
         sys.exit(-1)
 
     with open(status_file, 'w') as f:
         download_date = datetime.datetime.today().strftime('%Y-%m-%d')
-        f.write("Download date: {}".format(download_date))
-        os.remove(lockfilepath)
+        f.write("Download date: {}. Removing lock file.".format(download_date))
+        try:
+            os.remove(lockfilepath)
+        except:
+            pass
     logger.info("MOB init completed successfully")
     return 0
 

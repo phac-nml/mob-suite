@@ -6,6 +6,10 @@ logger=logging.getLogger()
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG)
 
+if not os.path.exists(os.path.join(TEST_ROOT,"run_test")):
+    os.mkdir(os.path.join(TEST_ROOT,"run_test"))
+
+
 def test_mob_recon_with_mob_typer_report():
     if os.path.exists("run_test") == False:
         os.mkdir("run_test")
@@ -26,9 +30,9 @@ def test_run_mob_typer():
     Test if mob_recon can call mob_typer and successfuly concatenate mob_typer results
     :return:
     """
-    plasmid_files=["run_test/mob_recon/plasmid_novel_0.fasta",
-                   "run_test/mob_recon/plasmid_novel_1.fasta"]
-    out_dir="run_test/mob_recon"
+    plasmid_files=[TEST_ROOT+"/run_test/mob_recon/plasmid_novel_0.fasta",
+                   TEST_ROOT+"/run_test/mob_recon/plasmid_novel_1.fasta"]
+    out_dir=TEST_ROOT+"/run_test/mob_recon"
     num_threads=1
     #database_dir="/Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/databases"
 

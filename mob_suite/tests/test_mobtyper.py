@@ -10,9 +10,10 @@ logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG)
 
 
 def test_mob_typer_IncX1():
+    create_output_dir()
     args = [
-        "--infile", os.path.dirname(__file__) + "/TestData/IncX/IncX1.fasta",
-        "--outdir", "run_test",
+        "--infile", TEST_ROOT + "/TestData/IncX/IncX1.fasta",
+        "--outdir", TEST_ROOT+"/run_test",
         "--host_range_detailed",
         "--debug"
     ]
@@ -22,10 +23,9 @@ def test_mob_typer_IncX1():
     print(results_df)
     assert results_df["LitPMIDs"].values[0] == "21625636;22470007"
 
-
 def create_output_dir():
-    if os.path.exists("run_test") == False:
-        os.mkdir("run_test")
+    if not os.path.exists(os.path.join(TEST_ROOT, "run_test")):
+        os.mkdir(os.path.join(TEST_ROOT, "run_test"))
 #test the entire mob-typer + mob_host_range modules. AB040415 has multiple replicons (IncFIB,IncFII)
 #IncFIB,IncFII multi-plasmids
 def test_mob_typer_host_range_multi_replicon():
@@ -37,7 +37,7 @@ def test_mob_typer_host_range_multi_replicon():
 
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/AB040415.fasta",
-        "--outdir", "run_test",
+        "--outdir", TEST_ROOT+"/run_test",
         "--host_range_detailed"
     ]
     sys.argv[1:] = args
@@ -56,7 +56,7 @@ def test_mob_typer_host_range_multi_replicon():
 
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/AB011548.fasta",
-        "--outdir", "run_test",
+        "--outdir", TEST_ROOT+"/run_test",
         "--host_range"
     ]
     sys.argv[1:] = args
@@ -79,7 +79,7 @@ def test_mob_typer_host_range_multi_replicon_KU295134():
 
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/KU295134.fasta",
-        "--outdir", "run_test",
+        "--outdir", TEST_ROOT+"/run_test",
         "--host_range_detailed"
     ]
     sys.argv[1:] = args
@@ -99,7 +99,7 @@ def test_mob_typer_host_range_no_replicon_data():
 
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/AY603981.fasta",
-        "--outdir", "run_test",
+        "--outdir", TEST_ROOT+"/run_test",
         "--host_range_detailed"
     ]
     sys.argv[1:] = args
@@ -118,13 +118,13 @@ def test_mob_typer_broad_host_range_IncF():
 
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/IncF/ET4_Ecoli_plasmid_969.fasta",
-        "--outdir", "run_test",
+        "--outdir", TEST_ROOT+"/run_test",
         "--host_range_detailed"
     ]
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
     results_df = pandas.read_csv(os.path.join(TEST_ROOT,"run_test/mobtyper_ET4_Ecoli_plasmid_969.fasta_report.txt"), sep="\t")
-    print(results_df)
+
     assert results_df["NCBI-HR-rank"].values[0] == "order"
     assert results_df["NCBI-HR-Name"].values[0] == "Enterobacterales"
     assert results_df["PredictedMobility"].values[0] == "Conjugative"

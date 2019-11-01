@@ -1,4 +1,4 @@
-{% set version = "2.0.0" %}
+{% set version = "2.0.1" %}
 
 package:
   name: mob_suite
@@ -10,32 +10,29 @@ build:
   script: python -m pip install --no-deps --ignore-installed .
 
 source:
-  #path: /Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite
+  #path: /root/mob_suite/mob-suite
   #url: https://github.com/phac-nml/mob-suite/archive/{{ version }}.tar.gz
-  #sha256: d67d64a70615b908f599723651d44ae52367c01963795fdf07b9bcbbb3f787a0
+  #sha256: 221dc24eb6d98b119c25cabff5110709cd345790d9836cf5865bec9262fddc3f
   git_url: https://github.com/phac-nml/mob-suite.git
   git_rev: master
 
-
-
 requirements:
   host:
-    - python >=3.4,<3.7
+    - python >=3.6
     - pip
-    - setuptools
   run:
-    - python >=3.4
+    - python >=3.6
+    - numpy >=1.11.1
+    - pytables >=3.3
+    - pandas >=0.22.0
+    - biopython >=1.70
     - pycurl >=7.43
     - scipy >=1.1
-    - numpy >=1.11
-    - biopython >=1.70
-    - pandas >=0.22.0
-    - pytables >=3.3
+    - ete3 >=3.0
     - blast
     - mash
     - circlator
-    - ete3
-    - qt >=5
+
 
 test:
   source_files:
@@ -44,10 +41,12 @@ test:
     - pytest
 
   commands:
-    - "mob_typer -h"
-    - "mob_recon -h"
-    - "mob_hostrange -h"
-    - "pytest -s mob_suite/tests/test_mobtyper.py"
+    - mob_typer -h
+    - mob_recon -h
+    - mob_hostrange -h
+    - pytest -s mob_suite/tests/test_mobrecon.py
+    - pytest -s mob_suite/tests/test_mobtyper.py
+    #- pytest -s mob_suite/tests/test_mob_init.py
 
 about:
   home: https://github.com/phac-nml/mob-suite
