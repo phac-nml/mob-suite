@@ -2,6 +2,7 @@ include LICENSE
 include README.rst
 include MANIFEST.in
 include setup.py
+include mob_suite/config.json
 include mob_suite/tests/TestData/*
 include mob_suite/tests/*.py
 include mob_suite/databases/host_range_ncbirefseq_plasmidDB.csv
