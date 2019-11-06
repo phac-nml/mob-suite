@@ -197,13 +197,10 @@ def run_mob_typer(plasmid_file_abs_path, outdir, num_threads=1,database_dir=None
                 row[i] = r.encode('utf-8', errors="ignore").decode("utf-8", errors="ignore")
                 printable = set(string.printable)
                 row[i] = ''.join(filter(lambda x: x in printable, row[i]))
-                #print(type(row[i]))
             else:
                 row[i] = str(r)
 
-        #print(row)
         mob_typer_results = "\t".join(str(v) for v in row)
-        #print(mob_typer_results)
         return mob_typer_results
     else:
         logger.error("File {} does not exist. Perhaps there is an issue with the mob_typer or some dependencies are missing (e.g. ete3)".format(mob_typer_report_file))
@@ -326,7 +323,7 @@ def main():
     if not args.infile:
         logger.error('Error, no fasta specified, please specify one')
         sys.exit(-1)
-    print()
+
     if not os.path.isfile(args.infile):
         logger.error('Error, input fasta file does not exist: "{}"'.format(args.infile))
         sys.exit(-1)
@@ -340,12 +337,8 @@ def main():
     # Check that the needed databases have been initialized
     database_dir = os.path.abspath(args.database_directory)
     verify_init(logger, database_dir)
-    status_file = os.path.join(database_dir, 'status.txt')
 
 
-    #if not os.path.isfile(status_file):
-    #    logger.info('Warning! Needed databases have not been initialize please run mob_init and try again')
-    #    mob_suite.mob_init.main()
 
     plasmid_files = []
     input_fasta = args.infile
@@ -464,9 +457,6 @@ def main():
             logger.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
             sys.exit(-1)
 
-    #min_overlapp = args.min_overlap
-
-    #min_length = args.min_length
 
     # Input Databases
     default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
@@ -539,8 +529,9 @@ def main():
 
     circular_contigs = dict()
 
-    logger.info('Running circlator minimus2 on {}'.format(fixed_fasta))
+
     if run_circlator:
+        logger.info('Running circlator minimus2 on {}'.format(fixed_fasta))
         circular_contigs = circularize(fixed_fasta, minimus_prefix)
 
     if unicycler_contigs:
@@ -809,7 +800,11 @@ def main():
             rep_dna_info = "\t\t\t\t"
             if contig_id in repetitive_dna:
                 rep_dna_info = repetitive_dna[contig_id]
-            contig_status = 'Incomplete'
+
+            if run_circlator or unicycler_contigs:
+                contig_status = 'Incomplete'
+            else:
+                contig_status = 'Not Tested'
             if contig_id in circular_contigs:
                 contig_status = 'Circular'
             results_fh.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(file_id, 'chromosome', contig_id,
