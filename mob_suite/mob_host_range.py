@@ -7,6 +7,7 @@ import subprocess
 from argparse import ArgumentParser
 from collections import Counter,OrderedDict
 from ete3 import NCBITaxa
+from mob_suite.version import __version__
 
 
 #pandas.options.display.float_format = '{:.1E}'.format #render scientific notation
@@ -301,7 +302,7 @@ def getHostRangeRankCovergence(taxids):
     then traverse the tree and report rank at genus level. Of course this literature based host range prediction might be understatement.
     """
 
-    ncbi = NCBITaxa()
+    ncbi = NCBITaxa(dbfile=os.path.abspath(__file__)+"/databases/taxa.sqlite")
     #taxids=[562,573,1288825,439842]
     tree = ncbi.get_topology(taxids)
     tree.annotate_ncbi_taxa(taxid_attr='name')
@@ -687,7 +688,7 @@ def parse_args():
     parser.add_argument('--outdir', action='store', required=True, help='Output files name prefix')
     parser.add_argument('--inputseq', action='store', required=False, help='Single plasmid sequence in FASTA format (optional)')
     parser.add_argument('--debug', required=False, help='Show debug detailed information (optional)', action='store_true')
-
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
     args = parser.parse_args()
 
 

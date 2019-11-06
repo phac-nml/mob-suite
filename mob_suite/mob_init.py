@@ -229,7 +229,7 @@ def main():
 
     try:
         logger.info("Init ete3 library ...")
-        os.system('python -c "from ete3 import NCBITaxa; ncbi = NCBITaxa(); ncbi.update_taxonomy_database()"')
+        os.system(sys.executable+' -c "from ete3 import NCBITaxa; ncbi = NCBITaxa(); ncbi.update_taxonomy_database('+database_directory+')"')
     except Exception as e:
         logger.error("Init of ete3 library failed with error {}. Removing lock file".format(e))
         os.remove(lockfilepath)

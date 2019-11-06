@@ -145,7 +145,7 @@ def run_mob_typer(plasmid_file_abs_path, outdir, num_threads=1,database_dir=None
     logger = logging.getLogger(__name__)
     logger.info("Launching mob_typer to type recently reconstructed plasmid {}".format(plasmid_file_abs_path))
     if database_dir is None:
-        p = Popen(['python', mob_typer_path,
+        p = Popen([sys.executable, mob_typer_path,
                    '--infile', plasmid_file_abs_path,
                    '--outdir', outdir,
                    '--keep_tmp',
@@ -155,7 +155,7 @@ def run_mob_typer(plasmid_file_abs_path, outdir, num_threads=1,database_dir=None
                   stderr=PIPE, universal_newlines=True
                   )
     else:
-        p = Popen(['python', mob_typer_path,
+        p = Popen([sys.executable, mob_typer_path,
                    '--infile', plasmid_file_abs_path,
                    '--outdir', outdir,
                    '--keep_tmp',
