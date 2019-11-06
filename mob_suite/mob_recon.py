@@ -5,11 +5,14 @@ import logging, os, shutil, sys, operator,re
 from subprocess import Popen, PIPE
 from argparse import (ArgumentParser, FileType)
 import mob_suite.mob_init
+import pandas as pd
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 from mob_suite.wrappers import circlator
 from mob_suite.wrappers import mash
 from mob_suite.classes.mcl import mcl
+import string
+
 from mob_suite.utils import \
     fixStart, \
     read_fasta_dict, \
@@ -24,14 +27,17 @@ from mob_suite.utils import \
     verify_init, \
     check_dependencies
 
+
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+
+
 
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
     default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     parser = ArgumentParser(
-        description="Mob Suite: Typing and reconstruction of plasmids from draft and complete assemblies version: {}".format(
+        description="MOB-Recon: Typing and reconstruction of plasmids from draft and complete assemblies version: {}".format(
             __version__))
     parser.add_argument('-o', '--outdir', type=str, required=True, help='Output Directory to put results')
     parser.add_argument('-i', '--infile', type=str, required=True, help='Input assembly fasta file to process')
@@ -119,6 +125,7 @@ def parse_args():
                         required=False,
                         help='Directory you want to use for your databases. If the databases are not already '
                              'downloaded, they will be downloaded automatically. Defaults to {}'.format(default_database_dir))
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
 
 
     return parser.parse_args()
@@ -129,27 +136,6 @@ def init_console_logger(lvl):
     report_lvl = logging_levels[lvl]
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
     return logging.getLogger(__name__)
-
-def mcl_predict(blast_results_file, min_ident, min_cov, evalue, min_length, tmp_dir):
-    if os.path.getsize(blast_results_file) == 0:
-        return dict()
-
-    blast_df = BlastReader(blast_results_file).df
-    blast_df = blast_df.loc[blast_df['length'] >= min_length]
-    blast_df = blast_df.loc[blast_df['qlen'] <= 400000]
-    blast_df = blast_df.loc[blast_df['qlen'] >= min_length]
-    blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
-    blast_df = blast_df.loc[blast_df['qlen'] >= min_length]
-    blast_df = blast_df.reset_index(drop=True)
-    for index, row in blast_df.iterrows():
-        (seqid, clust_id) = row[1].split('|')
-        blast_df.iloc[index, blast_df.columns.get_loc('sseqid')] = clust_id
-
-    filtered_blast = os.path.join(tmp_dir, 'filtered_mcl_blast.txt')
-    blast_df.to_csv(filtered_blast, sep='\t', header=False, line_terminator='\n', index=False)
-    mcl_clusters = mcl(filtered_blast, tmp_dir).getclusters()
-
-    return mcl_clusters
 
 
 
@@ -196,14 +182,31 @@ def run_mob_typer(plasmid_file_abs_path, outdir, num_threads=1,database_dir=None
     mob_typer_report_file = outdir + "/mobtyper_" + os.path.basename(plasmid_file_abs_path) + "_report.txt"
     if os.path.exists(mob_typer_report_file):
         logger.info("Typing plasmid {}".format(os.path.basename(plasmid_file_abs_path)))
-        with open(mob_typer_report_file) as fp:
-            mob_typer_results = fp.readlines()[1] #skip header of the mob_typer plasmid report file
-        fp.close()
+        if os.path.getsize(mob_typer_report_file) == 0:
+            logger.error(
+                "File {} is empty. Perhaps there is an issue with mob_typer or some dependencies are missing (e.g. ete3)".format(
+                    mob_typer_report_file))
+            return ''
 
+        df = pd.read_csv(mob_typer_report_file,header=0,sep="\t", encoding='utf8')
+        row = df.iloc[0].to_list()
+        for i in range(0,len(row)):
+            r = row[i]
+            if isinstance(r, str):
+
+                row[i] = r.encode('utf-8', errors="ignore").decode("utf-8", errors="ignore")
+                printable = set(string.printable)
+                row[i] = ''.join(filter(lambda x: x in printable, row[i]))
+                #print(type(row[i]))
+            else:
+                row[i] = str(r)
+
+        #print(row)
+        mob_typer_results = "\t".join(str(v) for v in row)
+        #print(mob_typer_results)
         return mob_typer_results
     else:
         logger.error("File {} does not exist. Perhaps there is an issue with the mob_typer or some dependencies are missing (e.g. ete3)".format(mob_typer_report_file))
-
 
 
 
@@ -817,19 +820,40 @@ def main():
     write_fasta_dict(chr_contigs, chromosome_file)
 
     if args.run_typer:
-        mobtyper_results = "file_id\tnum_contigs\ttotal_length\tgc\t" \
-                           "rep_type(s)\trep_type_accession(s)\t" \
-                           "relaxase_type(s)\trelaxase_type_accession(s)\t" \
-                           "mpf_type\tmpf_type_accession(s)\t" \
-                           "orit_type(s)\torit_accession(s)\tPredictedMobility\t" \
-                           "mash_nearest_neighbor\tmash_neighbor_distance\tmash_neighbor_cluster\t" \
-                           "NCBI-HR-rank\tNCBI-HR-Name\tLitRepHRPlasmClass\tLitPredDBHRRank\t" \
-                           "LitPredDBHRRankSciName\tLitRepHRRankInPubs\tLitRepHRNameInPubs\tLitMeanTransferRate\t" \
-                           "LitClosestRefAcc\tLitClosestRefDonorStrain\tLitClosestRefRecipientStrain\t" \
-                           "LitClosestRefTransferRate\tLitClosestConjugTemp\n"
-
+        mobtyper_results = "file_id\t" \
+                            "num_contigs\t" \
+                            "total_length\t" \
+                            "gc\t" \
+                            "rep_type(s)\t" \
+                            "rep_type_accession(s)\t" \
+                            "relaxase_type(s)\t" \
+                            "relaxase_type_accession(s)\t" \
+                            "mpf_type\t" \
+                            "mpf_type_accession(s)\t" \
+                            "orit_type(s)\t" \
+                            "orit_accession(s)\t" \
+                            "PredictedMobility\t" \
+                            "mash_nearest_neighbor\t" \
+                            "mash_neighbor_distance\t" \
+                            "mash_neighbor_cluster\t" \
+                            "NCBI-HR-rank\t" \
+                            "NCBI-HR-Name\t" \
+                            "LitRepHRPlasmClass\t" \
+                            "LitPredDBHRRank\t" \
+                            "LitPredDBHRRankSciName\t" \
+                            "LitRepHRRankInPubs\t" \
+                            "LitRepHRNameInPubs\t" \
+                            "LitMeanTransferRate\t" \
+                            "LitClosestRefAcc\t" \
+                            "LitClosestRefDonorStrain\t" \
+                            "LitClosestRefRecipientStrain\t" \
+                            "LitClosestRefTransferRate\t" \
+                            "LitClosestConjugTemp\t" \
+                            "LitPMIDs\t" \
+                            "LitPMIDsNumber\t" \
+                            "LitClosestMashDist\n"
         for plasmid_file_abs_path in plasmid_files:
-            mobtyper_results = mobtyper_results + "{}".format(run_mob_typer(plasmid_file_abs_path=plasmid_file_abs_path,
+            mobtyper_results = mobtyper_results + "{}\n".format(run_mob_typer(plasmid_file_abs_path=plasmid_file_abs_path,
                                                                             outdir=out_dir,
                                                                             num_threads=int(num_threads),
                                                                             database_dir=database_dir))

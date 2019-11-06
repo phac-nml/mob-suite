@@ -25,7 +25,7 @@ def init_console_logger(lvl):
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
-    parser = ArgumentParser(description='Mob-Suite: Generate and update existing plasmid clusters')
+    parser = ArgumentParser(description="MOB-Cluster: Generate and update existing plasmid clusters' version: {}".format(__version__))
     parser.add_argument('-m','--mode', type=str, required=True, help='Build: Create a new database from scratch, Update: Update an existing database with one or more sequences')
     parser.add_argument('-o','--outdir', type=str, required=True, help='Output Directory to put results')
     parser.add_argument('-i','--infile', type=str, required=True, help='Input fasta file of one or more closed plasmids to process')
@@ -34,6 +34,7 @@ def parse_args():
     parser.add_argument('--ref_mash_db', type=str, required=False, help='Reference mob-cluster mash sketch file')
     parser.add_argument('--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
     parser.add_argument('-w','--overwrite',  required=False, help='Overwrite the MOB-suite databases with results', action='store_true')
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
     return parser.parse_args()
 
 def read_cluster_assignments(file):

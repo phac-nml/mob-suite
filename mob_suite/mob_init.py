@@ -20,8 +20,10 @@ with open(config_path, 'r') as configfile:
 
 def arguments():
 
-    parser = argparse.ArgumentParser()
 
+    parser = argparse.ArgumentParser(
+        description="MOB-INIT: initialize databases version: {}".format(
+            __version__))
     parser.add_argument('-d', '--database_directory',
                         default=default_database_dir,
                         help='Directory to download databases to. Defaults to {}'.format(
@@ -31,6 +33,8 @@ def arguments():
                         default=0,
                         action='count',
                         help='Set the verbosity level. Can by used multiple times')
+
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
 
     args = parser.parse_args()
 

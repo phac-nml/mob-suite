@@ -27,7 +27,7 @@ exec(open('mob_suite/version.py').read())
 setup(
     name='mob_suite',
     include_package_data=True,
-    version='2.0.0',
+    version='2.0.2',
     python_requires='>3.5.2',
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
