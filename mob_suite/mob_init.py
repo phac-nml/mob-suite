@@ -239,6 +239,12 @@ def main():
         os.remove(lockfilepath)
         sys.exit(-1)
 
+    try:
+        os.remove(os.path.join(os.getcwd(), "taxdump.tar.gz"))
+        logger.info("Removed residual taxdump.tar.gz as ete3 is not doing proper cleaning job.")
+    except:
+        pass
+
     with open(status_file, 'w') as f:
         download_date = datetime.datetime.today().strftime('%Y-%m-%d')
         f.write("Download date: {}. Removing lock file.".format(download_date))

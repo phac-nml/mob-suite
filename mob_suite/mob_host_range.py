@@ -79,6 +79,12 @@ def initETE3Database():
     except:
         logging.warning("Lock file is already removed by some other process.")
         pass
+
+    try:
+        os.remove(os.path.join(os.getcwd(), "taxdump.tar.gz"))
+        logging.info("Removed residual taxdump.tar.gz as ete3 is not doing proper cleaning job.")
+    except:
+        pass
     logging.info("ETE3 database init completed successfully.")
 
 def loadliteratureplasmidDB():
@@ -574,7 +580,7 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
     return(convergance_rank, converged_taxonomy_name, unique_ref_selected_taxids, ref_taxids_df,stats_host_range_dict)
 
 def taxonomical_hits_breakdown_stats_per_taxonomical_rank(filename_prefix,stats_host_range_dict,dbtype):
-    with open(file=filename_prefix+"_refseqhostrange_phylostats.txt", mode="w") as fp:
+    with open(file=filename_prefix+"_refseqhostrange_phylostats.txt", mode="w", encoding="utf-8") as fp:
         strings2file = ["rank\tsci_name\tdb_hits\tconvergance_rank\tconvergance_sci_name\n"]
         for rank in stats_host_range_dict.keys():
             names = (Counter(stats_host_range_dict[rank]).keys())
@@ -610,7 +616,7 @@ def writeOutHostRangeReports(   filename_prefix = None,
         if dict_molecular_features[key] != None:
             dict_molecular_features[key] = ",".join([str(x) for x in dict_molecular_features[key]])
 
-    with open(filename_prefix+"_refseqhostrange_report.txt",mode="w") as fp:
+    with open(filename_prefix+"_refseqhostrange_report.txt",mode="w", encoding="utf-8") as fp:
         strings2file = ["filename\tquery_replicons\tquery_mob_cluster_ids\tquery_relaxase_names\tquery_relaxase_name_accs\tconvergance_refseq_rank\tconvergance_refseq_sci_name\n"]
         strings2file.append("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(
                                                   samplename,
@@ -852,7 +858,7 @@ def main():
 
 def renderTree(tree,filename_prefix):
 
-    with open(file=filename_prefix+ "asci_tree.txt", mode="w") as fp:
+    with open(file=filename_prefix+ "asci_tree.txt", mode="w", encoding="utf-8") as fp:
         fp.write(tree.get_ascii(attributes=["rank", "sci_name"]))
     logging.info("Wrote ASCII host range tree into {}".format(filename_prefix + "asci_tree.txt"))
     tree.write(format=2, outfile=filename_prefix + "phylogeny_tree.nwk")

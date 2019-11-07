@@ -53,7 +53,7 @@ def read_cluster_assignments(file):
 def calcDistances(input_fasta,ref_sketch_db,output_file):
     m = mash()
     mash_results = dict()
-    with open(output_file, 'w') as oh:
+    with open(output_file, 'w',encoding="utf-8") as oh:
         m.run_mash(ref_sketch_db, input_fasta, oh)
         mash_lines = m.read_mash(output_file)
         for line in mash_lines:
@@ -70,7 +70,7 @@ def calcDistances(input_fasta,ref_sketch_db,output_file):
 
 
 def write_clusters(file,cluster_assignments,header):
-    with open(file, 'w') as outfile:
+    with open(file, 'w', encoding="utf-8") as outfile:
         for id in cluster_assignments:
             outfile.write(str(id) + "\t" + "\t".join(cluster_assignments[id]))
         outfile.close()
@@ -121,11 +121,11 @@ def add_new_record(fasta_file,ref_mashdb,mash_results_file,ref_cluster_file,dist
     out_dir = os.path.dirname(fasta_file)
     mashObj = mash()
     mashObj.mashsketch(fasta_file, output_path=fasta_file, sketch_ind=True, num_threads=1, kmer_size=21, sketch_size=1000)
-    mashfile_handle = open(mash_results_file,'w')
+    mashfile_handle = open(mash_results_file,'w',encoding="utf-8")
     mashObj.run_mash(ref_mashdb, fasta_file + '.msh', mashfile_handle,table=False,num_threads=num_threads)
     mashfile_handle.close()
 
-    mashfile_handle = open(mash_results_file, 'r')
+    mashfile_handle = open(mash_results_file, 'r', encoding="utf-8")
     query_mash_distances = dict()
 
     for line in mashfile_handle:
@@ -171,14 +171,14 @@ def add_new_record(fasta_file,ref_mashdb,mash_results_file,ref_cluster_file,dist
 
 
 def writeClusterAssignments(output_file,header,cluster_assignmnets):
-    with open(output_file, 'w') as out:
+    with open(output_file, 'w', encoding="utf-8") as out:
         out.write("\t".join(map(str,header)) + "\n")
         for id in cluster_assignmnets:
             out.write("{}\t{}".format(id,"\t".join(map(str,cluster_assignmnets[id]))) + "\n")
         out.close()
 
 def updateFastaFile(in_fasta_file,out_fasta_file,cluster_assignments):
-    out = open(out_fasta_file,'w')
+    out = open(out_fasta_file,'w', encoding="utf-8")
     with open(in_fasta_file, "r") as handle:
         for record in SeqIO.parse(handle, "fasta"):
             row = str(record.id).split('|')
@@ -205,14 +205,14 @@ def update_existing(input_fasta,tmp_dir,ref_mash_db,tmp_cluster_file,header,tmp_
     for id in sequences:
         seq = sequences[id]
         tmp_fasta = os.path.join(tmp_dir,id + '_tmp.fasta')
-        with open(tmp_fasta , "w") as fh:
+        with open(tmp_fasta , "w", encoding="utf-8") as fh:
             fh.write("\n>{}\n{}\n".format(id,seq))
             fh.close()
         tmp_mash = os.path.join(tmp_dir,id + '_tmp.txt')
         clust_assignments = add_new_record(tmp_fasta, ref_mash_db ,tmp_mash, tmp_cluster_file,(0.05, 0.0001),num_threads)
 
         writeClusterAssignments(tmp_cluster_file , header, clust_assignments)
-        with open(tmp_ref_fasta_file , "a") as fh:
+        with open(tmp_ref_fasta_file , "a", encoding="utf-8") as fh:
             fh.write("\n>{}\n{}\n".format(id,seq))
             fh.close()
 
@@ -303,7 +303,7 @@ def main():
         mashObj = mash()
         mashObj.mashsketch(input_fasta,input_fasta+".msh",num_threads=num_threads)
         distance_matrix_file = os.path.join(tmp_dir,'mash_dist_matrix.txt')
-        mashfile_handle = open(distance_matrix_file,'w')
+        mashfile_handle = open(distance_matrix_file,'w',encoding="utf-8")
 
         mashObj.run_mash(input_fasta+'.msh', input_fasta+'.msh', mashfile_handle,table=True,num_threads=num_threads)
         clust_assignments = build_cluster_db(distance_matrix_file, (0.05, 0.0001))

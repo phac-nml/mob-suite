@@ -216,7 +216,7 @@ def contig_blast(input_fasta, plasmid_db, min_ident, min_cov, evalue, min_length
                            db_type='nucl', min_cov=min_cov, min_ident=min_ident, evalue=evalue,
                            blast_outfile=blast_results_file, num_threads=num_threads, word_size=11)
     if os.path.getsize(blast_results_file) == 0:
-        fh = open(filtered_blast, 'w')
+        fh = open(filtered_blast, 'w', encoding="utf-8")
         fh.write('')
         fh.close()
         return dict()
@@ -540,7 +540,7 @@ def main():
                 circular_contigs[seqid] = ''
 
     repetitive_dna = dict()
-    results_fh = open(repetitive_blast_report, 'w')
+    results_fh = open(repetitive_blast_report, 'w', encoding="utf-8")
     results_fh.write("contig_id\tmatch_id\tmatch_type\tscore\tcontig_match_start\tcontig_match_end\n")
 
     for contig_id in repetitive_contigs:
@@ -650,7 +650,7 @@ def main():
     mash_top_dists = dict()
     contig_report = list()
 
-    results_fh = open(contig_report_file, 'w')
+    results_fh = open(contig_report_file, 'w', encoding="utf-8")
     results_fh.write("file_id\tcluster_id\tcontig_id\tcontig_length\tcircularity_status\trep_type\t" \
                      "rep_type_accession\trelaxase_type\trelaxase_type_accession\tmash_nearest_neighbor\t"
                      " mash_neighbor_distance\trepetitive_dna_id\tmatch_type\tscore\tcontig_match_start\tcontig_match_end\n")
@@ -687,7 +687,7 @@ def main():
         mash_file = os.path.join(tmp_dir, 'clust_' + str(cluster) + '.txt')
         write_fasta_dict(clusters, cluster_file)
 
-        mashfile_handle = open(mash_file, 'w')
+        mashfile_handle = open(mash_file, 'w',encoding="utf-8")
         m.run_mash(mash_db, cluster_file, mashfile_handle)
 
         mash_results = m.read_mash(mash_file)
@@ -723,16 +723,16 @@ def main():
                 counter += 1
 
             if os.path.isfile(new_clust_file):
-                temp_fh = open(cluster_file, 'r')
+                temp_fh = open(cluster_file, 'r', encoding="utf-8")
 
                 data = temp_fh.read()
 
                 temp_fh.close()
-                temp_fh = open(new_clust_file, 'a')
+                temp_fh = open(new_clust_file, 'a', encoding="utf-8")
                 temp_fh.write(data)
                 temp_fh.close()
                 mash_file = os.path.join(tmp_dir, 'clust_' + str(cluster) + '.txt')
-                mashfile_handle = open(mash_file, 'w')
+                mashfile_handle = open(mash_file, 'w', encoding="utf-8")
                 m.run_mash(mash_db, cluster_file, mashfile_handle)
                 mash_results = m.read_mash(mash_file)
                 mash_top_hit = getMashBestHit(mash_results)
@@ -852,7 +852,7 @@ def main():
                                                                             outdir=out_dir,
                                                                             num_threads=int(num_threads),
                                                                             database_dir=database_dir))
-        fh = open(mobtyper_results_file, 'w')
+        fh = open(mobtyper_results_file, 'w', encoding="utf-8")
         fh.write(mobtyper_results)
         fh.close()
 

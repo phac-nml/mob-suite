@@ -36,15 +36,16 @@ def test_run_mob_typer():
     num_threads=1
     #database_dir="/Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/databases"
 
-    mobtyper_results="title\n"
+    mobtyper_results="Tab-file header will go here. Line 1\n"
     for file in plasmid_files:
         file=os.path.join(TEST_ROOT,file)
-        mobtyper_results = mobtyper_results + "{}".format(mob_suite.mob_recon.run_mob_typer(plasmid_file_abs_path=file,
+        mobtyper_results = mobtyper_results + "{}\n".format(mob_suite.mob_recon.run_mob_typer(plasmid_file_abs_path=file,
                                                                                             outdir=out_dir,
                                                                                             num_threads=int(num_threads)
                                                                                             ))
     mobtyper_results_file = os.path.join(out_dir, 'mobtyper_aggregate_report.txt')
     fh = open(mobtyper_results_file, 'w')
     fh.write(mobtyper_results)
+    print("mob_typer aggregate results",mobtyper_results)
     fh.close()
     assert sum(1 for line in open(mobtyper_results_file)) == 3, "Results file is empty, something went wrong"
