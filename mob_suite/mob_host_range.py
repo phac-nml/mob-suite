@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import pandas, re, logging, os
+import pandas, re, logging, os,time
 pandas.set_option('display.max_rows', 500)
 pandas.set_option('display.max_columns', 500)
 pandas.set_option('display.width', 1000)
@@ -7,12 +7,16 @@ import subprocess
 from argparse import ArgumentParser
 from collections import Counter,OrderedDict
 from ete3 import NCBITaxa
+from mob_suite.version import __version__
+from mob_suite.utils import default_database_dir
 
+database_directory = os.path.abspath(default_database_dir)
+ETE3DBTAXAFILE = os.path.abspath(database_directory + "/taxa.sqlite")
 
 #pandas.options.display.float_format = '{:.1E}'.format #render scientific notation
 
 #default init arguments
-args=ArgumentParser()
+#args=ArgumentParser()
 # args.multi_match = True
 # args.exact_match = None
 # args.loose_match = None
@@ -38,6 +42,51 @@ args=ArgumentParser()
 #     return log
 
 #LOG = createLogger()
+
+def isETE3DBTAXAFILEexists():
+    if not os.path.exists(ETE3DBTAXAFILE):
+        return False
+    else:
+        return True
+def initETE3Database():
+    lockfilepath = os.path.join(database_directory, ".lock")
+
+    if os.path.exists(lockfilepath) == False:
+        open(file=lockfilepath, mode="w").close()
+        logging.info("Placed lock file at {}".format(lockfilepath))
+    else:
+        while os.path.exists(lockfilepath):
+            elapsed_time = time.time() - os.path.getmtime(lockfilepath)
+            logging.info("Lock file found at {}. Waiting for other processes to finish ete3 database init ...".format(lockfilepath))
+            logging.info("Elapsed time {} min. Will continue processing after 16 min mark.".format(int(elapsed_time/60)))
+            if elapsed_time >= 1000:
+                logging.info("Elapsed time {} min. Assuming previous process completed all init steps. Continue ...".format(int(elapsed_time/60)))
+                try: #if previous process failed, no processes are running and > 16 min passed since the lock was created
+                    os.remove(lockfilepath)
+                except: #continue if file was removed by other process
+                    pass
+                break
+            time.sleep(60) #recheck every 1 min if lock file was removed by other process
+        logging.info("Lock file no longer exists. Assuming init process completed successfully")
+
+    ncbi = NCBITaxa()
+    ncbi.dbfile = ETE3DBTAXAFILE
+    ncbi.update_taxonomy_database()
+
+    try:
+        os.remove(lockfilepath)
+        logging.info("Lock file removed.")
+    except:
+        logging.warning("Lock file is already removed by some other process.")
+        pass
+
+    try:
+        os.remove(os.path.join(os.getcwd(), "taxdump.tar.gz"))
+        logging.info("Removed residual taxdump.tar.gz as ete3 is not doing proper cleaning job.")
+    except:
+        pass
+    logging.info("ETE3 database init completed successfully.")
+
 def loadliteratureplasmidDB():
     literatureplasmidDB = pandas.read_csv(os.path.dirname(os.path.abspath(__file__))+"/databases/host_range_literature_plasmidDB.csv",
                             sep=",",encoding = "ISO-8859-1",dtype={"PMID":str, "TransferRate":float, "Year":str,"Size":float})
@@ -301,10 +350,19 @@ def getHostRangeRankCovergence(taxids):
     then traverse the tree and report rank at genus level. Of course this literature based host range prediction might be understatement.
     """
 
-    ncbi = NCBITaxa()
+    if not isETE3DBTAXAFILEexists():
+        logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
+        initETE3Database()
+
+    ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
+    if not isETE3DBTAXAFILEexists():
+        logging.error("Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(ETE3DBTAXAFILE))
+        exit(-1)
+
     #taxids=[562,573,1288825,439842]
     tree = ncbi.get_topology(taxids)
-    tree.annotate_ncbi_taxa(taxid_attr='name')
+    tree.annotate_ncbi_taxa(dbfile=ETE3DBTAXAFILE, taxid_attr='name')
+
 
     tree_rank=tree.rank
     tree_sci_name=tree.sci_name
@@ -522,7 +580,7 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
     return(convergance_rank, converged_taxonomy_name, unique_ref_selected_taxids, ref_taxids_df,stats_host_range_dict)
 
 def taxonomical_hits_breakdown_stats_per_taxonomical_rank(filename_prefix,stats_host_range_dict,dbtype):
-    with open(file=filename_prefix+"_refseqhostrange_phylostats.txt", mode="w") as fp:
+    with open(file=filename_prefix+"_refseqhostrange_phylostats.txt", mode="w", encoding="utf-8") as fp:
         strings2file = ["rank\tsci_name\tdb_hits\tconvergance_rank\tconvergance_sci_name\n"]
         for rank in stats_host_range_dict.keys():
             names = (Counter(stats_host_range_dict[rank]).keys())
@@ -558,7 +616,7 @@ def writeOutHostRangeReports(   filename_prefix = None,
         if dict_molecular_features[key] != None:
             dict_molecular_features[key] = ",".join([str(x) for x in dict_molecular_features[key]])
 
-    with open(filename_prefix+"_refseqhostrange_report.txt",mode="w") as fp:
+    with open(filename_prefix+"_refseqhostrange_report.txt",mode="w", encoding="utf-8") as fp:
         strings2file = ["filename\tquery_replicons\tquery_mob_cluster_ids\tquery_relaxase_names\tquery_relaxase_name_accs\tconvergance_refseq_rank\tconvergance_refseq_sci_name\n"]
         strings2file.append("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(
                                                   samplename,
@@ -603,7 +661,15 @@ def getTaxonomyTree(taxids):
     :param taxids: list of NCBI Taxonomy ids (e.g. 562 - E.coli)
     :return: tree: object of PhyloTree class from ete3 library
     """
-    ncbi = NCBITaxa()
+
+    if not isETE3DBTAXAFILEexists():
+        logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
+        initETE3Database()
+
+    ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
+    if not isETE3DBTAXAFILEexists():
+        logging.error("Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(ETE3DBTAXAFILE))
+        exit(-1)
 
     tree = ncbi.get_topology(taxids)
     #prune tree
@@ -684,9 +750,14 @@ def parse_args():
     #parser.add_argument('--render_tree_image', required=False, help='Render host range phylogenetic tree in PNG format (requires running X11 server)',
     #                    action='store_true',
     #                    default=False)
+    parser.add_argument('-d', '--database_directory',
+                        default=default_database_dir,
+                        help='Directory where all download databases are located. Defaults to {}'.format(
+                            default_database_dir))
     parser.add_argument('--outdir', action='store', required=True, help='Output files name prefix')
     parser.add_argument('--inputseq', action='store', required=False, help='Single plasmid sequence in FASTA format (optional)')
     parser.add_argument('--debug', required=False, help='Show debug detailed information (optional)', action='store_true')
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
 
     args = parser.parse_args()
 
@@ -787,7 +858,7 @@ def main():
 
 def renderTree(tree,filename_prefix):
 
-    with open(file=filename_prefix+ "asci_tree.txt", mode="w") as fp:
+    with open(file=filename_prefix+ "asci_tree.txt", mode="w", encoding="utf-8") as fp:
         fp.write(tree.get_ascii(attributes=["rank", "sci_name"]))
     logging.info("Wrote ASCII host range tree into {}".format(filename_prefix + "asci_tree.txt"))
     tree.write(format=2, outfile=filename_prefix + "phylogeny_tree.nwk")

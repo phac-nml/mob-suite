@@ -43,7 +43,7 @@ def parse_args():
     "Parse the input arguments, use '-h' for help"
     default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     parser = ArgumentParser(
-        description="Mob Suite: Typing and reconstruction of plasmids from draft and complete assemblies version: {}".format(
+        description="MOB-Typer: Plasmid typing version: {}".format(
             __version__))
 
     parser.add_argument('-o', '--outdir', type=str, required=True, help='Output Directory to put results')
@@ -128,6 +128,7 @@ def parse_args():
                              '--plasmid_replicons, --plasmid_mob, --plasmid_mpf, and '
                              '--plasmid_orit'.format(default_database_dir))
 
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
     return parser.parse_args()
 
 

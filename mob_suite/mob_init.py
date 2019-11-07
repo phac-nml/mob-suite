@@ -11,6 +11,7 @@ import shutil
 import datetime
 import time #waiting for other processes
 from mob_suite.utils import default_database_dir, init_console_logger
+from ete3 import NCBITaxa
 
 logger = init_console_logger(3)
 config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.json')
@@ -20,8 +21,10 @@ with open(config_path, 'r') as configfile:
 
 def arguments():
 
-    parser = argparse.ArgumentParser()
 
+    parser = argparse.ArgumentParser(
+        description="MOB-INIT: initialize databases version: {}".format(
+            __version__))
     parser.add_argument('-d', '--database_directory',
                         default=default_database_dir,
                         help='Directory to download databases to. Defaults to {}'.format(
@@ -31,6 +34,8 @@ def arguments():
                         default=0,
                         action='count',
                         help='Set the verbosity level. Can by used multiple times')
+
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
 
     args = parser.parse_args()
 
@@ -120,7 +125,7 @@ def main():
 
 
     database_directory = os.path.abspath(args.database_directory)
-    print(os.getcwd())
+
 
     if os.path.exists(database_directory) == False:
         os.mkdir(database_directory)
@@ -138,23 +143,23 @@ def main():
             open(file=lockfilepath, mode="w").close()
             logger.info("Placed lock file at {}".format(lockfilepath))
         except Exception as e:
-            logger.info("Failed to place lock file at {}".format(lockfilepath))
+            logger.error("Failed to place a lock file at {}. Database diretory can not be accessed. Wrong path?".format(lockfilepath))
             logger.error("{}".format(e))
-            pass
+            exit(-1)
     else:
         while os.path.exists(lockfilepath):
             elapsed_time = time.time() - os.path.getmtime(lockfilepath)
             logger.info("Lock file found at {}. Waiting for other processes to finish database init ...".format(lockfilepath))
-            logger.info("Elapsed time {} min. Will continue processing at 10 min mark.".format(int(elapsed_time/60)))
+            logger.info("Elapsed time {} min. Will continue processing after 16 min mark.".format(int(elapsed_time/60)))
             if elapsed_time >= 1000:
                 logger.info("Elapsed time {} min. Assuming previous process completed all init steps. Continue ...".format(int(elapsed_time/60)))
-                try: #if previous process failed, no processes are running and > 10 min passed since the lock was created
+                try: #if previous process failed, no processes are running and > 16 min passed since the lock was created
                     os.remove(lockfilepath)
                 except: #continue if file was removed by other process
                     pass
                 break
             time.sleep(60) #recheck every 1 min if lock file was removed
-        logger.info("Lock file removed. Assuming init process completed successfully")
+        logger.info("Lock file no longer exists. Assuming init process completed successfully")
         return 0
 
 
@@ -225,11 +230,20 @@ def main():
 
     try:
         logger.info("Init ete3 library ...")
-        os.system('python -c "from ete3 import NCBITaxa; ncbi = NCBITaxa(); ncbi.update_taxonomy_database()"')
+        ete3taxadbpath = os.path.abspath(os.path.join(database_directory,"taxa.sqlite"))
+        ncbi = NCBITaxa()
+        ncbi.dbfile=ete3taxadbpath
+        ncbi.update_taxonomy_database()
     except Exception as e:
         logger.error("Init of ete3 library failed with error {}. Removing lock file".format(e))
         os.remove(lockfilepath)
         sys.exit(-1)
+
+    try:
+        os.remove(os.path.join(os.getcwd(), "taxdump.tar.gz"))
+        logger.info("Removed residual taxdump.tar.gz as ete3 is not doing proper cleaning job.")
+    except:
+        pass
 
     with open(status_file, 'w') as f:
         download_date = datetime.datetime.today().strftime('%Y-%m-%d')
@@ -237,6 +251,7 @@ def main():
         try:
             os.remove(lockfilepath)
         except:
+            logger.warning("Lock file is already removed by some other process.")
             pass
     logger.info("MOB init completed successfully")
     return 0

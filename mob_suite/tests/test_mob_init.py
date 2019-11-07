@@ -34,7 +34,7 @@ def test_concurrent_init():
                                shell=False
                                )
     except:
-        p1 = subprocess.Popen(['python','../mob_init.py', '-v', '-d', TEST_ROOT+'/run_test/databases'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+        p1 = subprocess.Popen([sys.executable,'../mob_init.py', '-v', '-d', TEST_ROOT+'/run_test/databases'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,
                               )
     print("Strated process 1  ...")
     time.sleep(10)
@@ -45,7 +45,7 @@ def test_concurrent_init():
                                stderr=subprocess.PIPE,
                                shell=False)
     except:
-        p2 = subprocess.Popen(['python','../mob_init.py', '-v', '-d', TEST_ROOT+'/run_test/databases'],
+        p2 = subprocess.Popen([sys.executable,'../mob_init.py', '-v', '-d', TEST_ROOT+'/run_test/databases'],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE,
                               shell=False)

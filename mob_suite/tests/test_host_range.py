@@ -60,8 +60,8 @@ def test_getRefSeqHostRange_replicon():
             relaxase_name_list=None,
             matchtype="exact",
             hr_obs_data=loadHostRangeDB())
-    assert returnhrrank == "-", "Wronog value. Returned "+returnhrrank
-    assert returnhrsciname == "-", "Wronog value. Returned "+returnhrsciname
+    assert returnhrrank == "-", "Wrong value. Returned "+returnhrrank
+    assert returnhrsciname == "-", "Wrong value. Returned "+returnhrsciname
     assert stats_host_range_dict == {},"Wrong value. Returned "+stats_host_range_dict
     assert ref_taxids_df.empty == True
 
