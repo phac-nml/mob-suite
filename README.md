@@ -100,7 +100,7 @@ We recommend installing MOB-Suite via bioconda but you can install it via pip us
 A docker image is also available at [https://hub.docker.com/r/kbessonov/mob_suite](https://hub.docker.com/r/kbessonov/mob_suite)
 ```
 % docker pull kbessonov/mob_suite:2.0.0 
-% docker run --rm -v $(pwd):/mnt/ "kbessonov/mob_suite:2.0.0 " mob_recon -i /mnt/*.fasta -t -o /mnt/mob_recon_output
+% docker run --rm -v $(pwd):/mnt/ "kbessonov/mob_suite:2.0.0 " mob_recon -i /mnt/assembly.fasta -t -o /mnt/mob_recon_output
 
 ```
 
@@ -114,7 +114,7 @@ The docker image section also has instructions on how to create singularity imag
 ```
 
 ## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and to predict mobility
-=======
+
 ### Setuptools
 Clone this repository and install via setuptools. 
 
