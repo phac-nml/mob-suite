@@ -1,4 +1,4 @@
-﻿Replicon,Plasmid_Name,NCBI_Accession,Size,HostRangeClass,IsolationSpecies,IsolationStain,IsolationSerovar,IsolationTaxid,HostRangeClaim,HostRangeRankClaim,Donor,Recipient,TransferRate,ConjugationTemperature,PMID,PMCID,DOI,Year,Author,Notes
+Replicon,Plasmid_Name,NCBI_Accession,Size,HostRangeClass,IsolationSpecies,IsolationStain,IsolationSerovar,IsolationTaxid,HostRangeClaim,HostRangeRankClaim,Donor,Recipient,TransferRate,ConjugationTemperature,PMID,PMCID,DOI,Year,Author,Notes
 IncF,F,NC_002483,99159,NarrowHostRange,Escherichia coli,K-12,NA,83333,Enterobacteriaceae,family,NA,NA,NA,NA,20851899,PMC2976426,10.1128/JB.00277-10,2010,Suzuki H,
 IncF,p1658/97,NC_004998,125491,NarrowHostRange,Escherichia coli,NA,NA,562,Enterobacteriaceae,family,NA,NA,NA,NA,20851899,PMC2976427,10.1128/JB.00277-10,2010,Suzuki H,
 IncF,pC15-1a,NC_005327,92353,NarrowHostRange,Escherichia coli,NA,NA,562,Enterobacteriaceae,family,NA,NA,NA,NA,20851899,PMC2976428,10.1128/JB.00277-10,2010,Suzuki H,
@@ -39,7 +39,7 @@ IncI1,pKHSB1,HF572032,94089,NarrowHostRange,Shigella sonnei,NA,NA,624,NA,NA,NA,N
 IncI1,pEC545_1,CP018975,95926,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
 IncI1,pHNRD174,KX246268,86207,NarrowHostRange,Escherichia coli,RD174,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
 IncI1,p628-CTXM,KP987217,85338,NarrowHostRange,Klebsiella pneumoniae,628,NA,573,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1,pSD107,NC_019137.1,107637,NarrowHostRange,Salmonella enterica,NA,Derby,28144,NA,NA,Salmonella enterica,E. coli DH5α,5.00E-06,37,23333216,NA,https://doi.org/10.1016/j.plasmid.2013.01.001,2013,Anne Bleicher,
+IncI1,pSD107,NC_019137.1,107637,NarrowHostRange,Salmonella enterica,NA,Derby,28144,NA,NA,Salmonella enterica,E. coli DH5,5.00E-06,37,23333216,NA,https://doi.org/10.1016/j.plasmid.2013.01.001,2013,Anne Bleicher,
 IncI1,pSH1148,JN983049.1,106833,NarrowHostRange,Salmonella enterica ,NA,Heidelberg,611,NA,NA,NA,NA,NA,NA,23333216,NA,https://doi.org/10.1016/j.plasmid.2013.01.001,2013,Anne Bleicher,
 IncI1,pND11_107,HQ114281.1,107138,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,23333216,NA,https://doi.org/10.1016/j.plasmid.2013.01.001,2013,Anne Bleicher,
 IncI1,pPWD4_103,HQ114284.1,103297,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,23333216,NA,https://doi.org/10.1016/j.plasmid.2013.01.001,2013,Anne Bleicher,

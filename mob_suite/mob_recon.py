@@ -4,13 +4,11 @@ from collections import OrderedDict
 import logging, os, shutil, sys, operator,re
 from subprocess import Popen, PIPE
 from argparse import (ArgumentParser, FileType)
-import mob_suite.mob_init
 import pandas as pd
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 from mob_suite.wrappers import circlator
 from mob_suite.wrappers import mash
-from mob_suite.classes.mcl import mcl
 import string
 
 from mob_suite.utils import \
@@ -125,7 +123,7 @@ def parse_args():
                         required=False,
                         help='Directory you want to use for your databases. If the databases are not already '
                              'downloaded, they will be downloaded automatically. Defaults to {}'.format(default_database_dir))
-    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__ )
 
 
     return parser.parse_args()

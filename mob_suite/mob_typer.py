@@ -128,7 +128,7 @@ def parse_args():
                              '--plasmid_replicons, --plasmid_mob, --plasmid_mpf, and '
                              '--plasmid_orit'.format(default_database_dir))
 
-    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
     return parser.parse_args()
 
 

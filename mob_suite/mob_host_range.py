@@ -175,6 +175,12 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
         LiteratureMaxTransferRateRange = "NA"
         LiteratureMeanTransferRateRange = "NA"
 
+        temp = []
+        for r in literature_knowledge["TransferRate"]:
+            if isinstance(r,int) or isinstance(r,float):
+                temp.append(r)
+        literature_knowledge["TransferRate"] = temp
+
         if any(literature_knowledge["TransferRate"] > 0):
             LiteratureMinTransferRateRange = min([i for i in literature_knowledge["TransferRate"] if i >= 0])
             LiteratureMeanTransferRateRange = mean([i for i in literature_knowledge["TransferRate"] if i >= 0])
@@ -339,7 +345,11 @@ def getClosestLiteratureRefPlasmid(input_fasta):
 
 
 def mean(numbers):
-    return float(sum(numbers)) / max(len(numbers), 1)
+    if not isinstance(numbers,int) and not isinstance(numbers,float):
+        mean = 'N/A'
+    else:
+        mean = float(sum(numbers)) / max(len(numbers), 1)
+    return mean
 
 def getHostRangeRankCovergence(taxids):
     """
