@@ -32,7 +32,7 @@ bitscore
 
 #inherit logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logger.getEffectiveLevel())
+logger.setLevel(logging.getLogger().getEffectiveLevel())
 
 
 
