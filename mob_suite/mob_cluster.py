@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument('--ref_mash_db', type=str, required=False, help='Reference mob-cluster mash sketch file')
     parser.add_argument('--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
     parser.add_argument('-w','--overwrite',  required=False, help='Overwrite the MOB-suite databases with results', action='store_true')
-    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
     return parser.parse_args()
 
 def read_cluster_assignments(file):

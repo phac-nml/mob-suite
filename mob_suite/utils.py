@@ -7,6 +7,7 @@ from subprocess import Popen, PIPE, STDOUT
 import shutil,sys
 import logging
 
+default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
 
 def check_dependencies(logger):
     external_programs = ['blastn', 'makeblastdb', 'tblastn', 'circlator']
@@ -300,9 +301,9 @@ def calcFastaStats(fasta):
     }
 
 
-def init_console_logger(lvl):
+def init_console_logger(lvl=2):
 
-    LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    LOG_FORMAT = '%(asctime)s %(name)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
     logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
     report_lvl = logging_levels[min(lvl, 3)]
@@ -311,4 +312,4 @@ def init_console_logger(lvl):
     return logging.getLogger(__name__)
 
 
-default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
+

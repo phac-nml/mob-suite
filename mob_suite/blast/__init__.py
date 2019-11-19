@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging
+
 import shutil
 
 from subprocess import Popen, PIPE
@@ -28,6 +29,11 @@ sstrand
 evalue
 bitscore
 '''.strip().split('\n')
+
+#inherit logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.getLogger().getEffectiveLevel())
+
 
 
 class BlastRunner:
@@ -63,10 +69,10 @@ class BlastRunner:
         stdout = p.stdout.read()
         stderr = p.stderr.read()
         if stdout is not None and stdout != '':
-            logging.debug('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
+            logger.debug('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
 
         if stderr is not None and stderr != '':
-            logging.debug('blastn on db {} and query {} STDERR: {}'.format(query_fasta_path, db_path, stderr))
+            logger.debug('blastn on db {} and query {} STDERR: {}'.format(query_fasta_path, db_path, stderr))
             if os.path.exists(blast_outfile):
                 return blast_outfile
             else:
@@ -74,7 +80,7 @@ class BlastRunner:
                     query_fasta_path,
                     db_path,
                     blast_outfile)
-                logging.error(ex_msg)
+                logger.error(ex_msg)
                 raise Exception(ex_msg)
 
     def run_blast(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1,word_size=11):
@@ -96,10 +102,10 @@ class BlastRunner:
         stdout = p.stdout.read()
         stderr = p.stderr.read()
         if stdout is not None and stdout != '':
-            logging.debug('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
+            logger.debug('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
 
         if stderr is not None and stderr != '':
-            logging.debug('blastn on db {} and query {} STDERR: {}'.format(query_fasta_path, db_path, stderr))
+            logger.debug('blastn on db {} and query {} STDERR: {}'.format(query_fasta_path, db_path, stderr))
             if os.path.exists(blast_outfile):
                 return blast_outfile
             else:
@@ -107,7 +113,7 @@ class BlastRunner:
                     query_fasta_path,
                     db_path,
                     blast_outfile)
-                logging.error(ex_msg)
+                logger.error(ex_msg)
                 raise Exception(ex_msg)
 
 
@@ -131,11 +137,11 @@ class BlastReader:
 
             self.df.columns = BLAST_TABLE_COLS
 
-            logging.debug(self.df.head())
+            logger.debug(self.df.head())
             self.is_missing = False
 
         except EmptyDataError as exc:
-            logging.warning('No BLASTN results to parse from file %s', blast_outfile)
+            logger.warning('No BLASTN results to parse from file %s', blast_outfile)
             self.is_missing = True
             self.df = pd.DataFrame(index=['A'], columns='A')
 

@@ -8,10 +8,13 @@ from argparse import ArgumentParser
 from collections import Counter,OrderedDict
 from ete3 import NCBITaxa
 from mob_suite.version import __version__
-from mob_suite.utils import default_database_dir
+from mob_suite.utils import default_database_dir,init_console_logger
 
 database_directory = os.path.abspath(default_database_dir)
 ETE3DBTAXAFILE = os.path.abspath(database_directory + "/taxa.sqlite")
+
+root_log_level = logging.getLogger().getEffectiveLevel()
+logger = init_console_logger(root_log_level)
 
 #pandas.options.display.float_format = '{:.1E}'.format #render scientific notation
 
@@ -53,21 +56,21 @@ def initETE3Database():
 
     if os.path.exists(lockfilepath) == False:
         open(file=lockfilepath, mode="w").close()
-        logging.info("Placed lock file at {}".format(lockfilepath))
+        logger.info("Placed lock file at {}".format(lockfilepath))
     else:
         while os.path.exists(lockfilepath):
             elapsed_time = time.time() - os.path.getmtime(lockfilepath)
-            logging.info("Lock file found at {}. Waiting for other processes to finish ete3 database init ...".format(lockfilepath))
-            logging.info("Elapsed time {} min. Will continue processing after 16 min mark.".format(int(elapsed_time/60)))
+            logger.info("Lock file found at {}. Waiting for other processes to finish ete3 database init ...".format(lockfilepath))
+            logger.info("Elapsed time {} min. Will continue processing after 16 min mark.".format(int(elapsed_time/60)))
             if elapsed_time >= 1000:
-                logging.info("Elapsed time {} min. Assuming previous process completed all init steps. Continue ...".format(int(elapsed_time/60)))
+                logger.info("Elapsed time {} min. Assuming previous process completed all init steps. Continue ...".format(int(elapsed_time/60)))
                 try: #if previous process failed, no processes are running and > 16 min passed since the lock was created
                     os.remove(lockfilepath)
                 except: #continue if file was removed by other process
                     pass
                 break
             time.sleep(60) #recheck every 1 min if lock file was removed by other process
-        logging.info("Lock file no longer exists. Assuming init process completed successfully")
+        logger.info("Lock file no longer exists. Assuming init process completed successfully")
 
     ncbi = NCBITaxa()
     ncbi.dbfile = ETE3DBTAXAFILE
@@ -75,17 +78,17 @@ def initETE3Database():
 
     try:
         os.remove(lockfilepath)
-        logging.info("Lock file removed.")
+        logger.info("Lock file removed.")
     except:
-        logging.warning("Lock file is already removed by some other process.")
+        logger.warning("Lock file is already removed by some other process.")
         pass
 
     try:
         os.remove(os.path.join(os.getcwd(), "taxdump.tar.gz"))
-        logging.info("Removed residual taxdump.tar.gz as ete3 is not doing proper cleaning job.")
+        logger.info("Removed residual taxdump.tar.gz as ete3 is not doing proper cleaning job.")
     except:
         pass
-    logging.info("ETE3 database init completed successfully.")
+    logger.info("ETE3 database init completed successfully.")
 
 def loadliteratureplasmidDB():
     literatureplasmidDB = pandas.read_csv(os.path.dirname(os.path.abspath(__file__))+"/databases/host_range_literature_plasmidDB.csv",
@@ -102,7 +105,7 @@ def findHitsInLiteratureDBbyReplicon(replicon_names,plasmid_lit_db):
     :return: repliconsearchdict: dictionary replicon name / hit indices (i.e. rows) (e.g. {'IncF': [0, 1, 2, 3, 4, 5, 6, 7, 97, 123, 135]})
     """
 
-    # Match by Inc families if exact match is returns no hits (e.g. IncF instead of IncFII)
+    # Match by Inc families if exact match returns no hits (e.g. IncF instead of IncFII)
     repliconsearchdict = {}
     for replicon_name in replicon_names:
         db_hit_indices=[i for i in range(0, plasmid_lit_db.shape[0]) if plasmid_lit_db.iloc[i, :]["Replicon"] == replicon_name]
@@ -175,6 +178,12 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
         LiteratureMaxTransferRateRange = "NA"
         LiteratureMeanTransferRateRange = "NA"
 
+        temp = []
+        for r in literature_knowledge["TransferRate"]:
+            if isinstance(r,int) or isinstance(r,float):
+                temp.append(r)
+        literature_knowledge["TransferRate"] = temp
+
         if any(literature_knowledge["TransferRate"] > 0):
             LiteratureMinTransferRateRange = min([i for i in literature_knowledge["TransferRate"] if i >= 0])
             LiteratureMeanTransferRateRange = mean([i for i in literature_knowledge["TransferRate"] if i >= 0])
@@ -227,8 +236,7 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
 
 
             if literature_closest_seq_hit_df.shape[0] != 1:
-                print(literature_closest_seq_hit_df)
-                logging.warning("Literature top hit dataframe returned more than a single hit ... Expecting a single top hit.Some entries have multiple hits.")
+                logger.warning("Literature top hit dataframe returned more than a single hit ... Expecting a single top hit.Some entries have multiple hits.")
 
             #additional fields
             report_dict.update(
@@ -294,19 +302,19 @@ def collapseLiteratureReport(df):
     #for i in range(0,df.shape[0]):
     #    if isinstance(df.iloc[i]["LiteratureReportedHostRangeInPubs"],int):
     #        idx.append(i)
-    #print(df)
+
+
     if df.shape[0] > 1:
         collapsedlitdf.loc[0,"LiteratureReportedHostRangeRankInPubs"] = numrank2nameconversiondict[max([rankconversiondict[k] for k in df["LiteratureReportedHostRangeRankInPubs"].values if k != "-"])]
-        collapsedlitdf.loc[0, "LiteratureReportedHostRangeNameInPubs"] = dict(zip(df["LiteratureReportedHostRangeRankInPubs"], df["LiteratureReportedHostRangeNameInPubs"]))[collapsedlitdf.loc[0,"LiteratureReportedHostRangeRankInPubs"]]
+        collapsedlitdf.loc[0,"LiteratureReportedHostRangeNameInPubs"] = dict(zip(df["LiteratureReportedHostRangeRankInPubs"], df["LiteratureReportedHostRangeNameInPubs"]))[collapsedlitdf.loc[0,"LiteratureReportedHostRangeRankInPubs"]]
     else:
         collapsedlitdf.loc[0, "LiteratureReportedHostRangeRankInPubs"] = "-"
         collapsedlitdf.loc[0,"LiteratureReportedHostRangeNameInPubs" ] = "-"
 
+
     for field in ["LiteratureMinTransferRateRange","LiteratureMaxTransferRateRange", "LiteratureMeanTransferRateRange"]:
-        if all(df[field].isna()):
-            collapsedlitdf.loc[0, field] = "-"
-        else:
-            collapsedlitdf.loc[0,field] = mean(df[df[field].isna() == False][field].values)
+        filteredvals=[i for i in df[field].values if isinstance(i,int) or isinstance(i,float)]
+        collapsedlitdf.loc[0,field] = mean(filteredvals)
 
     collapsedlitdf.loc[0,"LiteraturePMIDs"] = ";".join(df["LiteraturePMIDs"])
     collapsedlitdf.loc[0, "LiteraturePublicationsNumber"] = sum(df["LiteraturePublicationsNumber"])
@@ -339,7 +347,11 @@ def getClosestLiteratureRefPlasmid(input_fasta):
 
 
 def mean(numbers):
-    return float(sum(numbers)) / max(len(numbers), 1)
+    if not all([isinstance(n,float) or isinstance(n,int) for n in numbers]):
+        mean = "-"
+    else:
+        mean = float(sum(numbers)) / max(len(numbers), 1)
+    return mean
 
 def getHostRangeRankCovergence(taxids):
     """
@@ -351,12 +363,12 @@ def getHostRangeRankCovergence(taxids):
     """
 
     if not isETE3DBTAXAFILEexists():
-        logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
+        logger.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
         initETE3Database()
 
     ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
     if not isETE3DBTAXAFILEexists():
-        logging.error("Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(ETE3DBTAXAFILE))
+        logger.error("Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(ETE3DBTAXAFILE))
         exit(-1)
 
     #taxids=[562,573,1288825,439842]
@@ -398,42 +410,41 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
              stats_host_range_dict: dictionary with taxonomy rank keys and taxonomy rank names as values for future taxonomy hit statistics calculation
     """
 
-
-    logging.debug("Inside getRefSeqHostRange()")
-    logging.debug("Replicon_name_list:{}\nMob_cluster_id:{}\nRelaxase_name_acc_list:{}\nRelaxase_name_list:{}\nMatch_typer:{}\n".format(
+    logger.debug("Inside getRefSeqHostRange()")
+    logger.debug("Replicon_name_list:{}\nMob_cluster_id:{}\nRelaxase_name_acc_list:{}\nRelaxase_name_list:{}\nMatch_typer:{}\n".format(
                   replicon_name_list,mob_cluster_id_list,relaxase_name_acc_list,relaxase_name_list,matchtype)) #DEBUG
 
 
 
 
-    logging.info("Loading the plasmid reference database ...")
+    logger.info("Loading the plasmid reference database ...")
 
     #load reference lookup table
     ref_taxids_df = pandas.DataFrame()
 
 
-    logging.info("Searching  RefSeq plasmid database ...")
+    logger.info("Searching  RefSeq plasmid database ...")
 
     if replicon_name_list is not None:
         for replicon_name in replicon_name_list: #allows to run multi-replicon queries
             n_total_records_before = ref_taxids_df.shape[0]
-            logging.debug("Replicon name: {} MOB-Cluster: {}\n".format(replicon_name, mob_cluster_id_list))
+            logger.debug("Replicon name: {} MOB-Cluster: {}\n".format(replicon_name, mob_cluster_id_list))
             ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, replicon_name, "Ref_rep_type(s)", matchtype="exact")])
-            logging.debug("Extracted total records (replicon): {}".format(ref_taxids_df.shape[0] - n_total_records_before))
+            logger.debug("Extracted total records (replicon): {}".format(ref_taxids_df.shape[0] - n_total_records_before))
     if mob_cluster_id_list is not None:
         for mob_cluster_id in mob_cluster_id_list:
             ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, mob_cluster_id, "Ref_cluster_id", matchtype="exact")])#must peform only exact match to DB
-        logging.debug("Extracted total records (clusterid): {}".format(ref_taxids_df.shape[0]))
+        logger.debug("Extracted total records (clusterid): {}".format(ref_taxids_df.shape[0]))
     if relaxase_name_acc_list is not None:
         for relaxase_name_acc in relaxase_name_acc_list:
             ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, relaxase_name_acc, "Ref_relaxase_type_accession(s)",matchtype="exact")])
-            logging.debug("Relaxase accession: {}\n".format(relaxase_name_acc))
+            logger.debug("Relaxase accession: {}\n".format(relaxase_name_acc))
     if relaxase_name_list is not None:
         for relaxase_name in relaxase_name_list:
             ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, relaxase_name, "Ref_relaxase_type(s)", matchtype="exact")])
     if ref_taxids_df.empty:
-        logging.warning("RefSeq Plasmid database found no hits ...")
-        logging.warning("Search parameters:\n"+
+        logger.warning("RefSeq Plasmid database found no hits ...")
+        logger.warning("Search parameters:\n"+
                       "replicon name list: "+str(replicon_name_list)+"; mob_cluster_id: "+
                        str(mob_cluster_id_list)+"; relaxase_name_acc_list: "+
                        str(relaxase_name_acc_list)+"; relaxase_name_list: "+str(relaxase_name_list)+";")
@@ -495,10 +506,10 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
 
     # Check if the search returned no results. Abort
     n_ref_rep_hits = ref_taxids_df.shape[0]  # number of records on the query replicon/relaxase
-    logging.debug("QC removed {} hits (uncultured bacteria filter)".format(unfiltered_n_ref_hits - n_ref_rep_hits))
+    logger.debug("QC removed {} hits (uncultured bacteria filter)".format(unfiltered_n_ref_hits - n_ref_rep_hits))
 
     if n_ref_rep_hits == 0:
-        logging.warning("No plasmid reference database hits were found ...")
+        logger.warning("No plasmid reference database hits were found ...")
         #exit("ERROR: No plasmid reference database hits were found ... Try --loose_match parameter")
         convergance_rank="-"; converged_taxonomy_name="-"; unique_ref_selected_taxids="-";
         ref_taxids_df=pandas.DataFrame(); stats_host_range_dict={}
@@ -509,7 +520,7 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
     ref_taxids = list(ref_taxids_df['taxid']) #might be duplicated taxids
     unique_ref_selected_taxids = set(list(ref_taxids_df['taxid'])) #UNIQUE taxids returned as per query
 
-    logging.debug("Found {} records (with duplicates) in the reference database.({} unique and {} duplicated)".format(n_ref_rep_hits,
+    logger.debug("Found {} records (with duplicates) in the reference database.({} unique and {} duplicated)".format(n_ref_rep_hits,
                                                                                                                  len(unique_ref_selected_taxids),
                                                                                                                  n_ref_rep_hits-len(unique_ref_selected_taxids)))
 
@@ -589,7 +600,7 @@ def taxonomical_hits_breakdown_stats_per_taxonomical_rank(filename_prefix,stats_
                strings2file.append("{}\t{}\t{}\n".format(rank,couple[0],couple[1]))
         fp.writelines(strings2file)
         fp.close()
-        logging.info("Wrote phylogeny stats into {}".format(filename_prefix + "_"+dbtype+"_hostrange_tree_phylostats.txt"))
+        logger.info("Wrote phylogeny stats into {}".format(filename_prefix + "_"+dbtype+"_hostrange_tree_phylostats.txt"))
 
 def writeOutHostRangeReports(   filename_prefix = None,
                                 samplename = None,
@@ -607,6 +618,7 @@ def writeOutHostRangeReports(   filename_prefix = None,
                              "relaxase_names":relaxase_name_list, "relaxase_name_accs":relaxase_name_acc_list }
 
     #collapse data if literature report contains more than one cell
+
     if literature_hr_report.shape[0] > 1:
         literature_hr_report.to_csv(filename_prefix + '_literature_uncollapsed_report.txt', sep="\t", index=False, na_rep="NA",mode="w")
         literature_hr_report = collapseLiteratureReport(literature_hr_report) #collapse report
@@ -626,7 +638,7 @@ def writeOutHostRangeReports(   filename_prefix = None,
                                                   dict_molecular_features["relaxase_name_accs"],
                                                   convergance_rank,convergance_taxonomy))
         fp.writelines(strings2file)
-        logging.info("Wrote phylogeny stats into {}".format(filename_prefix+"_refseqhostrange_report.txt"))
+        logger.info("Wrote phylogeny stats into {}".format(filename_prefix+"_refseqhostrange_report.txt"))
     fp.close()
 
     #if no_header_flag is True: #flag to write header in the report file
@@ -663,12 +675,12 @@ def getTaxonomyTree(taxids):
     """
 
     if not isETE3DBTAXAFILEexists():
-        logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
+        logger.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
         initETE3Database()
 
     ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
     if not isETE3DBTAXAFILEexists():
-        logging.error("Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(ETE3DBTAXAFILE))
+        logger.error("Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(ETE3DBTAXAFILE))
         exit(-1)
 
     tree = ncbi.get_topology(taxids)
@@ -757,7 +769,7 @@ def parse_args():
     parser.add_argument('--outdir', action='store', required=True, help='Output files name prefix')
     parser.add_argument('--inputseq', action='store', required=False, help='Single plasmid sequence in FASTA format (optional)')
     parser.add_argument('--debug', required=False, help='Show debug detailed information (optional)', action='store_true')
-    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
 
     args = parser.parse_args()
 
@@ -782,7 +794,8 @@ def parse_args():
     #    os.remove(args.outdir+".txt")
 
     if args.debug:
-        logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]", level=logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
+        #logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]", level=)
     #print(parser.parse_args())
     #print(parser.parse_args().output)
     #exit()
@@ -801,8 +814,8 @@ def main():
     args = parse_args()
 
 
-    logging.info("Running host range main function")
-    logging.info("Parsing command line arguments")
+    logger.info("Running host range main function")
+    logger.info("Parsing command line arguments")
 
 
     #determine type of the NCBI reference database match
@@ -815,8 +828,8 @@ def main():
     else:
         matchtype=None
 
-    logging.info("INPUT: Replicon=" + str(args.replicon_name) + " and MOB-SuiteClusterID=" + str(args.cluster_id) + ";")
-    logging.info("Started to run the main taxonomy query function per feature")
+    logger.info("INPUT: Replicon=" + str(args.replicon_name) + " and MOB-SuiteClusterID=" + str(args.cluster_id) + ";")
+    logger.info("Started to run the main taxonomy query function per feature")
 
     # hostrange based on MOB-Suite  RefSeq database
     (rank, host_range, taxids, taxids_df, stats_refseq_host_range_dict) = getRefSeqHostRange(args.replicon_name, args.cluster_id,
@@ -826,7 +839,7 @@ def main():
     if len(taxids) == 1:
         rank="NA"
         host_range="NA"
-        logging.warning("Only single hit was found in the NCBI RefSeq database. Can not predict host range ... Broaden your search criterion")
+        logger.warning("Only single hit was found in the NCBI RefSeq database. Can not predict host range ... Broaden your search criterion")
 
     if len(taxids) > 0 and args.host_range_detailed:
         treeRefSeq = getTaxonomyTree(taxids)  # get a phylogenetic tree
@@ -854,22 +867,22 @@ def main():
                               stats_host_range_dict = stats_refseq_host_range_dict,
                               literature_hr_report=lit_report)
 
-    logging.info("Host Range module run is complete!")
+    logger.info("Host Range module run is complete!")
 
 def renderTree(tree,filename_prefix):
 
     with open(file=filename_prefix+ "asci_tree.txt", mode="w", encoding="utf-8") as fp:
         fp.write(tree.get_ascii(attributes=["rank", "sci_name"]))
-    logging.info("Wrote ASCII host range tree into {}".format(filename_prefix + "asci_tree.txt"))
+    logger.info("Wrote ASCII host range tree into {}".format(filename_prefix + "asci_tree.txt"))
     tree.write(format=2, outfile=filename_prefix + "phylogeny_tree.nwk")
-    logging.info("Wrote Newick host range tree into {}".format(filename_prefix + "asci_tree.txt"))
+    logger.info("Wrote Newick host range tree into {}".format(filename_prefix + "phylogeny_tree.nwk"))
 
 
 
 if __name__ == "__main__":
     # setup the application logging
     main()
-    logging.info("Run completed")
+    logger.info("Run completed")
     #getTaxidsPerRelaxase()
     #IncI2
 

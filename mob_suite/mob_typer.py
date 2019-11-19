@@ -26,15 +26,19 @@ from mob_suite.utils import \
     verify_init, \
     check_dependencies
 from mob_suite.mob_host_range import getTaxonomyTree, getLiteratureBasedHostRange, loadliteratureplasmidDB, \
-    writeOutHostRangeReports,getRefSeqHostRange,loadHostRangeDB,collapseLiteratureReport,renderTree
+    writeOutHostRangeReports,getRefSeqHostRange,loadHostRangeDB,renderTree, collapseLiteratureReport
 
 
-LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
+def init_console_logger(lvl=2):
+    root = logging.getLogger()
 
-def init_console_logger(lvl):
+    LOG_FORMAT = '%(asctime)s %(name)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
     logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
+
     report_lvl = logging_levels[lvl]
+    root.setLevel(report_lvl)  # set root logger level
+
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
     return logging.getLogger(__name__)
 
@@ -128,7 +132,7 @@ def parse_args():
                              '--plasmid_replicons, --plasmid_mob, --plasmid_mpf, and '
                              '--plasmid_orit'.format(default_database_dir))
 
-    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
     return parser.parse_args()
 
 
@@ -148,11 +152,11 @@ def main():
     args = parse_args()
 
     if args.debug:
-        logger = init_console_logger(3)
+       logger = init_console_logger(3)
     else:
-        logger = init_console_logger(2)
+       logger = init_console_logger(2)
 
-    logger.info('Running Mob-typer v. {}'.format(__version__))
+    logger.info('Running Mob-typer version {}'.format(__version__))
 
     if not args.outdir:
         logger.info('Error, no output directory specified, please specify one')
@@ -368,10 +372,10 @@ def main():
                    filename_prefix=args.outdir+"/"+file_id+"_refseqhostrange_")
 
         #get literature report summary dataframe (might be more than 1 row if multiple replicons are present)
-        host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(
-                                                                                  replicon_names = list(found_replicons.values()),
+        host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
                                                                                   plasmid_lit_db = loadliteratureplasmidDB(),
                                                                                   input_seq = args.infile )
+
 
 
 
@@ -461,7 +465,7 @@ def main():
         predicted_mobility = 'Conjugative'
 
 
-    main_report_data_dict=collections.OrderedDict({"file_id":re.sub("\.(fasta|fa|fas){1,1}","",file_id), "num_contigs":stats['num_seq'], "total_length": stats['size'], "gc":stats['gc_content'],
+    main_report_data_dict=collections.OrderedDict({"file_id":re.sub(r"\.(fasta|fa|fas){1,1}","",file_id), "num_contigs":stats['num_seq'], "total_length": stats['size'], "gc":stats['gc_content'],
                            "rep_type(s)": rep_types, "rep_type_accession(s)": rep_acs, "relaxase_type(s)":mob_types,
                            "relaxase_type_accession(s)": mob_acs, "mpf_type": mpf_type, "mpf_type_accession(s)": mpf_acs,
                            "orit_type(s)": orit_types, "orit_accession(s)": orit_acs, "PredictedMobility": predicted_mobility,
@@ -481,6 +485,8 @@ def main():
 
 
     if host_range_literature_report_df.empty == False:
+        if host_range_literature_report_df.shape[0] >= 2: #collapse host range repor more than 2 rows
+            host_range_literature_report_df = collapseLiteratureReport(host_range_literature_report_df)
         main_report_data_dict.update({"LitRepHRPlasmClass":host_range_literature_report_df["LiteratureReportedHostRangePlasmidClass"].values[0],
                                       "LitPredDBHRRank":host_range_literature_report_df["LiteraturePredictedHostRangeTreeRank"].values[0],
                                       "LitPredDBHRRankSciName": host_range_literature_report_df["LiteraturePredictedHostRangeTreeRankSciName"].values[0],

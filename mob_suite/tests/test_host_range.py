@@ -1,10 +1,11 @@
 from mob_suite.mob_host_range import getRefSeqHostRange, getLiteratureBasedHostRange, loadliteratureplasmidDB, \
     loadHostRangeDB, getTaxonomyTree, renderTree
 import ete3, numpy, os, logging
+import locale
 
 logger=logging.getLogger()
-LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG)
+logger.setLevel(logging.DEBUG)
+
 
 #test the main function
 def test_loadliteratureHostRangeDB():
@@ -270,6 +271,41 @@ def test_getTaxonomyTree_onLiteratureDB_and_Render():
     tree = getTaxonomyTree(taxids=lit_taxids)
     assert isinstance(tree,ete3.PhyloTree), "Class mismatch output by getTaxonomyTree(). Output class is "+type(tree).__name__
     renderTree(tree=tree, filename_prefix="run_test/run_test_literaturehostrange")
+
+
+
+def test_nonASCII_characters_in_host_range():
+    "Check for potential printing errors such as UnicodeEncodeError: 'ascii' codec can't encode characters in position 523-524: ordinal not in range(128)"
+    dbplasmids = loadHostRangeDB()
+
+    try:
+        print(dbplasmids)
+    except UnicodeError as e:
+        print(e)
+        logger.error("Database has non-ascii characters that might not display well on all locales")
+        logger.error("Check that host_range_ncbirefseq_plasmidDB.csv has only ASCII characters")
+        print("Your environment:")
+        os.system("env")
+        exit(-1)
+
+    dblit = loadliteratureplasmidDB()
+
+    assert all([isinstance(value,float) for value in dblit["TransferRate"].values]) == True
+    try:
+        print(dblit)
+    except UnicodeError as e:
+        print(e)
+        logger.error("Database has non-ascii characters that might not display well on all locales")
+        logger.error("Check that host_range_literature_plasmid.csv has only ASCII characters")
+        print("Your environment:")
+        os.system("env")
+        exit(-1)
+
+    print("Your environment:")
+    os.system("env")
+
+    #set locale via export LC_ALL = POSIX or C.UTF-8
+
 
 
 

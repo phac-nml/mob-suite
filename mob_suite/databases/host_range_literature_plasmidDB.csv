@@ -1,4 +1,4 @@
-﻿Replicon,Plasmid_Name,NCBI_Accession,Size,HostRangeClass,IsolationSpecies,IsolationStain,IsolationSerovar,IsolationTaxid,HostRangeClaim,HostRangeRankClaim,Donor,Recipient,TransferRate,ConjugationTemperature,PMID,PMCID,DOI,Year,Author,Notes
+Replicon,Plasmid_Name,NCBI_Accession,Size,HostRangeClass,IsolationSpecies,IsolationStain,IsolationSerovar,IsolationTaxid,HostRangeClaim,HostRangeRankClaim,Donor,Recipient,TransferRate,ConjugationTemperature,PMID,PMCID,DOI,Year,Author,Notes
 IncF,F,NC_002483,99159,NarrowHostRange,Escherichia coli,K-12,NA,83333,Enterobacteriaceae,family,NA,NA,NA,NA,20851899,PMC2976426,10.1128/JB.00277-10,2010,Suzuki H,
 IncF,p1658/97,NC_004998,125491,NarrowHostRange,Escherichia coli,NA,NA,562,Enterobacteriaceae,family,NA,NA,NA,NA,20851899,PMC2976427,10.1128/JB.00277-10,2010,Suzuki H,
 IncF,pC15-1a,NC_005327,92353,NarrowHostRange,Escherichia coli,NA,NA,562,Enterobacteriaceae,family,NA,NA,NA,NA,20851899,PMC2976428,10.1128/JB.00277-10,2010,Suzuki H,
@@ -39,31 +39,31 @@ IncI1,pKHSB1,HF572032,94089,NarrowHostRange,Shigella sonnei,NA,NA,624,NA,NA,NA,N
 IncI1,pEC545_1,CP018975,95926,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
 IncI1,pHNRD174,KX246268,86207,NarrowHostRange,Escherichia coli,RD174,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
 IncI1,p628-CTXM,KP987217,85338,NarrowHostRange,Klebsiella pneumoniae,628,NA,573,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1,pSD107,NC_019137.1,107637,NarrowHostRange,Salmonella enterica,NA,Derby,28144,NA,NA,Salmonella enterica,E. coli DH5α,5.00E-06,37,23333216,NA,https://doi.org/10.1016/j.plasmid.2013.01.001,2013,Anne Bleicher,
+IncI1,pSD107,NC_019137.1,107637,NarrowHostRange,Salmonella enterica,NA,Derby,28144,NA,NA,Salmonella enterica,E. coli DH5,5.00E-06,37,23333216,NA,https://doi.org/10.1016/j.plasmid.2013.01.001,2013,Anne Bleicher,
 IncI1,pSH1148,JN983049.1,106833,NarrowHostRange,Salmonella enterica ,NA,Heidelberg,611,NA,NA,NA,NA,NA,NA,23333216,NA,https://doi.org/10.1016/j.plasmid.2013.01.001,2013,Anne Bleicher,
 IncI1,pND11_107,HQ114281.1,107138,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,23333216,NA,https://doi.org/10.1016/j.plasmid.2013.01.001,2013,Anne Bleicher,
 IncI1,pPWD4_103,HQ114284.1,103297,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,23333216,NA,https://doi.org/10.1016/j.plasmid.2013.01.001,2013,Anne Bleicher,
 IncI1,pEK204,EU935740.1,93732,NarrowHostRange,Escherichia coli ,C,NA,562,NA,NA,NA,NA,NA,NA,23333216,NA,https://doi.org/10.1016/j.plasmid.2013.01.001,2013,Anne Bleicher,
 IncI1,pCTXM1-MU2,MF152729,110255,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli,E. coli J53,3.40E-02,37,29899511,PMC6155088,10.1038/s41396-018-0200-3,2018,Sam Abraham,
-IncI1-Iγ,pSL476_91,CP001118,91374,NarrowHostRange,Salmonella enterica,NA,Heidelberg,454169,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pIFM3804,KF787110,104399,NarrowHostRange,Escherichia coli,B3804,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pH2291-112,KJ484629,112671,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,p14E509-CTXM,MG764547,112544,NarrowHostRange,Escherichia coli ,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pCVM29188_101,CP001121,101461,NarrowHostRange,Salmonella enterica,CVM29188,Kentucky,439842,NA,NA,Salmonella Kentucky CVM29188,Salmonella Kentucky CVM35942,1.40E-01,37,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pC-6,KT186369,90486,NarrowHostRange,Escherichia coli ,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pR7AC,KF434766,90449,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pSD107,JX566770,107637,NarrowHostRange,Salmonella enterica,NA,Derby,28144,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pS51_1,CP015996,93029,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pC23-89,KJ484639,89513,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pEC15I_2,KU932030,87767,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,p11011-CTXM,MF344575,131779,NarrowHostRange,Escherichia coli,140611011,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pC271,LN735561,125315,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pFORC11.2,CP010831,83905,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,p205880-NR2,MF344577,82822,NarrowHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pESBL-EA11,CP003290,88544,NarrowHostRange,Escherichia coli,2011C-3493,O104:H4,1133852,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pEC_Bactec,GU371927,92970,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,pB15,KM409652,102294,NarrowHostRange,Escherichia coli,REL5382,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-Iγ,R621a,AP011954,93185,NarrowHostRange,Salmonella enteric,NA,Typhimurium,90371,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,Reference plasmid
+IncI1-Igamma,pSL476_91,CP001118,91374,NarrowHostRange,Salmonella enterica,NA,Heidelberg,454169,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pIFM3804,KF787110,104399,NarrowHostRange,Escherichia coli,B3804,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pH2291-112,KJ484629,112671,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,p14E509-CTXM,MG764547,112544,NarrowHostRange,Escherichia coli ,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pCVM29188_101,CP001121,101461,NarrowHostRange,Salmonella enterica,CVM29188,Kentucky,439842,NA,NA,Salmonella Kentucky CVM29188,Salmonella Kentucky CVM35942,1.40E-01,37,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pC-6,KT186369,90486,NarrowHostRange,Escherichia coli ,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pR7AC,KF434766,90449,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pSD107,JX566770,107637,NarrowHostRange,Salmonella enterica,NA,Derby,28144,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pS51_1,CP015996,93029,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pC23-89,KJ484639,89513,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pEC15I_2,KU932030,87767,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,p11011-CTXM,MF344575,131779,NarrowHostRange,Escherichia coli,140611011,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pC271,LN735561,125315,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pFORC11.2,CP010831,83905,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,p205880-NR2,MF344577,82822,NarrowHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pESBL-EA11,CP003290,88544,NarrowHostRange,Escherichia coli,2011C-3493,O104:H4,1133852,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pEC_Bactec,GU371927,92970,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,pB15,KM409652,102294,NarrowHostRange,Escherichia coli,REL5382,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-Igamma,R621a,AP011954,93185,NarrowHostRange,Salmonella enteric,NA,Typhimurium,90371,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,Reference plasmid
 IncN,pKP12,NC_011385,75617,BroadHostRange,Klebsiella pneumoniae,12,NA,573,Enterobacteriales,order,NA,NA,NA,NA,20851899,PMC2976448,,2010,Suzuki H,
 IncN,pKP9,NC_011383,70655,BroadHostRange,Klebsiella pneumoniae,9,NA,573,Enterobacteriales,order,NA,NA,NA,NA,20851899,PMC2976449,,2010,Suzuki H,
 IncN,pKP96,NC_011617,67850,BroadHostRange,Klebsiella pneumoniae,KP96,NA,573,Enterobacteriales,order,NA,NA,NA,NA,20851899,PMC2976450,,2010,Suzuki H,
@@ -74,13 +74,14 @@ IncN,R46,NC_003292,50969,BroadHostRange,Salmonella enterica,NA,Typhimurium,90371
 IncN,pDS2,KC170280.1,56683,BroadHostRange,uncultured bacterium,NA,NA,77133,Gammaproteobacteria,class,E. coli K12Nal,Pseudomonas putida UCW1gfp,NA,37,24096417,PMC3837812,10.1128/AEM.02252-13,2013,Celeste J. Brown,plasmid conjugative
 IncN,pDS2,KC170280.1,56683,BroadHostRange,uncultured bacterium,NA,NA,77133,Betaproteobacteria,class,E. coli K12Nal,Cupriavidus pinatubonensis JMP228gfp,NA,37,24096417,PMC3837812,10.1128/AEM.02252-13,2013,Celeste J. Brown,plasmid conjugative
 IncN,pDS2,KC170280.1,56683,BroadHostRange,uncultured bacterium,NA,NA,77133,Alphaproteobacteria,class,E. coli K12Nal,Sinorhizobium meliloti RM1021,NA,37,24096417,PMC3837812,10.1128/AEM.02252-13,2013,Celeste J. Brown,plasmid conjugative
-IncP,pA1,NC_007353,46557,BroadHostRange,Sphingomonas sp. A1,A1,NA,90322,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,IncP1-β2 The β2  subclade
+IncP,pA1,NC_007353,46557,BroadHostRange,Sphingomonas sp. A1,A1,NA,90322,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,IncP1-beta2 The beta2  subclade
+
 IncP,pA81,NC_006830,98192,BroadHostRange,Achromobacter xylosoxidans,A8,NA,762376,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncP,pADP-1,NC_004956,108845,BroadHostRange,Pseudomonas sp. ADP,ADP,NA,47660,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncP,pAMMD_1,NC_008385,43581,BroadHostRange,Burkholderia ambifaria,AMMD,NA,339670,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncP,pAOVO02,NC_008766,63609,BroadHostRange,Acidovorax sp. JS42,JS42,NA,232721,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncP,pB10,NC_004840,64508,BroadHostRange,uncultured bacterium,NA,NA,77133,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
-IncP,pB3,NC_006388.1,56167,BroadHostRange,Escherichia coli,DH5,NA,562,Proteobacteria,phylum,E. coli strain DH5,Sinorhizobium meliloti Rm1021,1.00E-03,37,20851899,PMC2976455,,2010,Suzuki H,pB3 revealed the typical structure of an IncP-1 β plasmid backbone (PMID: 15528648)
+IncP,pB3,NC_006388.1,56167,BroadHostRange,Escherichia coli,DH5,NA,562,Proteobacteria,phylum,E. coli strain DH5,Sinorhizobium meliloti Rm1021,1.00E-03,37,20851899,PMC2976455,,2010,Suzuki H,pB3 revealed the typical structure of an IncP-1 beta plasmid backbone (PMID: 15528648)
 IncP,pB4,NC_003430,79370,BroadHostRange,uncultured bacterium,NA,NA,77133,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncP,pB8,NC_007502,57198,BroadHostRange,uncultured bacterium,NA,NA,77133,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncP,pBP136,NC_008459,41268,BroadHostRange,Bordetella pertussis,BP136,NA,520,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
@@ -90,16 +91,16 @@ IncP,pEST4011,NC_005793,76958,BroadHostRange,Achromobacter denitrificans,EST4002
 IncP,pIJB1,DQ065837,99448,BroadHostRange,Burkholderia cepacia,2a,NA,292,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncP,pJP4,NC_005912,87688,BroadHostRange,Cupriavidus pinatubonensis,JMP134,NA,264198,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncP,pKJK5,NC_008272,54383,BroadHostRange,uncultured bacterium,NA,NA,77133,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
-IncP,pQKH54,NC_008055,69966,BroadHostRange,uncultured bacterium,NA,NA,77133,Proteobacteria,phylum,Pseudomonas putida UWCB20,Pseudomonas putida UWC7,1.00E+01,30,20851899,PMC2976455,,2010,Suzuki H,"One plasmid, pQKH54, which appeared to be IncP-1 by some tests but not others was characterized by determining its complete genome sequence and proved to belong to a new subgroup of this ubiquitous plasmid family, which we have designated IncP-1 γ (DOI: 10.1099/mic.0.28941-0). pQKH54 (γ clade; GenBank accession no. AM157767),"
+IncP,pQKH54,NC_008055,69966,BroadHostRange,uncultured bacterium,NA,NA,77133,Proteobacteria,phylum,Pseudomonas putida UWCB20,Pseudomonas putida UWC7,1.00E+01,30,20851899,PMC2976455,,2010,Suzuki H,"One plasmid, pQKH54, which appeared to be IncP-1 by some tests but not others was characterized by determining its complete genome sequence and proved to belong to a new subgroup of this ubiquitous plasmid family, which we have designated IncP-1 gamma (DOI: 10.1099/mic.0.28941-0). pQKH54 (Gammma clade; GenBank accession no. AM157767),"
 IncP,pTB11,NC_006352,68869,BroadHostRange,uncultured bacterium,NA,NA,77133,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncP,pTP6,NC_007680,54344,BroadHostRange,uncultured bacterium,NA,NA,77133,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncP,pUO1,NC_005088,67066,BroadHostRange,Delftia acidovorans,B,NA,80866,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
-IncP,R751,NC_001735,53423,BroadHostRange,Klebsiella aerogenes,NA,NA,548,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,IncP1-β1 The β1  subclade
+IncP,R751,NC_001735,53423,BroadHostRange,Klebsiella aerogenes,NA,NA,548,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,IncP1-beta1 The beta1  subclade
 IncP,RK2,NC_001621,60099,BroadHostRange,Pseudomonas aeruginosa,NA,NA,287,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncP,pMCR_1511,KX377410.1,57278,BroadHostRange,Klebsiella pneumoniae,WCHKP1511,NA,573,NA,NA,Klebsiella pneumoniae WCHKP1511 ,E. coli strain J53,1.00E-02,37,27895009,PMC5278755 ,10.1128/AAC.02229-16,2017,Zhao F,pMCR_1511 has the typical IncP-1 plasmid backbone (PMID: 27895009)
-IncP,pAKD4,NC_025029,56803,BroadHostRange,Pseudomonas putida ,NA,NA,303,Gammaproteobacteria,class,Pseudomonas putida UWC1,P. putida KT2442,NA,30,20018208,PMC2819548,10.1016/j.plasmid.2009.11.005,2010,"Sen,D.",pAKD4 (δ clade; GenBank accession no. NC_025029) (PMID: 27895009).plasmid conjugative
-IncP,pAKD4,NC_025029,56803,BroadHostRange,Pseudomonas putida ,NA,NA,303,Betaproteobacteria,class,Pseudomonas putida UWC1,C. necator JMP228,NA,30,20018208,PMC2819548,10.1016/j.plasmid.2009.11.005,2010,"Sen,D.",pAKD4 (δ clade; GenBank accession no. NC_025029) (PMID: 27895009).plasmid conjugative
-IncP,pKJK5,AM261282,54383,BroadHostRange,Kluyvera sp.,NA,NA,579,NA,NA,Kluyvera sp. MB101::gfp,E. coli CSH26,0.262,37,54383,NA,10.1111/j.1574-6968.2006.00536.x,2007,"Bahl,M.I.",pKJK5 (ε clade; GenBank accession no. AM261282) (PMID: 27895009)
+IncP,pAKD4,NC_025029,56803,BroadHostRange,Pseudomonas putida ,NA,NA,303,Gammaproteobacteria,class,Pseudomonas putida UWC1,P. putida KT2442,NA,30,20018208,PMC2819548,10.1016/j.plasmid.2009.11.005,2010,"Sen,D.",pAKD4 (Delta clade; GenBank accession no. NC_025029) (PMID: 27895009).plasmid conjugative
+IncP,pAKD4,NC_025029,56803,BroadHostRange,Pseudomonas putida ,NA,NA,303,Betaproteobacteria,class,Pseudomonas putida UWC1,C. necator JMP228,NA,30,20018208,PMC2819548,10.1016/j.plasmid.2009.11.005,2010,"Sen,D.",pAKD4 (Delta clade; GenBank accession no. NC_025029) (PMID: 27895009).plasmid conjugative
+IncP,pKJK5,AM261282,54383,BroadHostRange,Kluyvera sp.,NA,NA,579,NA,NA,Kluyvera sp. MB101::gfp,E. coli CSH26,0.262,37,54383,NA,10.1111/j.1574-6968.2006.00536.x,2007,"Bahl,M.I.",pKJK5 (Epsilon clade; GenBank accession no. AM261282) (PMID: 27895009)
 IncP,pMCBF1,AY950444,62689,BroadHostRange,Pseudomonas putida ,NA,NA,303,Bacteria,superkingdom,Pseudomonas putida UWC1,Escherichia coli ,NA,26,21468020,NA,10.1038/ncomms1267,2011,"Norberg,P.",
 IncW,pIE321,NC_010716,38150,BroadHostRange,Salmonella enterica,enterica,Dublin,98360,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
 IncW,pMAK3,NC_009982,39924,BroadHostRange,Salmonella enterica,enterica,Dublin,98360,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,,2010,Suzuki H,
@@ -135,7 +136,7 @@ IncU,pFBAOT6,NC_006143,84749,BroadHostRange,Aeromonas caviae,HGB5,NA,648,Proteob
 IncU,pRA3,NC_010919,45909,BroadHostRange,Aeromonas hydrophila,NA,NA,644,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976455,NA,2010,Suzuki H,
 IncU,pRA3,DQ401103,45909,BroadHostRange,Aeromonas hydrophila,NA,NA,644,Alphaproteobacteria,class,E. coli ,A. tumefaciens,1.00E-04,28,18502921,PMC2446526 ,10.1128/AEM.00229-08,2008,Kulinska A,"Functional analysis demonstrated that RA3 possesses a broad host range and can efficiently self-transfer, replicate, and be maintained stably in alpha-, beta-, and gammaproteobacteria"
 IncU,pRA3,DQ401103,45909,BroadHostRange,Aeromonas hydrophila,NA,NA,644,Betaproteobacteria,class,E. coli ,R. eutropha,1.00E-01,28,18502921,PMC2446526 ,10.1128/AEM.00229-08,2008,Kulinska A,"Functional analysis demonstrated that RA3 possesses a broad host range and can efficiently self-transfer, replicate, and be maintained stably in alpha-, beta-, and gammaproteobacteria"
-IncU,pFBAOT6,NC_006143.1,84749,BroadHostRange,Aeromonas caviae,NA,NA,648,NA,NA,Aeromonas caviae HG5B,Escherichia coli J53-1 ,1.00E-04,37,30619542,PMC6312765 ,doi:10.1016/j.plasmid.2005.11.003 ,2006,"Haines, A. S.","This plasmid was originally isolated from a hospital effluent (Kendal, Cumbria, United Kingdom) strain of Aeromonas caviae HG5B in September 1997 and was subsequently transferred to Escherichia coli J53-1 by conjugation"
+IncU,pFBAOT6,NC_006143.1,84749,BroadHostRange,Aeromonas caviae,NA,NA,648,NA,NA,Aeromonas caviae HG5B,Escherichia coli J53-1 ,1.00E-04,37,30619542,PMC6312765 ,doi:10.1016/j.plasmid.2005.11.003,2006,"Haines, A. S.","This plasmid was originally isolated from a hospital effluent (Kendal, Cumbria, United Kingdom) strain of Aeromonas caviae HG5B in September 1997 and was subsequently transferred to Escherichia coli J53-1 by conjugation"
 IncU,pRA3,DQ401103,45909,BroadHostRange,Aeromonas hydrophila,NA,NA,644,Gammaproteobacteria,class,E. coli ,P. putida ,1.00E-01,28,18502921,PMC2446526 ,10.1128/AEM.00229-08,2008,Kulinska A,"Functional analysis demonstrated that RA3 possesses a broad host range and can efficiently self-transfer, replicate, and be maintained stably in alpha-, beta-, and gammaproteobacteria"
 IncU,pMBUI7,KC170284.1,34006,BroadHostRange,uncultured bacterium,NA,NA,77133,Gammaproteobacteria,class,E. coli K12Nal,Pseudomonas putida UCW1gfp,NA,37,24096417,PMC3837812,10.1128/AEM.02252-13,2013,Celeste J. Brown,plasmid conjugative
 IncU,pMBUI7,KC170284.1,34006,BroadHostRange,uncultured bacterium,NA,NA,77133,Betaproteobacteria,class,E. coli K12Nal,Cupriavidus pinatubonensis JMP228gfp,NA,37,24096417,PMC3837812,10.1128/AEM.02252-13,2013,Celeste J. Brown,plasmid conjugative
@@ -154,7 +155,7 @@ Ri/Ti,pTi-C58,NC_003065,214233,WideHostRange,Agrobacterium fabrum,C58,NA,176299,
 Ri/Ti,pTi-SAKURA,NC_002147,206479,WideHostRange,Agrobacterium tumefaciens,MAFF301001,NA,358,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976515,,2010,Suzuki H,
 Ri/Ti,pTiBo542,NC_010929,244978,WideHostRange,Agrobacterium tumefaciens,Bo542,NA,358,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976516,,2010,Suzuki H,
 Ri/Ti,pTiS4,NC_011982,258824,WideHostRange,Agrobacterium vitis,NA,NA,311402,Proteobacteria,phylum,NA,NA,NA,NA,20851899,PMC2976517,,2010,Suzuki H,
-IncC,pVCR94ΔX,KF551948.1,120572,BroadHostRange,Vibrio cholerae,BI144,NA,666,Enterobacterales,family,NA,NA,NA,NA,24567731,PMC3915882,,2014,Carraro N,"Enterobacteriaceae,Vibrio cholerae"
+IncC,pVCR94deltaX,KF551948.1,120572,BroadHostRange,Vibrio cholerae,BI144,NA,666,Enterobacterales,family,NA,NA,NA,NA,24567731,PMC3915882,,2014,Carraro N,"Enterobacteriaceae,Vibrio cholerae"
 IncA/C,pRA1,NC_012885.1,143963,BroadHostRange,Aeromonas hydrophila,NA,NA,644,Enterobacterales,family,Aeromonas hydrophila,E. coli DH10B,9.20E-03,NA,19482926,PMC2715731,,2009,Fricke WF,
 IncA/C,pRA1,FJ705807.1,143963,BroadHostRange,Aeromonas hydrophila,NA,NA,644,Enterobacteriaceae,family,Aeromonas hydrophila,E. coli DH10B,9.20E-03,NA,19482926,PMC2715731,,2009,Fricke WF,
 IncA/C,pYR1,CP000602,158038,BroadHostRange,Yersinia ruckeri,YR71,NA,29486,Enterobacteriaceae,family,Yersinia ruckeri YR71,E. coli DH10B,5.00E-02,NA,19482926,PMC2715731,,2009,Fricke WF,
@@ -163,25 +164,25 @@ IncF,pCVM29188_146,CP001122,146811,BroadHostRange,Salmonella enterica Kentucky ,
 IncA/C,pIP1202,CP000603,182913,BroadHostRange,Yersinia pestis,IP275,NA,373665,Enterobacteriaceae,family,NA,NA,NA,NA,20138094,NA,,2010,Lindsey RL,
 IncM,R69,KM406488.1,78899,BroadHostRange,Salmonella enterica subsp. enterica serovar Paratyphi B,NA,Paratyphi B,57045,Enterobacteriaceae,family,Escherichia coli,Escherichia coli,2.00E-03,NA,25933288,PMC4416936 ,,2015,Carattoli A,
 IncL,R471,KM406489,86748,BroadHostRange,Serratia marcescens,NA,NA,615,Enterobacteriaceae,family,Escherichia coli,Escherichia coli,2.00E-03,NA,25933288,PMC4416936 ,,2015,Carattoli A,
-IncL/M,p202c,KM406490,79502,BroadHostRange,Salmonella enterica Typhimurium,NA,Typhimurium,611,Enterobacteriaceae,family,Escherichia coli,Escherichia coli,2.00E-03,NA,25933288,PMC4416936 ,,2015,Carattoli A,
+IncL/M,p202c,KM406490,79502,BroadHostRange,Salmonella enterica Typhimurium,NA,Typhimurium,611,Enterobacteriaceae,family,Escherichia coli,Escherichia coli,2.00E-03,NA,25933288,PMC4416936 ,,2015,Carattoli A,
 IncN,RPC3,LT985287.1,49251,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,NA,NA,,NA,NA,
 IncP,RP4,Y12694.1,3457,BroadHostRange,Escherichia coli K-12,NA,NA,83333,NA,NA,NA,NA,NA,NA,9641980,NA,,1998,Rondot S,
 IncW,Rsa,CP020471.1,157147,BroadHostRange,Rhodobacter blasticus,NA,NA,1075,NA,NA,NA,NA,NA,NA,30533667,PMC6256690 ,,2018,Anton BP,
 IncX2,R6K,LT827129.1,39872,NarrowHostRange,Escherichia coli strain K12 J53,NA,NA,562,NA,NA,NA,NA,NA,NA,23980652,NA,,2013,Jain A,"When it was determined that the IncX plasmid group should be further subdivided into IncX1 and IncX2 using restriction analysis, plasmid R6K was classified into the IncX2 subgroup (Jones et al., 1993) (PMID:22470007)"
-IncX2,R6K,LT827129.1,39872,NarrowHostRange,Escherichia coli strain K12 J53,Escherichia coli strain K12,Escherichia coli strain K12,562,NA,NA,Escherichia coli strain K12,Escherichia coli strain K12,1.00E-04,NA,9218765,NA,,1997,Núñez B,
+IncX2,R6K,LT827129.1,39872,NarrowHostRange,Escherichia coli strain K12 J53,Escherichia coli strain K12,Escherichia coli strain K12,562,NA,NA,Escherichia coli strain K12,Escherichia coli strain K12,1.00E-04,NA,9218765,NA,,1997,Nunez B,
 IncW,pJD4,U20374.1,7426,BroadHostRange,Neisseria gonorrhoeae,NA,NA,485,NA,NA,NA,NA,NA,NA,23980652,NA,,2013,Jain A,
 IncA/C,IncA/C-LS6,JX442976.1,171925,BroadHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,NA,NA,NA,NA,23800906,NA,10.1093/jac/dkt235,2013,"Villa,L.",
-IncA/C,pIP40A,KX709966.1,167554,BroadHostRange,Pseudomonas aeruginosa,NA,NA,287,NA,NA,Salmonella Agona 959SA97,Escherichia coli BM14,1.90E-02,NA,NA,NA,,2011,Grégory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
-IncA/C,R55,AF332662.1,6179,BroadHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,Salmonella Agona 959SA98,Escherichia coli BM15,3.40E-03,NA,NA,NA,,2011,Grégory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
-IncA/C,R16a,KX156773.1,173094,BroadHostRange,Providencia stuartii,NA,NA,588,NA,NA,Salmonella Agona 959SA99,Escherichia coli BM16,8.90E-03,NA,NA,NA,,2011,Grégory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
-IncA/C,p13688,NA,NA,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,Salmonella Agona 959SA100,Escherichia coli BM17,5.20E-06,NA,NA,NA,,2011,Grégory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
-IncA/C,p13956,NA,NA,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,Salmonella Agona 959SA101,Escherichia coli BM18,2.20E-06,NA,NA,NA,,2011,Grégory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
-IncA/C,pAM04528,NC_012693.1,158213,BroadHostRange,Salmonella enterica Newport,NA,Newport,108619,NA,NA,Salmonella Agona 959SA102,Escherichia coli BM19,1.00E-09,NA,NA,NA,,2011,Grégory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
-IncA/C,pN418,NA,NA,BroadHostRange,Salmonella enterica Heidelberg,NA,NA,611,NA,NA,Salmonella Agona 959SA103,Escherichia coli BM20,1.00E-09,NA,NA,NA,,2011,Grégory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
-IncHI2,pCEB6542,NA,NA,WideHostRange,Salmonella enterica,NA,NA,28901,NA,NA,Salmonella Agona 959SA104,Escherichia coli BM21,1.00E-09,NA,NA,NA,,2011,Grégory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
-IncHI2,p1639-SA-00,NA,NA,WideHostRange,Salmonella enterica Virchow,NA,NA,48409,NA,NA,Salmonella Agona 959SA105,Escherichia coli BM22,1.00E-09,NA,NA,NA,,2011,Grégory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
-IncHI2,p142-SA-01,NA,NA,WideHostRange,Salmonella enterica Virchow,NA,NA,48409,NA,NA,Salmonella Agona 959SA106,Escherichia coli BM23,1.00E-09,NA,NA,NA,,2011,Grégory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
-IncHI2,p3464b,NA,NA,WideHostRange,Salmonella enterica Typhimurium,NA,NA,90371,NA,NA,Salmonella Agona 959SA107,Escherichia coli BM24,1.00E-09,NA,NA,NA,,2011,Grégory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+IncA/C,pIP40A,KX709966.1,167554,BroadHostRange,Pseudomonas aeruginosa,NA,NA,287,NA,NA,Salmonella Agona 959SA97,Escherichia coli BM14,1.90E-02,NA,NA,NA,,2011,Gregory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+IncA/C,R55,AF332662.1,6179,BroadHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,Salmonella Agona 959SA98,Escherichia coli BM15,3.40E-03,NA,NA,NA,,2011,Gregory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+IncA/C,R16a,KX156773.1,173094,BroadHostRange,Providencia stuartii,NA,NA,588,NA,NA,Salmonella Agona 959SA99,Escherichia coli BM16,8.90E-03,NA,NA,NA,,2011,Gregory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+IncA/C,p13688,NA,NA,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,Salmonella Agona 959SA100,Escherichia coli BM17,5.20E-06,NA,NA,NA,,2011,Gregory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+IncA/C,p13956,NA,NA,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,Salmonella Agona 959SA101,Escherichia coli BM18,2.20E-06,NA,NA,NA,,2011,Gregory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+IncA/C,pAM04528,NC_012693.1,158213,BroadHostRange,Salmonella enterica Newport,NA,Newport,108619,NA,NA,Salmonella Agona 959SA102,Escherichia coli BM19,1.00E-09,NA,NA,NA,,2011,Gregory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+IncA/C,pN418,NA,NA,BroadHostRange,Salmonella enterica Heidelberg,NA,NA,611,NA,NA,Salmonella Agona 959SA103,Escherichia coli BM20,1.00E-09,NA,NA,NA,,2011,Gregory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+IncHI2,pCEB6542,NA,NA,WideHostRange,Salmonella enterica,NA,NA,28901,NA,NA,Salmonella Agona 959SA104,Escherichia coli BM21,1.00E-09,NA,NA,NA,,2011,Gregory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+IncHI2,p1639-SA-00,NA,NA,WideHostRange,Salmonella enterica Virchow,NA,NA,48409,NA,NA,Salmonella Agona 959SA105,Escherichia coli BM22,1.00E-09,NA,NA,NA,,2011,Gregory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+IncHI2,p142-SA-01,NA,NA,WideHostRange,Salmonella enterica Virchow,NA,NA,48409,NA,NA,Salmonella Agona 959SA106,Escherichia coli BM23,1.00E-09,NA,NA,NA,,2011,Gregory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+IncHI2,p3464b,NA,NA,WideHostRange,Salmonella enterica Typhimurium,NA,NA,90371,NA,NA,Salmonella Agona 959SA107,Escherichia coli BM24,1.00E-09,NA,NA,NA,,2011,Gregory DOUARD,Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
 IncHI2,R478,U62007.2,12792,WideHostRange,Serratia marcescens,NA,NA,615,NA,NA,NA,NA,NA,NA,11390690,NA,,2001,Page DT,
 IncHI1,R27,AF250878,180461,WideHostRange,Salmonella typhi,NA,NA,90370,NA,NA,NA,NA,NA,NA,10773089,NA,,2000,"Sherburne,C.K",
 IncL/M,pSem,KM406490.1,79502,BroadHostRange,Salmonella enterica subsp. enterica serovar Typhimurium,NA,NA,90371,NA,NA,NA,NA,NA,NA,25933288,NA,,2015,"Carattoli,A.",
@@ -196,20 +197,20 @@ IncN,pBK31551,JX193301,83712,BroadHostRange,Klebsiella pneumoniae,NA,NA,573,NA,N
 IncX5,pBK31567,JX193302,47387,NarrowHostRange,Klebsiella pneumoniae strain BK31567,NA,NA,573,NA,NA,NA,NA,NA,NA,23114770,NA,,2013,"Chen,L.",
 IncA/C,pAR060302,HQ023864,166530,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,Escherichia coli,Escherichia coli,1.30E-03,NA,19949054,NA,,2010,"Call,D.R.",
 IncA/C,peH4H,FJ621586,148105,BroadHostRange,Escherichia coli,H4H,NA,562,NA,NA,NA,NA,NA,NA,19949054,NA,,2010,"Call,D.R.",
-IncA/C,pAM04528,FJ621587,158213,BroadHostRange,Salmonella enterica Newport,AM04528,NA,28901,NA,NA,NA,NA,NA,NA,19949054,NA,,2010,"Call,D.R.",
+IncA/C,pAM04528,FJ621587,158213,BroadHostRange,Salmonella enterica Newport,AM04528,NA,28901,NA,NA,NA,NA,NA,NA,19949054,NA,,2010,"Call,D.R.",
 IncF,pKP048,FJ628167,151188,NarrowHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,NA,NA,NA,NA,20547789,NA,,2010,"Jiang,Y.",
 IncX,pJIE143,JN194214,34345,NarrowHostRange,Escherichia coli ST131,ST131,NA,562,NA,NA,NA,NA,NA,NA,21911569,NA,,2011,"Partridge,S.R.",
-IncL/M,pOXA-48a,JN626286,61881,BroadHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,E. coli J53 ,E. coli JM109,3.30E-05,NA,22083465,NA,,2012,"Poirel,L.",
-IncL/M,pNDM-HK,HQ451074.1,88803,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli J53 ,E. coli JM109,2.50E-05,NA,22083465,NA,,2012,"Poirel,L.",
-IncL/M,pCTX-M3,AF550415,89468,BroadHostRange,Citrobacter freundii,NA,NA,546,NA,NA,E. coli DH5α,E. coli DH5α,0.1,NA,17698626,NA,,2007,"Golebiewski,M.",
+IncL/M,pOXA-48a,JN626286,61881,BroadHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,E. coli J53,E. coli JM109,3.30E-05,NA,22083465,NA,,2012,"Poirel,L.",
+IncL/M,pNDM-HK,HQ451074.1,88803,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli J53,E. coli JM109,2.50E-05,NA,22083465,NA,,2012,"Poirel,L.",
+IncL/M,pCTX-M3,AF550415,89468,BroadHostRange,Citrobacter freundii,NA,NA,546,NA,NA,E. coli DH5alpha,E. coli DH5alpha,0.1,NA,17698626,NA,,2007,"Golebiewski,M.",
 IncA/C,pMR0211,JN687470.1,178277,BroadHostRange,Providencia stuartii,NA,NA,588,NA,NA,P. stuartii MRSN 2154,E. coliJ53Az,3.40E-05,NA,22290972,NA,,2012,"Mc Gann,P.",
-IncK,pCT,FN868832.1,93629,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,Escherichia coli DH5α,Escherichia coli DH5α,1.00E-05,NA,21470454,PMC3377399 ,,2011,Cottell JL,
-IncT,R394 ,NA,NA,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,Escherichia coli K12,Escherichia coli K12,1.00E-04,NA,6759617,NA,,1982,Hauman JH,
+IncK,pCT,FN868832.1,93629,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,Escherichia coli DH5alpha,Escherichia coli DH5alpha,1.00E-05,NA,21470454,PMC3377399 ,,2011,Cottell JL,
+IncT,R394,NA,NA,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,Escherichia coli K12,Escherichia coli K12,1.00E-04,NA,6759617,NA,,1982,Hauman JH,
 IncT,Rst1,AP004237.1,217182,NarrowHostRange,Proteus vulgaris,NA,NA,585,NA,NA,NA,NA,NA,NA,12029035,NA,,2002,Murata T,
 IncT,pT-OXA-181,NC_020123,83698,NarrowHostRange,Citrobacter freundii,CFSTE,NA,546,NA,NA,Citrobacter freundii, Escherichia coli J53,NA,NA,23357767,PMC3623325 ,10.1128/AAC.01297-12,2013,"Villa,L.",Mobilizable but non-self-conjugative IncT-type plasmid. Probably requires other plasmid to move. A large deletion that had occurred inside the transfer system genes
 IncR,pK245,DQ449578.1 ,98264,BroadHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,NA,NA,NA,NA,16940067,PMC1635178,,2006,"Chen,Y.T.",
-IncR,pKP1780,JX424614.1,49770,BroadHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,Klebsiella pneumoniae,Escherichia coli DH5α,NA,NA,23711894,NA,10.1093/jac/dkt196,2013,Papagiannitsis CC,plasmid non-conjugative
-IncY,pMCR-1-P3,KX880944.1,97386,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli isolate P3 ,E. coli J53,1.00E-04,NA,28031198,PMC5328573 ,,2017,Zhang C,
+IncR,pKP1780,JX424614.1,49770,BroadHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,Klebsiella pneumoniae,Escherichia coli DH5alpha,NA,NA,23711894,NA,10.1093/jac/dkt196,2013,Papagiannitsis CC,plasmid non-conjugative
+IncY,pMCR-1-P3,KX880944.1,97386,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli isolate P3 ,E. coli J53,1.00E-04,NA,28031198,PMC5328573 ,,2017,Zhang C,
 IncY,pMCR-1-P3,KX880944.1,97386,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli isolate P3 ,Pseudomonas aeruginosa ATCC 9027,1.00E-01,NA,28031198,PMC5328573 ,,2017,Zhang C,
 IncB/O,p3521,GU256641.1,110416,WideHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,20956594,NA,,2011,"Papagiannitsis,C.C.",
 IncQ,RSF1010,M28829.1,8684,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,2653965,NA,,1989,"Scholz,P.",
@@ -217,7 +218,7 @@ PromA,pSFA231,KJ850907,41518,WideHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,N
 IncB/O,TP113 ,ExternalSource,96471,WideHostRange,Escherichia coli,NA,NA,562,NA,NA,Escherichia coli,Escherichia coli,NA,NA,24221045,NA,,1984,Gowland PC,No transfer was seen on a solid support 
 IncA/C,pSMS35_130,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,1.00E-04,NA,NA,NA,,NA,NA,
 IncFII,pMC-NDM,HG003695.1,87619,NarrowHostRange,Escherichia coli,A15,NA,562,NA,NA,E.coli 5428/11,E. coli A15 ,2.00E-03,NA,24247128,NA,,2014,J. Fiett et.al.,
-IncFII,pGUE-NDM,JQ364967,87021,NarrowHostRange,Escherichia coli,ST131,NA,562,NA,NA,Escherichia coli,E. coli strain J53,2.00E-04,NA,22511964,NA,,2012,"Bonnin,R.A.",
+IncFII,pGUE-NDM,JQ364967,87021,NarrowHostRange,Escherichia coli,ST131,NA,562,NA,NA,Escherichia coli,E. coli strain J53,2.00E-04,NA,22511964,NA,,2012,"Bonnin,R.A.",
 IncX4,pMCR1-IncX4,KU761327,33287,NarrowHostRange,Klebsiella pneumoniae,SZ04,NA,573,NA,NA,NA,NA,NA,NA,26842776,NA,10.1128/AAC.00550-16,2016,"Li,A.",
 IncX3,pNDM5-IncX3,KU761328,46161,NarrowHostRange,Klebsiella pneumoniae,SZ04,NA,573,NA,NA,NA,NA,NA,NA,26842776,NA,10.1128/AAC.00550-16,2016,"Li,A.",
 IncX4,pJIE143,JN194214,34345,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,Escherichia coli,Escherichia coli,6.70E-07,NA,21911569,NA,,2011,"Partridge,S.R.",
@@ -225,7 +226,7 @@ IncX4,pBS512_33,CP001059,33103,NarrowHostRange,Shigella boydii,NA,NA,344609,NA,N
 IncX4,pCROD2,FN543504,39265,NarrowHostRange,Citrobacter rodentium,NA,NA,637910,NA,NA,NA,NA,NA,NA,21911569,NA,10.1128/JB.01144-09.,2011,"Partridge,S.R.",
 IncX4,pSH146_32,JX258655,32447,NarrowHostRange,Salmonella enterica,NA,Heidelberg,611,NA,NA,NA,NA,1.00E-04,NA,26842776,NA,10.1128/AAC.00550-16,2016,"Li,A.",
 IncX4,pCSZ4,KX711706,33309,NarrowHostRange,Escherichia coli ,CSZ4,NA,562,Enterobacteriaceae,family,NA,NA,1.00E-01,NA,28336940,NA,10.1038/s41598-017-00095-x,2017,Sun J,
-IncFII,pCROD1,FN543503,54449,NarrowHostRange,Citrobacter rodentium,NA,NA,637910,NA,NA,NA,NA,NA,NA,19897651,NA,10.1128/JB.01144-09.,2010,"Petty,N.K.","pCROD1, is nonconjugative; encodes two toxin/antitoxin (TA) addiction systems, PemIK and CcdAB; and has a replication locus similar to those of plasmids belonging to the incompatibility group IncFII, such as the E. coli plasmid R100 "
+IncFII,pCROD1,FN543503,54449,NarrowHostRange,Citrobacter rodentium,NA,NA,637910,NA,NA,NA,NA,NA,NA,19897651,NA,10.1128/JB.01144-09.,2010,"Petty,N.K.","pCROD1, is nonconjugative; encodes two toxin/antitoxin (TA) addiction systems, PemIK and CcdAB; and has a replication locus similar to those of plasmids belonging to the incompatibility group IncFII, such as the E. coli plasmid R100"
 IncHI1,pF8475,KP899804.1,210266,WideHostRange,Salmonella enterica,F8475 ,Typhimurium,28901,NA,NA,Salmonella enterica Typhimurium,Salmonella Typhimurium F98,NA,24,18606786,NA,https://doi.org/10.1093/jac/dkn286,2008,H. Hradecka,"pF8475, was quite unstable in Salmonella Typhimurium F98 after conjugational transfer in the absence of selective pressure"
 IncHI1,pB71,KP899806.1,190730,WideHostRange,Salmonella enterica,B71,Typhimurium,28901,NA,NA,Salmonella enterica Typhimurium,Salmonella Typhimurium F98,NA,37,18606786,NA,https://doi.org/10.1093/jac/dkn286,2008,H. Hradecka,"pB71, was quite unstable in Salmonella Typhimurium F98 after conjugational transfer in the absence of selective pressure"
 IncHI1,p109/9 ,KP899805.1,207203,WideHostRange,Salmonella enterica,109/9,Typhimurium,28901,NA,NA,Salmonella enterica Typhimurium,Salmonella Typhimurium F98,NA,37,18606786,NA,https://doi.org/10.1093/jac/dkn286,2008,H. Hradecka,"p109/9, was quite unstable in Salmonella Typhimurium F98 after conjugational transfer in the absence of selective pressure"
@@ -233,7 +234,7 @@ IncHI1,p8025,KP899803.1,311280,WideHostRange,Salmonella enterica,F8025,Typhimuri
 IncFI,pKDSC50,NC_002638.1,49503,NA,Salmonella enterica enterica,NA,Choleraesuis,119912,NA,NA,NA,NA,NA,NA,11254626,NA,10.1128/IAI.69.4.2612-2620.2001,2001,Haneda T,"pKDSC50, are known to be nonconjugative; plasmid non-conjugative"
 IncFI,pSC138,NC_006856.1,138742,NA,Salmonella enterica enterica,NA,Choleraesuis,321314,NA,NA,NA,NA,NA,NA,15781495,NA,10.1093/nar/gki297,2005,Chiu CH,"The pSC138 is non-conjugative, but contains oriT sequence and a defective transfer system; therefore, it is probably mobilizable"
 IncFI,pSCV50,NZ_CM001063.1,49558,NA,Salmonella enterica enterica,NA,Choleraesuis,904139,NA,NA,NA,NA,NA,NA,16257053,NA,10.1016/j.plasmid.2005.09.001,2006,Yu H,
-IncG,pRms149,AJ877225.1,57121,NA,Pseudomonas aeruginosa,NA,NA,287,NA,NA,NA,NA,NA,NA,30619542,PMC6312765 ,doi:10.1016/j.plasmid.2005.11.003 ,2006,"Haines, A. S.","plasmid pRms149 (Haines et al., 2005), originally isolated from Pseudomonas aeruginosa (Sagai et al., 1975), where it is the only known member of the IncP-6 incompatibility group"
+IncG,pRms149,AJ877225.1,57121,NA,Pseudomonas aeruginosa,NA,NA,287,NA,NA,NA,NA,NA,NA,30619542,PMC6312765 ,doi:10.1016/j.plasmid.2005.11.003,2006,"Haines, A. S.","plasmid pRms149 (Haines et al., 2005), originally isolated from Pseudomonas aeruginosa (Sagai et al., 1975), where it is the only known member of the IncP-6 incompatibility group"
 IncB/O,pJIE139,EU418926,87925,NarrowHostRange,Escherichia coli ,JIE139,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
 IncB/O,pSF-468-2,CP012627,92766,NarrowHostRange,Escherichia coli ,SF-468,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
 IncB/O,pO26-Vir,FJ386569,168100,NarrowHostRange,Escherichia coli ,H30,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
@@ -245,7 +246,7 @@ IncK1,p69-3818,KT754167,119227,NarrowHostRange,Shigella dysenteriae 1,69-3818,NA
 IncK1,p92-9000,KT754166,121262,NarrowHostRange,Shigella dysenteriae 1,92-9000,NA,984897,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
 IncK1,pCT,FN868832,93629,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,Reference plasmid
 IncK1,pSERB1,AY686591,67034,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
-IncI1-γ,pRK1,CP002968,102535,NarrowHostRange,Escherichia coli W,NA,NA,566546,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
+IncI1-gamma,pRK1,CP002968,102535,NarrowHostRange,Escherichia coli W,NA,NA,566546,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
 IncK1,p61806-CTXM,MF344576,104270,NarrowHostRange,Escherichia coli,15061806,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
 IncK1,pV404,LM651376,101631,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
 IncK1,pFORC31.3,CP013193,66990,NarrowHostRange,Escherichia coli,FORC_031,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,
@@ -264,15 +265,15 @@ IncK2 ,pNVI1292,KU312044,79298,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,
 IncK2,p5312.29,KR905385,86455,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,NA,NA,NA,NA,30761100,PMC6361801,https://doi.org/10.3389/fmicb.2019.00048,2019,Zhang D,Reference plasmid
 IncX4,pFS170G,KX711707,34997,NarrowHostRange,Escherichia coli,FS170G,NA,562,NA,NA,NA,NA,1.00E-02,NA,28336940,NA,10.1038/s41598-017-00095-x,2017,Sun J,
 IncX4,pPY1,KX711708,34924,NarrowHostRange,Escherichia coli,pPY1,NA,562,NA,NA,NA,NA,1.00E-03,NA,28336940,NA,10.1038/s41598-017-00095-x,2017,Sun J,
-ColE1/ColRNAI,pTOR_02,JX843238,28080,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli ,E. coli DH5α,3.90E-05,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
+ColE1/ColRNAI,pTOR_02,JX843238,28080,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli ,E. coli DH5alpha,3.90E-05,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
 ColE1/ColRNAI,pTOR_02,JX843238,28080,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli ,Pantoea agglomerans,1.50E-07,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
-IncFII,pEFC36a,JX486126,87419,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli DH5α,E. coli ,4.40E-01,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
-IncP-1β,pRWC72a,JX486125,61919,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli DH5α,E. coli ,9.70E-02,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
+IncFII,pEFC36a,JX486126,87419,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli DH5alpha,E. coli ,4.40E-01,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
+IncP-1beta,pRWC72a,JX486125,61919,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli DH5alpha,E. coli ,9.70E-02,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
 IncFII,pEFC36a,JX486126,87419,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli ,Pantoea agglomerans,2.40E-05,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
-IncP-1β,pRWC72a ,JX486125,61919,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli ,Pantoea agglomerans,3.60E-06,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
+IncP-1beta,pRWC72a,JX486125,61919,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli ,Pantoea agglomerans,3.60E-06,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
 IncFII,pEFC36a,JX486126,87419,NarrowHostRange,Escherichia coli,NA,NA,562,NA,NA,Pantoea agglomerans,Pantoea ananatis,1.60E-03,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
-IncP-1β,pRWC72a,JX486125,61919,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,Pantoea agglomerans,Pantoea ananatis,3.70E-04,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
-IncU,pTOR_01,JX843237,20914,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli DH5α,E. coli ,NA,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,plasmid non-conjugative
+IncP-1beta,pRWC72a,JX486125,61919,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,Pantoea agglomerans,Pantoea ananatis,3.70E-04,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,
+IncU,pTOR_01,JX843237,20914,BroadHostRange,Escherichia coli,NA,NA,562,NA,NA,E. coli DH5alpha,E. coli ,NA,37,25389419,PMC4211555,10.3389/fmicb.2014.00558,2014,Rahube TO,plasmid non-conjugative
 ColE1/ColRNAI,pIGMS31,AY543072.1,2520,NarrowHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,NA,NA,NA,NA,24777092,PMC4068535,10.1128/AAC.02412-14,2014,Alessandra Carattoli,
 ColE1/ColRNAI,pIGMS32,DQ298019,9294,NarrowHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,NA,NA,NA,NA,24777092,PMC4068535,10.1128/AAC.02412-14,2014,Alessandra Carattoli,
 ColE1/ColRNAI,pIGRK,AY543071,2348,NarrowHostRange,Klebsiella pneumoniae,NA,NA,573,NA,NA,NA,NA,NA,NA,24777092,PMC4068535,10.1128/AAC.02412-14,2014,Alessandra Carattoli,

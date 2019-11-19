@@ -4,9 +4,10 @@ import pandas
 import logging
 
 TEST_ROOT = os.path.dirname(__file__)
-logger=logging.getLogger()
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG)
+logging.basicConfig(format=LOG_FORMAT)
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def test_mob_typer_IncX1():
@@ -31,9 +32,9 @@ def create_output_dir():
 def test_mob_typer_host_range_multi_replicon():
     create_output_dir()
 
-    logging.info("Testing mob_typer on IncF {} plasmid".format("AB040415.fasta"))
-    logging.info("Current working directory:{}".format(os.getcwd()))
-    logging.info("List diretory of the input files: {}".format(os.listdir(os.path.dirname(__file__)+"/TestData/")))
+    logger.info("Testing mob_typer on IncF {} plasmid".format("AB040415.fasta"))
+    logger.info("Current working directory:{}".format(os.getcwd()))
+    logger.info("List diretory of the input files: {}".format(os.listdir(os.path.dirname(__file__)+"/TestData/")))
 
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/AB040415.fasta",
@@ -73,9 +74,9 @@ def test_mob_typer_host_range_multi_replicon_KU295134():
     create_output_dir()
     #KU295134.fasta with IncFII and IncN replicons with closest literature reference NC_011385
     #suitable to check the multi-replicon case and how host range data collapse is functioning
-    logging.info("Testing mob_typer on IncFII and IncF {} plasmid".format("KU295134.fasta"))
-    logging.info("Current working directory:{}".format(os.getcwd()))
-    logging.info("List diretory of the input files: {}".format(os.listdir(os.path.dirname(__file__) + "/TestData/")))
+    logger.info("Testing mob_typer on IncFII and IncF {} plasmid".format("KU295134.fasta"))
+    logger.info("Current working directory:{}".format(os.getcwd()))
+    logger.info("List diretory of the input files: {}".format(os.listdir(os.path.dirname(__file__) + "/TestData/")))
 
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/KU295134.fasta",
@@ -93,9 +94,9 @@ def test_mob_typer_host_range_multi_replicon_KU295134():
 
 def test_mob_typer_host_range_no_replicon_data():
     create_output_dir()
-    logging.info("Testing mob_typer on Mobilizable {} plasmid from Pseudomonas".format("AY603981.fasta"))
-    logging.info("Current working directory:{}".format(os.getcwd()))
-    logging.info("List diretory of the input files: {}".format(os.listdir(os.path.dirname(__file__) + "/TestData/")))
+    logger.info("Testing mob_typer on Mobilizable {} plasmid from Pseudomonas".format("AY603981.fasta"))
+    logger.info("Current working directory:{}".format(os.getcwd()))
+    logger.info("List diretory of the input files: {}".format(os.listdir(os.path.dirname(__file__) + "/TestData/")))
 
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/AY603981.fasta",
@@ -112,9 +113,9 @@ def test_mob_typer_host_range_no_replicon_data():
 
 def test_mob_typer_broad_host_range_IncF():
     create_output_dir()
-    logging.info("Testing mob_typer on IncF {} plasmid".format("ET4_Ecoli_plasmid_969.fasta"))
-    logging.info("Current working directory:{}".format(os.getcwd()))
-    logging.info("List diretory of the input files: {}".format(os.listdir(os.path.dirname(__file__) + "/TestData/")))
+    logger.info("Testing mob_typer on IncF {} plasmid".format("ET4_Ecoli_plasmid_969.fasta"))
+    logger.info("Current working directory:{}".format(os.getcwd()))
+    logger.info("List diretory of the input files: {}".format(os.listdir(os.path.dirname(__file__) + "/TestData/")))
 
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/IncF/ET4_Ecoli_plasmid_969.fasta",
@@ -128,3 +129,15 @@ def test_mob_typer_broad_host_range_IncF():
     assert results_df["NCBI-HR-rank"].values[0] == "order"
     assert results_df["NCBI-HR-Name"].values[0] == "Enterobacterales"
     assert results_df["PredictedMobility"].values[0] == "Conjugative"
+
+
+def test_mean_and_multireplicon_frame():
+    logger.info("Testing multireplicon case with multiple transfer rate means")
+    args = [
+        "--infile", os.path.dirname(__file__) + "/TestData/pCAV1453-208.fasta",
+        "--outdir", TEST_ROOT + "/run_test",
+        "--host_range_detailed"
+    ]
+
+    sys.argv[1:] = args
+    mob_suite.mob_typer.main()
