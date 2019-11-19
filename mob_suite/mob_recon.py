@@ -26,7 +26,7 @@ from mob_suite.utils import \
     check_dependencies
 
 
-LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+LOG_FORMAT = '%(asctime)s %(name)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
 
 
@@ -129,10 +129,16 @@ def parse_args():
     return parser.parse_args()
 
 
-def init_console_logger(lvl):
+def init_console_logger(lvl=2):
+    root = logging.getLogger()
+
     logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
+
     report_lvl = logging_levels[lvl]
+    root.setLevel(report_lvl)  # set root logger level
+
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
+
     return logging.getLogger(__name__)
 
 
@@ -306,12 +312,14 @@ def main():
 
     args = parse_args()
 
+
     if args.debug:
         logger = init_console_logger(3)
     else:
         logger = init_console_logger(2)
 
-    logger.info("MOB-recon v. {} ".format(__version__))
+    logger.info("MOB-recon version {} ".format(__version__))
+    logger.debug("Debug log reporting set on successfully")
 
 
     if not args.outdir:

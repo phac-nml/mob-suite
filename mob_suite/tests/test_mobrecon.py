@@ -17,7 +17,8 @@ def test_mob_recon_with_mob_typer_report():
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/Pseudomonas/test_contigs.fasta",
         "--run_typer",
-        "--outdir", os.path.dirname(__file__)+"/run_test/mob_recon"
+        "--outdir", os.path.dirname(__file__)+"/run_test/mob_recon",
+        "--debug"
     ]
     sys.argv[1:] = args
     mob_suite.mob_recon.main()
