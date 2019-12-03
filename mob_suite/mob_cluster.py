@@ -308,7 +308,7 @@ def main():
         mashObj.run_mash(input_fasta+'.msh', input_fasta+'.msh', mashfile_handle,table=True,num_threads=num_threads)
         clust_assignments = build_cluster_db(distance_matrix_file, (0.05, 0.0001))
         writeClusterAssignments(tmp_cluster_file, header, clust_assignments)
-        clust_dict = selectCluster(clust_assignments, 1)
+        clust_dict = selectCluster(clust_assignments, 0)
         shutil.copy(input_fasta, tmp_ref_fasta_file)
         updateFastaFile(tmp_ref_fasta_file ,update_fasta, clust_dict)
 
