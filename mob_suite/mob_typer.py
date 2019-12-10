@@ -9,7 +9,6 @@ from mob_suite.version import __version__
 import mob_suite.mob_init
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
-from mob_suite.wrappers import circlator
 from mob_suite.wrappers import mash
 from mob_suite.classes.mcl import mcl
 from mob_suite.utils import \
@@ -365,38 +364,42 @@ def main():
             relaxase_name_list=None,
             matchtype="loose_match",hr_obs_data = loadHostRangeDB())
 
+        if '-' in taxids:
+            host_range_refseq_rank = None;
+            host_range_refseq_name = None
 
-        refseqtree = getTaxonomyTree(taxids) #refseq tree
-        renderTree(
-                   tree=refseqtree,
-                   filename_prefix=args.outdir+"/"+file_id+"_refseqhostrange_")
-
-        #get literature report summary dataframe (might be more than 1 row if multiple replicons are present)
-        host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
-                                                                                  plasmid_lit_db = loadliteratureplasmidDB(),
-                                                                                  input_seq = args.infile )
-
-
-
-
-        if littaxids:
-            littree = getTaxonomyTree(littaxids) #get literature tree
+        else:
+            refseqtree = getTaxonomyTree(taxids) #refseq tree
             renderTree(
-                       tree=littree,
-                       filename_prefix=args.outdir+"/"+file_id+ "_literaturehostrange_")
+                       tree=refseqtree,
+                       filename_prefix=args.outdir+"/"+file_id+"_refseqhostrange_")
+
+            #get literature report summary dataframe (might be more than 1 row if multiple replicons are present)
+            host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
+                                                                                      plasmid_lit_db = loadliteratureplasmidDB(),
+                                                                                      input_seq = args.infile )
 
 
-        #write hostrange reports
-        writeOutHostRangeReports(filename_prefix = args.outdir+"/"+file_id,
-                                 samplename=file_id,
-                                 replicon_name_list = list(found_replicons.values()),
-                                 mob_cluster_id_list = [mash_top_hit['clustid']],
-                                 relaxase_name_acc_list = None,
-                                 relaxase_name_list = None,
-                                 convergance_rank=host_range_refseq_rank,
-                                 convergance_taxonomy=host_range_refseq_name,
-                                 stats_host_range_dict=stats_host_range,
-                                 literature_hr_report=host_range_literature_report_df)
+
+
+            if littaxids:
+                littree = getTaxonomyTree(littaxids) #get literature tree
+                renderTree(
+                           tree=littree,
+                           filename_prefix=args.outdir+"/"+file_id+ "_literaturehostrange_")
+
+
+            #write hostrange reports
+            writeOutHostRangeReports(filename_prefix = args.outdir+"/"+file_id,
+                                     samplename=file_id,
+                                     replicon_name_list = list(found_replicons.values()),
+                                     mob_cluster_id_list = [mash_top_hit['clustid']],
+                                     relaxase_name_acc_list = None,
+                                     relaxase_name_list = None,
+                                     convergance_rank=host_range_refseq_rank,
+                                     convergance_taxonomy=host_range_refseq_name,
+                                     stats_host_range_dict=stats_host_range,
+                                     literature_hr_report=host_range_literature_report_df)
     elif args.host_range_detailed and found_mob: #by MOB_accession numbers
         (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
                                                                                                                     replicon_name_list=None,
