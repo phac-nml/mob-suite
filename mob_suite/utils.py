@@ -10,7 +10,7 @@ import logging
 default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
 
 def check_dependencies(logger):
-    external_programs = ['blastn', 'makeblastdb', 'tblastn', 'circlator']
+    external_programs = ['blastn', 'makeblastdb', 'tblastn']
     missing = 0
     for program in external_programs:
         path = shutil.which(program)
