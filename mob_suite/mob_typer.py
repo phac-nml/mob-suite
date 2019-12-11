@@ -5,6 +5,8 @@ import os, re, pandas, collections
 import shutil
 import sys
 from argparse import (ArgumentParser, FileType)
+from collections import OrderedDict
+from operator import itemgetter
 from mob_suite.version import __version__
 import mob_suite.mob_init
 from mob_suite.blast import BlastRunner
@@ -432,6 +434,7 @@ def main():
     #END HOST RANGE MODULE
 
     if len(found_replicons) > 0:
+        found_replicons = OrderedDict(sorted(found_replicons.items(), key=itemgetter(1), reverse=False))
         rep_types = ",".join(list(found_replicons.values()))
         rep_acs = ",".join(list(found_replicons.keys()))
     else:
@@ -439,6 +442,7 @@ def main():
         rep_acs = "-"
 
     if len(found_mob) > 0:
+        found_mob = OrderedDict(sorted(found_mob.items(), key=itemgetter(1), reverse=False))
         mob_types = ",".join(list(found_mob.values()))
         mob_acs = ",".join(list(found_mob.keys()))
     else:
@@ -446,6 +450,7 @@ def main():
         mob_acs = "-"
 
     if len(found_mpf) > 0:
+        found_mpf = OrderedDict(sorted(found_mpf.items(), key=itemgetter(1), reverse=False))
         mpf_type = determine_mpf_type(found_mpf)
         mpf_acs = ",".join(list(found_mpf.keys()))
     else:
@@ -453,6 +458,7 @@ def main():
         mpf_acs = "-"
 
     if len(found_orit) > 0:
+        found_orit = OrderedDict(sorted(found_orit.items(), key=itemgetter(1), reverse=False))
         orit_types = ",".join(list(found_orit.values()))
         orit_acs = ",".join(list(found_orit.keys()))
     else:
