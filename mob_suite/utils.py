@@ -92,6 +92,7 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
     exclude_filter = dict()
 
 
+
     for index, row in blast_df.iterrows():
         contig_id = row['sseqid']
         contig_start = row['sstart']
@@ -154,7 +155,7 @@ def replicon_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blas
         return dict()
     blast_df = BlastReader(blast_results_file).df
     blast_df = blast_df.loc[blast_df['pident'] >= min_ident]
-    blast_df = blast_df.loc[blast_df['qcovhsp'] >= min_cov]
+    blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
     blast_df = fixStart(blast_df)
     blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
     blast_df = blast_df.reset_index(drop=True)
@@ -181,7 +182,7 @@ def mob_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_res
         return dict()
     blast_df = BlastReader(blast_results_file).df
     blast_df = blast_df.loc[blast_df['pident'] >= min_ident]
-    blast_df = blast_df.loc[blast_df['qcovhsp'] >= min_cov]
+    blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
     blast_df = fixStart(blast_df)
     blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
     blast_df = blast_df.reset_index(drop=True)
