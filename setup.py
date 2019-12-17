@@ -36,7 +36,7 @@ setup(
     url='https://github.com/phac-nml/mob-suite',
     license='GPLv3',
     author='James Robertson, Kyrylo Bessonov',
-    author_email='james.robertson@canada.ca;kyrylo.bessonov@canada.ca',
+    author_email='james.robertson@canada.ca',
     description=('mob_suite is a set of tools for finding, typing and reconstruction of plasmids from draft and complete genome assemblies.'),
     keywords='Plasmids finding typing reconstruction',
     classifiers=classifiers,
