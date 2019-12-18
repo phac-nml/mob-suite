@@ -156,6 +156,7 @@ def replicon_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blas
     blast_df = BlastReader(blast_results_file).df
     blast_df = blast_df.loc[blast_df['pident'] >= min_ident]
     blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
+    blast_df = blast_df.loc[blast_df['qcovhsp'] >= 25]
     blast_df = fixStart(blast_df)
     blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
     blast_df = blast_df.reset_index(drop=True)
@@ -183,6 +184,7 @@ def mob_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_res
     blast_df = BlastReader(blast_results_file).df
     blast_df = blast_df.loc[blast_df['pident'] >= min_ident]
     blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
+    blast_df = blast_df.loc[blast_df['qcovhsp'] >= 25]
     blast_df = fixStart(blast_df)
     blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
     blast_df = blast_df.reset_index(drop=True)
@@ -212,6 +214,7 @@ def repetitive_blast(input_fasta, ref_db, min_ident, min_cov, evalue, min_length
     blast_df = blast_df.loc[blast_df['length'] >= min_length]
     blast_df = blast_df.loc[blast_df['pident'] >= min_ident]
     blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
+    blast_df = blast_df.loc[blast_df['qcovhsp'] >= 25]
     blast_df = fixStart(blast_df)
     blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
     blast_df = blast_df.reset_index(drop=True)
