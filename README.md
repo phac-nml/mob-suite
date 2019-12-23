@@ -51,7 +51,6 @@ The outputs are text reports and phylogenetic trees rendered in Newick and PNG i
 ## Dependencies
 
 + blast+ v. 2.3.0
-+ circlator
 + mash
 
 
@@ -62,30 +61,10 @@ We recommend MOB-Suite installation as a conda package due to large number of de
 % conda config --add channels defaults
 % conda config --add channels conda-forge
 % conda config --add channels bioconda
-% conda install blast amos mash circlator
 % conda install -c bioconda mob_suite
 ```
 
-The MOB-suite uses the minimus2 pipeline from Circlator but there are some hardcoded links which need to be created in order for the tool to work correctly.
-After installing circlator and amos run the following as root.
- 
-```
-option 1: from https://github.com/sanger-pathogens/circlator/issues/65
 
-You will need to change ${CONDA_PREFIX}/bin/minimus2 for both SHOWCOORDS and DELTAFILTER
-
-Interestingly the two variables have also been hard coded, but fortunately using the ${CONDA_PREFIX} variable.
-
-Run the following line fixed the code whilst inside the environment.
-
-sed -i 's%/usr/local%${CONDA_PREFIX}%g' ${CONDA_PREFIX}/bin/minimus2
-
-option 2:
-% which show-coords 
-using the path above as "conda-show-coords-path"
-% ln -s conda-show-coords-path /usr/local/bin/show-coords
-
-```
 
 ### Pip
 
