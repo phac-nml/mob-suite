@@ -277,7 +277,7 @@ def membership_voting(reference_sequence_hits,contig_hit_scores):
 
 def contig_blast_group(blast_results_file, overlap_threshold):
     if os.path.getsize(blast_results_file) == 0:
-        return dict()
+        return ({},{},{})
     blast_df = BlastReader(blast_results_file).df
     blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
 
