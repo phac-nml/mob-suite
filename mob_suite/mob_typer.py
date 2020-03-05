@@ -203,7 +203,6 @@ def main():
 
     tmp_dir = os.path.join(out_dir, '__tmp')
     file_id = os.path.basename(input_fasta)
-    #output_file_prefix = re.sub(r"\..*", "", file_id)  # remove file extension by matching everything  before dot
 
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')
@@ -309,8 +308,6 @@ def main():
             acs, type = hit.split('|')
             found_replicons[acs] = type
 
-    #print("These replicons are found")
-    #print(list(found_replicons.values()))
 
     logger.info('Running relaxase blast on {}'.format(mob_ref))
 

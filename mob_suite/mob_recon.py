@@ -23,7 +23,8 @@ from mob_suite.utils import \
     fix_fasta_header, \
     getMashBestHit, \
     verify_init, \
-    check_dependencies
+    check_dependencies, \
+    run_mob_typer
 
 
 LOG_FORMAT = '%(asctime)s %(name)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
@@ -145,69 +146,6 @@ def init_console_logger(lvl=2):
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
 
     return logging.getLogger(__name__)
-
-
-
-def run_mob_typer(plasmid_file_abs_path, outdir, num_threads=1,database_dir=None):
-    mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
-
-    logger = logging.getLogger(__name__)
-    logger.info("Launching mob_typer to type recently reconstructed plasmid {}".format(plasmid_file_abs_path))
-    if database_dir is None:
-        p = Popen([sys.executable, mob_typer_path,
-                   '--infile', plasmid_file_abs_path,
-                   '--outdir', outdir,
-                   '--keep_tmp',
-                   '--host_range_detailed',
-                   '--num_threads', str(num_threads)],
-                  stdout=PIPE,
-                  stderr=PIPE, universal_newlines=True
-                  )
-    else:
-        p = Popen([sys.executable, mob_typer_path,
-                   '--infile', plasmid_file_abs_path,
-                   '--outdir', outdir,
-                   '--keep_tmp',
-                   '--database_directory', database_dir,
-                   '--host_range_detailed',
-                   '--num_threads', str(num_threads)],
-                  stdout=PIPE,
-                  stderr=PIPE, universal_newlines=True
-                  )
-
-    p.stdout.close()
-    p.stderr.close()
-
-    return_code = p.wait()
-    if return_code == 1:
-        logger.error("Mob_typer return code {}".format(return_code))
-        raise Exception("MOB_typer could not type {}".format(plasmid_file_abs_path))
-
-    mob_typer_report_file = outdir + "/mobtyper_" + os.path.basename(plasmid_file_abs_path) + "_report.txt"
-    if os.path.exists(mob_typer_report_file):
-        logger.info("Typing plasmid {}".format(os.path.basename(plasmid_file_abs_path)))
-        if os.path.getsize(mob_typer_report_file) == 0:
-            logger.error(
-                "File {} is empty. Perhaps there is an issue with mob_typer or some dependencies are missing (e.g. ete3)".format(
-                    mob_typer_report_file))
-            return ''
-
-        df = pd.read_csv(mob_typer_report_file,header=0,sep="\t", encoding='utf8')
-        row = df.iloc[0].to_list()
-        for i in range(0,len(row)):
-            r = row[i]
-            if isinstance(r, str):
-
-                row[i] = r.encode('utf-8', errors="ignore").decode("utf-8", errors="ignore")
-                printable = set(string.printable)
-                row[i] = ''.join(filter(lambda x: x in printable, row[i]))
-            else:
-                row[i] = str(r)
-
-        mob_typer_results = "\t".join(str(v) for v in row)
-        return mob_typer_results
-    else:
-        logger.error("File {} does not exist. Perhaps there is an issue with the mob_typer or some dependencies are missing (e.g. ete3)".format(mob_typer_report_file))
 
 
 

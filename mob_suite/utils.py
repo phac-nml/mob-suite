@@ -4,8 +4,8 @@ from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 import os, re
 from subprocess import Popen, PIPE, STDOUT
-import shutil,sys
-import logging
+import shutil,sys, logging, hashlib, string
+import pandas as pd
 
 default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
 
@@ -24,7 +24,11 @@ def check_dependencies(logger):
         sys.exit(-1)
 
 
-
+def calc_md5(seq):
+    seq = str(seq).encode()
+    md5 = hashlib.md5()
+    md5.update(seq)
+    return  md5.hexdigest()
 
 
 def fixStart(blast_df):
@@ -51,6 +55,21 @@ def read_fasta_dict(fasta_file):
             seqs[str(record.id)] = str(record.seq)
     handle.close()
     return seqs
+
+
+'''
+    Input: Fasta file and out directory
+    Output: writes individual files for each sequence record
+'''
+
+
+def write_individual_fasta(input_fasta, out_dir):
+    with open(input_fasta, "r") as handle:
+        for record in SeqIO.parse(handle, "fasta"):
+            out_fasta = os.path.join(out_dir, "{}.fasta".format(record.id))
+            with open(out_fasta, "w", encoding="utf-8") as fh:
+                fh.write("\n>{}\n{}\n".format(record.id, record.seq))
+                fh.close()
 
 
 def write_fasta_dict(seqs, fasta_file):
@@ -287,6 +306,27 @@ def getMashBestHit(mash_results):
 ''''
     Accepts fasta file and returns size, number of sequence records and gc %
 '''
+def calcFastaStatsIndividual(fasta):
+
+    stats = {}
+    for record in SeqIO.parse(fasta, "fasta"):
+        id = record.id
+        seq = record.seq
+        genome_size = len(seq)
+        gc = GC(seq)
+        md5 = calc_md5(seq)
+        stats[id] = {
+            'size': genome_size,
+            'gc_content': gc,
+            'md5': md5
+        }
+
+    return stats
+
+
+''''
+    Accepts fasta file and returns size, number of sequence records and gc %
+'''
 
 
 def calcFastaStats(fasta):
@@ -297,12 +337,23 @@ def calcFastaStats(fasta):
         seq = seq + record.seq
     genome_size = len(seq)
     gc = GC(seq)
+    md5 = calc_md5(seq)
 
     return {
         'num_seq': num_seqs,
         'size': genome_size,
-        'gc_content': gc
+        'gc_content': gc,
+        'md5': md5
     }
+
+def filterFastaByIDs(in_fasta,out_fasta,include_list):
+    fh = open(out_fasta,'w')
+
+    for record in SeqIO.parse(in_fasta, "fasta"):
+        if record.id in include_list:
+            fh.write(">{}\n{}\n".format(record.id,record.seq))
+
+    fh.close()
 
 
 def init_console_logger(lvl=2):
@@ -316,4 +367,64 @@ def init_console_logger(lvl=2):
     return logging.getLogger(__name__)
 
 
+def run_mob_typer(plasmid_file_abs_path, outdir, num_threads=1,database_dir=None):
+    mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
+
+    logger = logging.getLogger(__name__)
+    logger.info("Launching mob_typer to type recently reconstructed plasmid {}".format(plasmid_file_abs_path))
+    if database_dir is None:
+        p = Popen([sys.executable, mob_typer_path,
+                   '--infile', plasmid_file_abs_path,
+                   '--outdir', outdir,
+                   '--keep_tmp',
+                   '--host_range_detailed',
+                   '--num_threads', str(num_threads)],
+                  stdout=PIPE,
+                  stderr=PIPE, universal_newlines=True
+                  )
+    else:
+        p = Popen([sys.executable, mob_typer_path,
+                   '--infile', plasmid_file_abs_path,
+                   '--outdir', outdir,
+                   '--keep_tmp',
+                   '--database_directory', database_dir,
+                   '--host_range_detailed',
+                   '--num_threads', str(num_threads)],
+                  stdout=PIPE,
+                  stderr=PIPE, universal_newlines=True
+                  )
+
+    p.stdout.close()
+    p.stderr.close()
+
+    return_code = p.wait()
+    if return_code == 1:
+        logger.error("Mob_typer return code {}".format(return_code))
+        raise Exception("MOB_typer could not type {}".format(plasmid_file_abs_path))
+
+    mob_typer_report_file = outdir + "/mobtyper_" + os.path.basename(plasmid_file_abs_path) + "_report.txt"
+    if os.path.exists(mob_typer_report_file):
+        logger.info("Typing plasmid {}".format(os.path.basename(plasmid_file_abs_path)))
+        if os.path.getsize(mob_typer_report_file) == 0:
+            logger.error(
+                "File {} is empty. Perhaps there is an issue with mob_typer or some dependencies are missing (e.g. ete3)".format(
+                    mob_typer_report_file))
+            return ''
+
+        df = pd.read_csv(mob_typer_report_file,header=0,sep="\t", encoding='utf8')
+        row = df.iloc[0].to_list()
+        for i in range(0,len(row)):
+            r = row[i]
+            if isinstance(r, str):
+
+                row[i] = r.encode('utf-8', errors="ignore").decode("utf-8", errors="ignore")
+                printable = set(string.printable)
+                row[i] = ''.join(filter(lambda x: x in printable, row[i]))
+            else:
+                row[i] = str(r)
+
+        mob_typer_results = "\t".join(str(v) for v in row)
+        return mob_typer_results
+    else:
+        logger.error("File {} does not exist. Perhaps there is an issue with the mob_typer or some dependencies are missing (e.g. ete3)".format(mob_typer_report_file))
 
