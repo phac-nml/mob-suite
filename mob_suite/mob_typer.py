@@ -104,7 +104,7 @@ def parse_args():
 
     parser.add_argument('--keep_tmp', required=False,help='Do not delete temporary file directory', action='store_true')
     parser.add_argument('--debug', required=False, help='Show debug information', action='store_true')
-    parser.add_argument('-c','--plasmid_meta', type=str, required=False,
+    parser.add_argument('-m','--plasmid_meta', type=str, required=False,
                         help='MOB-cluster plasmid cluster formatted file matched to the reference plasmid db',
                         default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              'databases/clusters.txt'))
@@ -184,11 +184,12 @@ def main():
     database_dir = os.path.abspath(args.database_directory)
 
     if args.sample_id is None:
-        sample_id = re.sub(r"\.(fasta|fa|fas){1,1}", "", args.infile)
+        sample_id = re.sub(r"\.(fasta|fa|fas){1,1}", "", os.path.basename(args.infile))
     else:
         sample_id = args.sample_id
 
     verify_init(logger,database_dir)
+
     # Script arguments
     input_fasta = args.infile
     out_dir = args.outdir
@@ -199,13 +200,13 @@ def main():
         logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.primary_cluster_dist))
         sys.exit()
     else:
-        primary_distance = args.primary_cluster_dist
+        primary_distance = float(args.primary_cluster_dist)
 
     if not (args.secondary_cluster_dist >= 0 and args.secondary_cluster_dist <= 1):
         logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.secondary_cluster_dist))
         sys.exit()
     else:
-        secondary_distance = args.secondary_cluster_dist
+        secondary_distance = float(args.secondary_cluster_dist)
 
     if database_dir == default_database_dir:
         mob_ref = args.plasmid_mob
@@ -231,6 +232,7 @@ def main():
     mob_blast_results = os.path.join(tmp_dir, 'mobtyper_blast_results.txt')
     mpf_blast_results = os.path.join(tmp_dir, 'mpf_blast_results.txt')
     orit_blast_results = os.path.join(tmp_dir, 'orit_blast_results.txt')
+
     if os.path.isfile(mob_blast_results):
         os.remove(mob_blast_results)
     if os.path.isfile(mpf_blast_results):
@@ -239,8 +241,9 @@ def main():
         os.remove(orit_blast_results)
     if os.path.isfile(replicon_blast_results):
         os.remove(replicon_blast_results)
-    report_file = os.path.join(out_dir, 'mobtyper_' + file_id + '_report.txt')
-    mash_file = os.path.join(tmp_dir, 'mash_' + file_id + '.txt')
+
+    report_file = os.path.join(out_dir,"mobtyper_{}_report.txt".format(sample_id))
+    mash_file = os.path.join(tmp_dir, "mash_{}.txt".format(sample_id))
 
 
     # Input numeric params
@@ -321,6 +324,7 @@ def main():
     #Get cluster information
     reference_sequence_meta = read_sequence_info(plasmid_meta)
 
+
     # run individual marker blasts
     logger.info('Running replicon blast on {}'.format(replicon_ref))
     replicon_contigs = getRepliconContigs(
@@ -381,9 +385,9 @@ def main():
 
     if mash_top_hit['top_hit'] in reference_sequence_meta:
         if mash_top_hit['mash_hit_score'] <= primary_distance:
-            plasmid_primary_acs = reference_sequence_meta['primary_cluster_id']
+            plasmid_primary_acs = reference_sequence_meta[mash_top_hit['top_hit']]['primary_cluster_id']
         if mash_top_hit['mash_hit_score'] <= secondary_distance:
-            plasmid_secondary_acs = reference_sequence_meta['secondary_cluster_id']
+            plasmid_secondary_acs = reference_sequence_meta[mash_top_hit['top_hit']]['secondary_cluster_id']
 
 
     # GET HOST RANGE
@@ -402,9 +406,11 @@ def main():
 
         else:
             refseqtree = getTaxonomyTree(taxids) #refseq tree
-            renderTree(
-                       tree=refseqtree,
-                       filename_prefix=args.outdir+"/"+file_id+"_refseqhostrange_")
+
+            if not refseqtree is None:
+                renderTree(
+                           tree=refseqtree,
+                           filename_prefix=args.outdir+"/"+file_id+"_refseqhostrange_")
 
             #get literature report summary dataframe (might be more than 1 row if multiple replicons are present)
             host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
@@ -416,9 +422,10 @@ def main():
 
             if littaxids:
                 littree = getTaxonomyTree(littaxids) #get literature tree
-                renderTree(
-                           tree=littree,
-                           filename_prefix=args.outdir+"/"+file_id+ "_literaturehostrange_")
+                if not littree is None:
+                    renderTree(
+                               tree=littree,
+                               filename_prefix=args.outdir+"/"+file_id+ "_literaturehostrange_")
 
 
             #write hostrange reports
@@ -441,22 +448,23 @@ def main():
                                                                                                                     matchtype="loose_match", hr_obs_data=loadHostRangeDB())
 
         refseqtree = getTaxonomyTree(taxids)  # refseq tree
-        renderTree(
-                    tree=refseqtree,
-                    filename_prefix=args.outdir + "/" + file_id + "_refseqhostrange_")
 
-        writeOutHostRangeReports(filename_prefix=args.outdir + "/" + file_id,
-                                 samplename=file_id,
-                                 replicon_name_list=None,
-                                 mob_cluster_id_list=[plasmid_primary_acs],
-                                 relaxase_name_acc_list=None,
-                                 relaxase_name_list=None,
-                                 convergance_rank=host_range_refseq_rank,
-                                 convergance_taxonomy=host_range_refseq_name,
-                                 stats_host_range_dict=stats_host_range
-                                 )
+        if not refseqtree is None:
+            renderTree(
+                        tree=refseqtree,
+                        filename_prefix=args.outdir + "/" + file_id + "_refseqhostrange_")
 
-        #print(host_range_refseq_rank, host_range_refseq_name, taxids_df["Organism"])
+            writeOutHostRangeReports(filename_prefix=args.outdir + "/" + file_id,
+                                     samplename=file_id,
+                                     replicon_name_list=None,
+                                     mob_cluster_id_list=[plasmid_primary_acs],
+                                     relaxase_name_acc_list=None,
+                                     relaxase_name_list=None,
+                                     convergance_rank=host_range_refseq_rank,
+                                     convergance_taxonomy=host_range_refseq_name,
+                                     stats_host_range_dict=stats_host_range
+                                     )
+
 
     else:
         host_range_refseq_rank=None; host_range_refseq_name=None

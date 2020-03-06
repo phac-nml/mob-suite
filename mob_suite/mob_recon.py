@@ -24,7 +24,8 @@ from mob_suite.utils import \
     getMashBestHit, \
     verify_init, \
     check_dependencies, \
-    run_mob_typer
+    run_mob_typer, \
+    read_sequence_info
 
 
 LOG_FORMAT = '%(asctime)s %(name)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
@@ -41,6 +42,7 @@ def parse_args():
     parser.add_argument('-o', '--outdir', type=str, required=True, help='Output Directory to put results')
     parser.add_argument('-i', '--infile', type=str, required=True, help='Input assembly fasta file to process')
     parser.add_argument('-n', '--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
+    parser.add_argument('-s', '--sample_id', type=str, required=False, help='Sample Prefix for reports')
     parser.add_argument('--max_contig_size', type=int, required=False,
                         help='Maximum size of a contig to be considered a plasmid',
                         default=310000)
@@ -113,6 +115,10 @@ def parse_args():
                         help='Companion Mash database of reference database',
                         default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              'databases/ncbi_plasmid_full_seqs.fas.msh'))
+    parser.add_argument('-m','--plasmid_meta', type=str, required=False,
+                        help='MOB-cluster plasmid cluster formatted file matched to the reference plasmid db',
+                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                             'databases/clusters.txt'))
     parser.add_argument('--plasmid_db_type', type=str, required=False, help='Blast database type of reference database',
                         default='blastn')
     parser.add_argument('--plasmid_replicons', type=str, required=False, help='Fasta of plasmid replicons',
@@ -124,11 +130,20 @@ def parse_args():
     parser.add_argument('--plasmid_mob', type=str, required=False, help='Fasta of plasmid relaxases',
                         default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                              'databases/mob.proteins.faa'))
+    parser.add_argument('--plasmid_mpf', type=str, required=False, help='Fasta of known plasmid mate-pair proteins',
+                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                             'databases/mpf.proteins.faa'))
+    parser.add_argument('--plasmid_orit', type=str, required=False, help='Fasta of known plasmid oriT dna sequences',
+                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                             'databases/orit.fas'))
     parser.add_argument('-d', '--database_directory',
                         default=default_database_dir,
                         required=False,
                         help='Directory you want to use for your databases. If the databases are not already '
                              'downloaded, they will be downloaded automatically. Defaults to {}'.format(default_database_dir))
+    parser.add_argument('--primary_cluster_dist', type=int, required=False, help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
+    parser.add_argument('--secondary_cluster_dist', type=int, required=False, help='Mash distance for assigning primary cluster id 0 - 1',
+                        default=0.025)
     parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__ )
 
 
@@ -180,8 +195,6 @@ def membership_voting(reference_sequence_hits,contig_hit_scores):
         filtered_reference_hits[ref_id] = reference_sequence_hits[ref_id]
         filtered_cluster_ids[reference_sequence_hits[ref_id]['clust_id']] = reference_sequence_hits[ref_id]['score']
 
-    print(filtered_cluster_ids)
-    print(contig_hit_scores)
     memberships = {}
 
     for contig_id in contig_hit_scores:
@@ -209,11 +222,10 @@ def membership_voting(reference_sequence_hits,contig_hit_scores):
                 if clust_id in filtered_cluster_ids:
                     memberships[contig_id] = {'ref_id': hit_id, 'clust_id': reference_sequence_hits[hit_id]['clust_id'],'score':reference_sequence_hits[hit_id]['score']}
                     break
-    print(memberships)
     return memberships
 
 
-def contig_blast_group(blast_results_file, overlap_threshold):
+def contig_blast_group(blast_results_file, overlap_threshold,reference_sequence_meta):
     if os.path.getsize(blast_results_file) == 0:
         return ({},{},{})
     blast_df = BlastReader(blast_results_file).df
@@ -234,7 +246,11 @@ def contig_blast_group(blast_results_file, overlap_threshold):
     query_hit_scores = dict()
     for index, row in blast_df.iterrows():
         query = row['qseqid']
-        pID, clust_id = row['sseqid'].split('|')
+        pID = row['sseqid']
+        if pID not in reference_sequence_meta:
+            continue
+        else:
+            clust_id = reference_sequence_meta[pID]['primary_cluster_id']
         score = row['bitscore']
         pLen = row['slen']
         contig_id = row['qseqid']
@@ -333,7 +349,23 @@ def main():
     database_dir = os.path.abspath(args.database_directory)
     verify_init(logger, database_dir)
 
+    if args.sample_id is None:
+        sample_id = re.sub(r"\.(fasta|fa|fas){1,1}", "", os.path.basename(args.infile))
+    else:
+        sample_id = args.sample_id
 
+
+    if not (args.primary_cluster_dist >= 0 and args.primary_cluster_dist <= 1):
+        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.primary_cluster_dist))
+        sys.exit()
+    else:
+        primary_distance = float(args.primary_cluster_dist)
+
+    if not (args.secondary_cluster_dist >= 0 and args.secondary_cluster_dist <= 1):
+        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.secondary_cluster_dist))
+        sys.exit()
+    else:
+        secondary_distance = float(args.secondary_cluster_dist)
 
     plasmid_files = []
     input_fasta = args.infile
@@ -455,18 +487,30 @@ def main():
 
     # Input Databases
     default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
+
+
     if database_dir == default_database_dir:
         plasmid_ref_db = args.plasmid_db
-        replicon_ref = args.plasmid_replicons
         mob_ref = args.plasmid_mob
         mash_db = args.plasmid_mash_db
+        replicon_ref = args.plasmid_replicons
+        plasmid_meta = args.plasmid_meta
         repetitive_mask_file = args.repetitive_mask
+        mpf_ref = args.plasmid_mpf
+        plasmid_orit = args.plasmid_orit
     else:
         plasmid_ref_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas')
-        replicon_ref = os.path.join(database_dir, 'rep.dna.fas')
         mob_ref = os.path.join(database_dir, 'mob.proteins.faa')
         mash_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas.msh')
+        replicon_ref = os.path.join(database_dir, 'rep.dna.fas')
+        plasmid_meta = os.path.join(database_dir, 'clusters.txt')
         repetitive_mask_file = os.path.join(database_dir, 'repetitive.dna.fas')
+        mpf_ref = args.os.path.join(database_dir, 'mpf.proteins.faa')
+        plasmid_orit = args.os.path.join(database_dir, 'orit.fas')
+
+    reference_sequence_meta = read_sequence_info(plasmid_meta)
+
+
 
 
     check_dependencies(logger)
@@ -515,7 +559,7 @@ def main():
     contig_blast(fixed_fasta, plasmid_ref_db, min_con_ident, min_con_cov, min_con_evalue, min_length,
                  tmp_dir, contig_blast_results)
 
-    (pcl_clusters,reference_sequence_hits,contig_hit_scores) = contig_blast_group(filtered_blast, min_overlapp)
+    (pcl_clusters,reference_sequence_hits,contig_hit_scores) = contig_blast_group(filtered_blast, min_overlapp,reference_sequence_meta)
     contig_cluster_membership = membership_voting(reference_sequence_hits,contig_hit_scores)
     for contig_id in contig_cluster_membership:
         if contig_id in pcl_clusters:
@@ -651,7 +695,7 @@ def main():
     contig_report = list()
 
     results_fh = open(contig_report_file, 'w', encoding="utf-8")
-    results_fh.write("file_id\tcluster_id\tcontig_id\tcontig_length\tcircularity_status\trep_type\t" \
+    results_fh.write("sample_id\tprimary_cluster_id\tsecondary_cluster_id\tcontig_id\tcontig_length\tcircularity_status\trep_type\t" \
                      "rep_type_accession\trelaxase_type\trelaxase_type_accession\tmash_nearest_neighbor\t"
                      " mash_neighbor_distance\trepetitive_dna_id\tmatch_type\tscore\tcontig_match_start\tcontig_match_end\n")
 
@@ -699,8 +743,17 @@ def main():
         mash_results = m.read_mash(mash_file)
         mash_top_hit = getMashBestHit(mash_results)
 
+        plasmid_primary_acs = "{}_novel_counter".format(counter)
+        plasmid_secondary_acs = "{}_novel_counter".format(counter)
+
+        if mash_top_hit['top_hit'] in reference_sequence_meta:
+            if mash_top_hit['mash_hit_score'] <= primary_distance:
+                plasmid_primary_acs = reference_sequence_meta[mash_top_hit['top_hit']]['primary_cluster_id']
+            if mash_top_hit['mash_hit_score'] <= secondary_distance:
+                plasmid_secondary_acs = reference_sequence_meta[mash_top_hit['top_hit']]['secondary_cluster_id']
+
         # delete low scoring clusters
-        if float(mash_top_hit['mash_hit_score']) > 0.05:
+        if float(mash_top_hit['mash_hit_score']) > primary_distance:
             skip = True
             for contig_id in clusters:
                 if contig_id in replicon_contigs:
@@ -719,13 +772,11 @@ def main():
 
         new_clust_file = None
         if os.path.isfile(cluster_file):
-            if float(mash_top_hit['mash_hit_score']) < 0.05:
-                cluster = mash_top_hit['clustid']
-                new_clust_file = os.path.join(out_dir, 'plasmid_' + cluster + ".fasta")
+            if float(mash_top_hit['mash_hit_score']) < primary_distance:
+                new_clust_file = os.path.join(out_dir, "{}_plasmid_{}.fasta".format(sample_id, plasmid_primary_acs))
 
             else:
-                cluster = 'novel_' + str(counter)
-                new_clust_file = os.path.join(out_dir, 'plasmid_' + cluster + ".fasta")
+                new_clust_file = os.path.join(out_dir, "{}_plasmid_{}.fasta".format(sample_id, plasmid_primary_acs))
                 counter += 1
 
             if os.path.isfile(new_clust_file):
@@ -737,7 +788,7 @@ def main():
                 temp_fh = open(new_clust_file, 'a', encoding="utf-8")
                 temp_fh.write(data)
                 temp_fh.close()
-                mash_file = os.path.join(tmp_dir, 'clust_' + str(cluster) + '.txt')
+                mash_file = os.path.join(tmp_dir, "clust_{}.txt".format(plasmid_primary_acs))
                 mashfile_handle = open(mash_file, 'w', encoding="utf-8")
                 m.run_mash(mash_db, cluster_file, mashfile_handle)
                 mash_results = m.read_mash(mash_file)
@@ -791,8 +842,8 @@ def main():
             if contig_id in repetitive_dna:
                 rep_dna_info = repetitive_dna[contig_id]
 
-            results_fh.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(re.sub("\.(fasta|fa|fas){1,1}","",file_id),
-                                                                                       cluster, contig_id,
+            results_fh.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(sample_id,
+                                                                                       plasmid_primary_acs,plasmid_secondary_acs, contig_id,
                                                                                        len(clusters[contig_id]),
                                                                                        contig_status,
                                                                                        found_replicon_string,
@@ -888,10 +939,17 @@ def main():
                             "LitPMIDsNumber\t" \
                             "LitClosestMashDist\n"
         for plasmid_file_abs_path in plasmid_files:
-            mobtyper_results = mobtyper_results + "{}\n".format(run_mob_typer(plasmid_file_abs_path=plasmid_file_abs_path,
-                                                                            outdir=out_dir,
-                                                                            num_threads=int(num_threads),
-                                                                            database_dir=database_dir))
+            mobtyper_results = mobtyper_results + "{}\n".format(
+                run_mob_typer(plasmid_file_abs_path=plasmid_file_abs_path,
+                          outdir=out_dir,
+                          mash_db=mash_db,
+                          replicon_ref=replicon_ref,
+                          plasmid_meta=plasmid_meta,
+                          mob_ref=mob_ref,
+                          mpf_ref=mpf_ref,
+                          plasmid_orit=plasmid_orit,
+                          num_threads=int(num_threads)))
+
         fh = open(mobtyper_results_file, 'w', encoding="utf-8")
         fh.write(mobtyper_results)
         fh.close()

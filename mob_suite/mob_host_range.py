@@ -9,42 +9,13 @@ from collections import Counter,OrderedDict
 from ete3 import NCBITaxa
 from mob_suite.version import __version__
 from mob_suite.utils import default_database_dir,init_console_logger
+import sys
 
 database_directory = os.path.abspath(default_database_dir)
 ETE3DBTAXAFILE = os.path.abspath(database_directory + "/taxa.sqlite")
 
 root_log_level = logging.getLogger().getEffectiveLevel()
 logger = init_console_logger(root_log_level)
-
-#pandas.options.display.float_format = '{:.1E}'.format #render scientific notation
-
-#default init arguments
-#args=ArgumentParser()
-# args.multi_match = True
-# args.exact_match = None
-# args.loose_match = None
-# args.render_tree = True
-# args.write_newick = True
-# args.debug = False
-# args.relaxase_accession = None
-# args.outdir = "./"
-# args.inputseq = False
-
-#OUTDIR = os.getcwd()+"/"
-
-# def createLogger():
-#     log = logging.getLogger('MOB-Suite')
-#     formatter = logging.Formatter(
-#         '%(asctime)s %(name)-12s %(message)s')
-#     log.setLevel(logging.DEBUG)
-#
-#     console = logging.StreamHandler()
-#     console.setFormatter(formatter)
-#     console.setLevel(logging.DEBUG)
-#     log.addHandler(console)
-#     return log
-
-#LOG = createLogger()
 
 def isETE3DBTAXAFILEexists():
     if not os.path.exists(ETE3DBTAXAFILE):
@@ -673,6 +644,15 @@ def getTaxonomyTree(taxids):
     :param taxids: list of NCBI Taxonomy ids (e.g. 562 - E.coli)
     :return: tree: object of PhyloTree class from ete3 library
     """
+
+    filtered = []
+    for t in taxids:
+        if isinstance(t,int):
+            filtered.append(t)
+    taxids = filtered
+
+    if len(taxids) == 0:
+        return None
 
     if not isETE3DBTAXAFILEexists():
         logger.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
