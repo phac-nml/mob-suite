@@ -9,15 +9,8 @@ from collections import OrderedDict
 from operator import itemgetter
 from mob_suite.version import __version__
 import mob_suite.mob_init
-from mob_suite.blast import BlastRunner
-from mob_suite.blast import BlastReader
 from mob_suite.wrappers import mash
-from mob_suite.classes.mcl import mcl
 from mob_suite.utils import \
-    fixStart, \
-    read_fasta_dict, \
-    write_fasta_dict, \
-    filter_overlaping_records, \
     replicon_blast, \
     mob_blast, \
     getRepliconContigs, \
@@ -25,7 +18,9 @@ from mob_suite.utils import \
     getMashBestHit, \
     calcFastaStats, \
     verify_init, \
-    check_dependencies
+    check_dependencies, \
+    read_sequence_info
+
 from mob_suite.mob_host_range import getTaxonomyTree, getLiteratureBasedHostRange, loadliteratureplasmidDB, \
     writeOutHostRangeReports,getRefSeqHostRange,loadHostRangeDB,renderTree, collapseLiteratureReport
 
@@ -54,6 +49,8 @@ def parse_args():
     parser.add_argument('-o', '--outdir', type=str, required=True, help='Output Directory to put results')
 
     parser.add_argument('-i', '--infile', type=str, required=True, help='Input assembly fasta file to process')
+    parser.add_argument('-s', '--sample_id', type=str, required=False, help='Sample name for report')
+
 
     parser.add_argument('-n', '--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
 
@@ -107,6 +104,10 @@ def parse_args():
 
     parser.add_argument('--keep_tmp', required=False,help='Do not delete temporary file directory', action='store_true')
     parser.add_argument('--debug', required=False, help='Show debug information', action='store_true')
+    parser.add_argument('-c','--plasmid_meta', type=str, required=False,
+                        help='MOB-cluster plasmid cluster formatted file matched to the reference plasmid db',
+                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                             'databases/clusters.txt'))
     parser.add_argument('--plasmid_mash_db', type=str, required=False,
                         help='Companion Mash database of reference database',
                         default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -125,6 +126,9 @@ def parse_args():
                                              'databases/orit.fas'))
     parser.add_argument('--host_range_detailed', required=False, help='Complete host range report with phylogeny stats', action='store_true',
                         default=False)
+    parser.add_argument('--primary_cluster_dist', type=int, required=False, help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
+    parser.add_argument('--secondary_cluster_dist', type=int, required=False, help='Mash distance for assigning primary cluster id 0 - 1',
+                        default=0.025)
     parser.add_argument('-d','--database_directory',default=default_database_dir,
                         required=False,
                         help='Directory you want to use for your databases. If the databases are not already '
@@ -179,6 +183,11 @@ def main():
 
     database_dir = os.path.abspath(args.database_directory)
 
+    if args.sample_id is None:
+        sample_id = re.sub(r"\.(fasta|fa|fas){1,1}", "", args.infile)
+    else:
+        sample_id = args.sample_id
+
     verify_init(logger,database_dir)
     # Script arguments
     input_fasta = args.infile
@@ -186,6 +195,17 @@ def main():
     num_threads = int(args.num_threads)
     keep_tmp = args.keep_tmp
 
+    if not (args.primary_cluster_dist >= 0 and args.primary_cluster_dist <= 1):
+        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.primary_cluster_dist))
+        sys.exit()
+    else:
+        primary_distance = args.primary_cluster_dist
+
+    if not (args.secondary_cluster_dist >= 0 and args.secondary_cluster_dist <= 1):
+        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.secondary_cluster_dist))
+        sys.exit()
+    else:
+        secondary_distance = args.secondary_cluster_dist
 
     if database_dir == default_database_dir:
         mob_ref = args.plasmid_mob
@@ -193,12 +213,14 @@ def main():
         orit_ref = args.plasmid_orit
         mash_db = args.plasmid_mash_db
         replicon_ref = args.plasmid_replicons
+        plasmid_meta = args.plasmid_meta
     else:
         mob_ref = os.path.join(database_dir, 'mob.proteins.faa')
         mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
         orit_ref = os.path.join(database_dir, 'orit.fas')
         mash_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas.msh')
         replicon_ref = os.path.join(database_dir, 'rep.dna.fas')
+        plasmid_meta = os.path.join(database_dir, 'clusters.txt')
 
 
     tmp_dir = os.path.join(out_dir, '__tmp')
@@ -296,6 +318,9 @@ def main():
 
     fix_fasta_header(input_fasta, fixed_fasta)
 
+    #Get cluster information
+    reference_sequence_meta = read_sequence_info(plasmid_meta)
+
     # run individual marker blasts
     logger.info('Running replicon blast on {}'.format(replicon_ref))
     replicon_contigs = getRepliconContigs(
@@ -318,8 +343,7 @@ def main():
         for hit in mob_contigs[contig_id]:
             acs, type = hit.split('|')
             found_mob[acs] = type
-    #print ("These are relaxeses found")
-    #print (list(found_mob.values()))
+
 
 
     logger.info('Running mpf blast on {}'.format(mob_ref))
@@ -331,7 +355,7 @@ def main():
             acs, type = hit.split('|')
             found_mpf[acs] = type
 
-    # print(found_mpf)
+
 
     logger.info('Running orit blast on {}'.format(replicon_ref))
     orit_contigs = getRepliconContigs(
@@ -346,11 +370,20 @@ def main():
 
     # Get closest neighbor by mash distance in the entire plasmid database
     m = mash()
-    #mash_distances = dict()
     mashfile_handle = open(mash_file, 'w')
     m.run_mash(mash_db, fixed_fasta, mashfile_handle)
     mash_results = m.read_mash(mash_file)
     mash_top_hit = getMashBestHit(mash_results)
+
+
+    plasmid_primary_acs = 'nan'
+    plasmid_secondary_acs = 'nan'
+
+    if mash_top_hit['top_hit'] in reference_sequence_meta:
+        if mash_top_hit['mash_hit_score'] <= primary_distance:
+            plasmid_primary_acs = reference_sequence_meta['primary_cluster_id']
+        if mash_top_hit['mash_hit_score'] <= secondary_distance:
+            plasmid_secondary_acs = reference_sequence_meta['secondary_cluster_id']
 
 
     # GET HOST RANGE
@@ -358,7 +391,7 @@ def main():
     if args.host_range_detailed and found_replicons:
         (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
             replicon_name_list=list(found_replicons.values()),
-            mob_cluster_id_list=[mash_top_hit['clustid']],
+            mob_cluster_id_list=[plasmid_primary_acs],
             relaxase_name_acc_list=None,
             relaxase_name_list=None,
             matchtype="loose_match",hr_obs_data = loadHostRangeDB())
@@ -392,7 +425,7 @@ def main():
             writeOutHostRangeReports(filename_prefix = args.outdir+"/"+file_id,
                                      samplename=file_id,
                                      replicon_name_list = list(found_replicons.values()),
-                                     mob_cluster_id_list = [mash_top_hit['clustid']],
+                                     mob_cluster_id_list = [plasmid_primary_acs],
                                      relaxase_name_acc_list = None,
                                      relaxase_name_list = None,
                                      convergance_rank=host_range_refseq_rank,
@@ -402,7 +435,7 @@ def main():
     elif args.host_range_detailed and found_mob: #by MOB_accession numbers
         (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
                                                                                                                     replicon_name_list=None,
-                                                                                                                    mob_cluster_id_list=[mash_top_hit['clustid']],
+                                                                                                                    mob_cluster_id_list=[plasmid_primary_acs],
                                                                                                                     relaxase_name_acc_list=found_mob.keys(),
                                                                                                                     relaxase_name_list=None,
                                                                                                                     matchtype="loose_match", hr_obs_data=loadHostRangeDB())
@@ -415,7 +448,7 @@ def main():
         writeOutHostRangeReports(filename_prefix=args.outdir + "/" + file_id,
                                  samplename=file_id,
                                  replicon_name_list=None,
-                                 mob_cluster_id_list=[mash_top_hit['clustid']],
+                                 mob_cluster_id_list=[plasmid_primary_acs],
                                  relaxase_name_acc_list=None,
                                  relaxase_name_list=None,
                                  convergance_rank=host_range_refseq_rank,
@@ -471,12 +504,12 @@ def main():
         predicted_mobility = 'Conjugative'
 
 
-    main_report_data_dict=collections.OrderedDict({"file_id":re.sub(r"\.(fasta|fa|fas){1,1}","",file_id), "num_contigs":stats['num_seq'], "total_length": stats['size'], "gc":stats['gc_content'],
+    main_report_data_dict=collections.OrderedDict({"sample_id":sample_id, "num_contigs":stats['num_seq'], "total_length": stats['size'], "gc":stats['gc_content'],
                            "rep_type(s)": rep_types, "rep_type_accession(s)": rep_acs, "relaxase_type(s)":mob_types,
                            "relaxase_type_accession(s)": mob_acs, "mpf_type": mpf_type, "mpf_type_accession(s)": mpf_acs,
                            "orit_type(s)": orit_types, "orit_accession(s)": orit_acs, "PredictedMobility": predicted_mobility,
                            "mash_nearest_neighbor": mash_top_hit['top_hit'],"mash_neighbor_distance": mash_top_hit['mash_hit_score'],
-                           "mash_neighbor_cluster": mash_top_hit['clustid'], "NCBI-HR-rank":"-","NCBI-HR-Name":"-",
+                           "primary_cluster_id": plasmid_primary_acs,"secondary_cluster_id": plasmid_secondary_acs, "NCBI-HR-rank":"-","NCBI-HR-Name":"-",
                            "LitRepHRPlasmClass":"-","LitPredDBHRRank":"-","LitPredDBHRRankSciName":"-",
                            "LitRepHRRankInPubs":"-", "LitRepHRNameInPubs":"-","LitMeanTransferRate":"-",
                            "LitClosestRefAcc":"-", "LitClosestRefDonorStrain":"-",

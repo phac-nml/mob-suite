@@ -22,7 +22,8 @@ from mob_suite.utils import \
     write_individual_fasta, \
     replicon_blast, \
     check_dependencies,\
-    mob_blast
+    mob_blast, \
+    read_sequence_info
 
 from mob_suite.wrappers import mash
 
@@ -190,31 +191,6 @@ def int_to_acs(numerical_id):
     return "{}{}{}".format(ACS_VALUES_TO_LETTERS[acs[0]], ACS_VALUES_TO_LETTERS[acs[1]], str(acs[2]).zfill(3))
 
 
-'''
-    Input: Path to TSV file with MOB_CLUSTER_INFO_HEADER fields as the header lines
-    Output: Dictionary of sequence indexed by sequence identifier
-'''
-def read_sequence_info(file):
-    if os.path.getsize(file) == 0:
-        return dict()
-    data = pd.read_csv(file, sep='\t', header=0,names=MOB_CLUSTER_INFO_HEADER,index_col=0)
-    sequences = dict()
-    for index, row in data.iterrows():
-        record = list()
-        sequences[index] = {}
-        for i in range(0,len(MOB_CLUSTER_INFO_HEADER)):
-            if MOB_CLUSTER_INFO_HEADER[i] == 'id':
-                v = index
-            else:
-                if str(row[MOB_CLUSTER_INFO_HEADER[i]]) == 'nan' :
-                    v = ''
-                else:
-                    v = row[MOB_CLUSTER_INFO_HEADER[i]]
-            sequences[index][MOB_CLUSTER_INFO_HEADER[i]] = v
-
-
-
-    return sequences
 
 
 '''
@@ -604,13 +580,13 @@ def main():
         os.mkdir(tmp_dir, 0o755)
 
     if not (args.primary_cluster_dist >= 0 and args.primary_cluster_dist <= 1):
-        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(mode))
+        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.primary_cluster_dist))
         sys.exit()
     else:
         primary_distance = args.primary_cluster_dist
 
     if not (args.secondary_cluster_dist >= 0 and args.secondary_cluster_dist <= 1):
-        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(mode))
+        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.secondary_cluster_dist))
         sys.exit()
     else:
         secondary_distance = args.secondary_cluster_dist

@@ -9,6 +9,38 @@ import pandas as pd
 
 default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
 
+MOB_CLUSTER_INFO_HEADER = ['id','size','gc_content','md5','organism','primary_cluster_id','primary_dist','secondary_cluster_id','secondary_dist',"rep_type(s)","rep_type_accession(s)","relaxase_type(s)","relaxase_type_accession(s)"]
+
+
+'''
+    Input: Path to TSV file with MOB_CLUSTER_INFO_HEADER fields as the header lines
+    Output: Dictionary of sequence indexed by sequence identifier
+'''
+def read_sequence_info(file):
+    if os.path.getsize(file) == 0:
+        return dict()
+    data = pd.read_csv(file, sep='\t', header=0,names=MOB_CLUSTER_INFO_HEADER,index_col=0)
+    sequences = dict()
+    for index, row in data.iterrows():
+        record = list()
+        sequences[index] = {}
+        for i in range(0,len(MOB_CLUSTER_INFO_HEADER)):
+            if MOB_CLUSTER_INFO_HEADER[i] == 'id':
+                v = index
+            else:
+                if str(row[MOB_CLUSTER_INFO_HEADER[i]]) == 'nan' :
+                    v = ''
+                else:
+                    v = row[MOB_CLUSTER_INFO_HEADER[i]]
+            sequences[index][MOB_CLUSTER_INFO_HEADER[i]] = v
+
+
+
+    return sequences
+
+
+
+
 def check_dependencies(logger):
     external_programs = ['blastn', 'makeblastdb', 'tblastn']
     missing = 0
@@ -286,13 +318,12 @@ def getMashBestHit(mash_results):
     top_hit = ''
     top_hit_size = 0
     seqid = ''
-    mash_clustid = ''
 
     for line in mash_results:
         row = line.strip("\n").split("\t")
 
         if float(score) > float(row[2]):
-            seqid, mash_clustid = row[0].split('|')
+            seqid = row[0]
             score = row[2]
             matches = row[4]
 
@@ -300,7 +331,6 @@ def getMashBestHit(mash_results):
         'top_hit': seqid,
         'mash_hit_score': score,
         'top_hit_size': top_hit_size,
-        'clustid': mash_clustid
     }
 
 ''''
