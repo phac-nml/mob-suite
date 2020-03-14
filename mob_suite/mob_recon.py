@@ -2,15 +2,13 @@
 from mob_suite.version import __version__
 from collections import OrderedDict
 import logging, os, shutil, sys, operator,re
-from subprocess import Popen, PIPE
 from argparse import (ArgumentParser, FileType)
-import pandas as pd
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 from mob_suite.wrappers import mash
 from mob_suite.wrappers import detectCircularity
 
-import string
+from mob_suite.mob_typer import  MOB_TYPER_REPORT_HEADER
 
 from mob_suite.utils import \
     read_fasta_dict, \
@@ -523,7 +521,6 @@ def main():
             sys.exit(-1)
 
     contig_report_file = os.path.join(out_dir, 'contig_report.txt')
-    minimus_prefix = os.path.join(tmp_dir, 'minimus')
     filtered_blast = os.path.join(tmp_dir, 'filtered_blast.txt')
     repetitive_blast_report = os.path.join(out_dir, 'repetitive_blast_report.txt')
     mobtyper_results_file = os.path.join(out_dir, 'mobtyper_aggregate_report.txt')
@@ -906,49 +903,20 @@ def main():
     write_fasta_dict(chr_contigs, chromosome_file)
 
     if args.run_typer:
-        mobtyper_results = "file_id\t" \
-                            "num_contigs\t" \
-                            "total_length\t" \
-                            "gc\t" \
-                            "rep_type(s)\t" \
-                            "rep_type_accession(s)\t" \
-                            "relaxase_type(s)\t" \
-                            "relaxase_type_accession(s)\t" \
-                            "mpf_type\t" \
-                            "mpf_type_accession(s)\t" \
-                            "orit_type(s)\t" \
-                            "orit_accession(s)\t" \
-                            "PredictedMobility\t" \
-                            "mash_nearest_neighbor\t" \
-                            "mash_neighbor_distance\t" \
-                            "mash_neighbor_cluster\t" \
-                            "NCBI-HR-rank\t" \
-                            "NCBI-HR-Name\t" \
-                            "LitRepHRPlasmClass\t" \
-                            "LitPredDBHRRank\t" \
-                            "LitPredDBHRRankSciName\t" \
-                            "LitRepHRRankInPubs\t" \
-                            "LitRepHRNameInPubs\t" \
-                            "LitMeanTransferRate\t" \
-                            "LitClosestRefAcc\t" \
-                            "LitClosestRefDonorStrain\t" \
-                            "LitClosestRefRecipientStrain\t" \
-                            "LitClosestRefTransferRate\t" \
-                            "LitClosestConjugTemp\t" \
-                            "LitPMIDs\t" \
-                            "LitPMIDsNumber\t" \
-                            "LitClosestMashDist\n"
+        mobtyper_results = "{}\n".format("\t".join(MOB_TYPER_REPORT_HEADER))
         for plasmid_file_abs_path in plasmid_files:
+            mob_out_file = os.path.join(out_dir,"mob_typer_{}_report.txt".format(os.path.splitext(os.path.basename(plasmid_file_abs_path) )[0]))
+
             mobtyper_results = mobtyper_results + "{}\n".format(
                 run_mob_typer(plasmid_file_abs_path=plasmid_file_abs_path,
-                          outdir=out_dir,
+                          out_file=mob_out_file,
                           mash_db=mash_db,
                           replicon_ref=replicon_ref,
                           plasmid_meta=plasmid_meta,
                           mob_ref=mob_ref,
                           mpf_ref=mpf_ref,
                           plasmid_orit=plasmid_orit,
-                          num_threads=int(num_threads)))
+                          num_threads=str(num_threads)))
 
         fh = open(mobtyper_results_file, 'w', encoding="utf-8")
         fh.write(mobtyper_results)

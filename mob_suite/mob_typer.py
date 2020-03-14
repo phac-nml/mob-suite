@@ -712,7 +712,6 @@ def main():
 
     mobtyper_results = {}
     fix_fasta_header(input_fasta, fixed_fasta)
-    print(tmp_dir)
     if multi:
         fastaSeqStats = calcFastaStatsIndividual(fixed_fasta)
         for sid in fastaSeqStats:

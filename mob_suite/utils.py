@@ -494,11 +494,13 @@ def init_console_logger(lvl=2):
     return logging.getLogger(__name__)
 
 
-def run_mob_typer(plasmid_file_abs_path, outdir, mash_db,replicon_ref,plasmid_meta,mob_ref,mpf_ref,plasmid_orit, num_threads=1):
+def run_mob_typer(plasmid_file_abs_path, out_file, mash_db,replicon_ref,plasmid_meta,mob_ref,mpf_ref,plasmid_orit, num_threads=1):
     mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
 
     logger = logging.getLogger(__name__)
     logger.info("Launching mob_typer to type recently reconstructed plasmid {}".format(plasmid_file_abs_path))
+
+    outdir = os.path.dirname(plasmid_file_abs_path)
 
     log_file = os.path.join(outdir,"mob-typer-stdout.txt")
     err_file = os.path.join(outdir, "mob-typer-stderr.txt")
@@ -508,17 +510,16 @@ def run_mob_typer(plasmid_file_abs_path, outdir, mash_db,replicon_ref,plasmid_me
 
 
     p = Popen([sys.executable, mob_typer_path,
-                   '--infile', plasmid_file_abs_path,
-                   '--outdir', outdir,
-                    '--plasmid_meta',plasmid_meta,
-               '--plasmid_mash_db',mash_db,
-               '--plasmid_replicons',replicon_ref,
-               '--plasmid_mob',mob_ref,
-               '--plasmid_mpf',mpf_ref,
-               '--plasmid_orit', plasmid_orit,
-                   '--keep_tmp',
-                   '--host_range_detailed',
-                   '--num_threads', str(num_threads)],
+                '--infile', plasmid_file_abs_path,
+                '--out_file', out_file,
+                '--plasmid_meta',plasmid_meta,
+                '--plasmid_mash_db',mash_db,
+                '--plasmid_replicons',replicon_ref,
+                '--plasmid_mob',mob_ref,
+                '--plasmid_mpf',mpf_ref,
+                '--plasmid_orit', plasmid_orit,
+                '--keep_tmp',
+                '--num_threads', str(num_threads)],
                   stdout=log,
                   stderr=err, universal_newlines=True
                   )
@@ -533,15 +534,15 @@ def run_mob_typer(plasmid_file_abs_path, outdir, mash_db,replicon_ref,plasmid_me
         raise Exception("MOB_typer could not type {} please check log files for details: {} , {} ".format(plasmid_file_abs_path,log_file,err_file))
 
     mob_typer_report_file = os.path.join(outdir,"mobtyper_{}_report.txt".format(os.path.splitext(os.path.basename(plasmid_file_abs_path))[0]))
-    if os.path.exists(mob_typer_report_file):
+    if os.path.exists(out_file):
         logger.info("Typing plasmid {}".format(os.path.basename(plasmid_file_abs_path)))
-        if os.path.getsize(mob_typer_report_file) == 0:
+        if os.path.getsize(out_file) == 0:
             logger.error(
                 "File {} is empty. Perhaps there is an issue with mob_typer or some dependencies are missing (e.g. ete3)".format(
                     mob_typer_report_file))
             return ''
 
-        df = pd.read_csv(mob_typer_report_file,header=0,sep="\t", encoding='utf8')
+        df = pd.read_csv(out_file,header=0,sep="\t", encoding='utf8')
         row = df.iloc[0].to_list()
         for i in range(0,len(row)):
             r = row[i]
@@ -554,8 +555,8 @@ def run_mob_typer(plasmid_file_abs_path, outdir, mash_db,replicon_ref,plasmid_me
                 row[i] = str(r)
 
         mob_typer_results = "\t".join(str(v) for v in row)
-        shutil.rmtree(log_file)
-        shutil.rmtree(err_file)
+        os.remove(log_file)
+        os.remove(err_file)
         return mob_typer_results
     else:
         logger.error("File {} does not exist. Perhaps there is an issue with the mob_typer or some dependencies are missing (e.g. ete3)".format(mob_typer_report_file))
