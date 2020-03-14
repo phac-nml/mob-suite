@@ -47,8 +47,7 @@ NCBI_PLASMID_TAXONOMY_HEADER = [
                                 'rep_type_accession(s)', 'relaxase_type(s)', 'relaxase_type_accession(s)',
                                 'mpf_type', 'mpf_type_accession(s)', 'orit_type(s)', 'orit_accession(s)',
                                 'predicted_mobility', 'mash_nearest_neighbor', 'mash_neighbor_distance',
-                                'primary_cluster_id', 'secondary_cluster_id', 'organism', 'taxid',
-                                'lineage_taxid', 'lineage_ranks', 'lineage_names'
+                                'primary_cluster_id', 'secondary_cluster_id', 'organism', 'taxid'
 ]
 
 LIT_PLASMID_TAXONOMY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),"databases/host_range_literature_plasmidDB.txt")
