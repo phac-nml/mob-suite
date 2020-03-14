@@ -23,7 +23,8 @@ from mob_suite.utils import \
     replicon_blast, \
     check_dependencies,\
     mob_blast, \
-    read_sequence_info
+    read_sequence_info, \
+    dict_from_alt_key
 
 from mob_suite.wrappers import mash
 
@@ -192,20 +193,6 @@ def int_to_acs(numerical_id):
 
 
 
-
-'''
-    Input: Dictionary with format key :{dict}
-    Output: Dictionary indexed by alternate key specified by user
-'''
-def dict_from_alt_key(dictionary,new_key):
-    new_dict = {}
-    for id in dictionary:
-        values = dictionary[id]
-        if new_key in values:
-            if not values[new_key] in new_dict:
-                new_dict[values[new_key]] = {}
-            new_dict[values[new_key]][id] = values
-    return new_dict
 
 
 '''

@@ -53,7 +53,7 @@ class BlastRunner:
 
 
 
-    def run_tblastn(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1):
+    def run_tblastn(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1,max_target_seqs=100000):
 
         p = Popen(['tblastn',
                    '-query', query_fasta_path,
@@ -61,6 +61,7 @@ class BlastRunner:
                    '-db', '{}'.format(db_path),
                    '-evalue', '{}'.format(evalue),
                    '-out', blast_outfile,
+                   '-max_target_seqs','{}'.format(max_target_seqs),
                    '-outfmt', '6 {}'.format(' '.join(BLAST_TABLE_COLS))],
                   stdout=PIPE,
                   stderr=PIPE)
@@ -83,7 +84,7 @@ class BlastRunner:
                 logger.error(ex_msg)
                 raise Exception(ex_msg)
 
-    def run_blast(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1,word_size=11):
+    def run_blast(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1,word_size=11,max_target_seqs=100000):
 
         p = Popen(['blastn',
                    '-task', blast_task,
@@ -93,6 +94,7 @@ class BlastRunner:
                    '-evalue', '{}'.format(evalue),
                    '-dust', 'yes',
                    '-perc_identity', '{}'.format(min_ident),
+                   '-max_target_seqs','{}'.format(max_target_seqs),
                    '-out', blast_outfile,
                    '-outfmt', '6 {}'.format(' '.join(BLAST_TABLE_COLS))],
                   stdout=PIPE,

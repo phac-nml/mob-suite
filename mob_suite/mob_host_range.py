@@ -64,8 +64,6 @@ def initETE3Database():
 def loadliteratureplasmidDB():
     literatureplasmidDB = pandas.read_csv(os.path.dirname(os.path.abspath(__file__))+"/databases/host_range_literature_plasmidDB.csv",
                             sep=",",encoding = "ISO-8859-1",dtype={"PMID":str, "TransferRate":float, "Year":str,"Size":float})
-
-
     return literatureplasmidDB
 
 def findHitsInLiteratureDBbyReplicon(replicon_names,plasmid_lit_db):
@@ -111,7 +109,7 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
     report_df=pandas.DataFrame()
     repliconsearchdict = findHitsInLiteratureDBbyReplicon(replicon_names,plasmid_lit_db)
     lit_taxids_list=[]
-    #report_dict=dict.fromkeys(['apple','ball'],"-")
+
 
 
     for replicon_name in repliconsearchdict.keys():
@@ -183,43 +181,6 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
                          "LiteraturePMIDs": ";".join(sorted(set([str(int(i)) for i in literature_knowledge.loc[:, "PMID"] if pandas.isna(i) == False]))),
                          "LiteraturePublicationsNumber": len(set(literature_knowledge.loc[literature_knowledge["PMID"].isna() == False, "PMID"]))})
 
-        #if input plasmid sequence is provided, do additional closest match based on the sequence similarity and append to the general report
-
-        if input_seq.strip():  #if plasmid sequence is available
-            literature_accession_top_hit, literature_mash_dist_top_hit = getClosestLiteratureRefPlasmid(input_seq)
-            #print("L",literature_accession_top_hit, literature_mash_dist_top_hit,literature_accession_top_hit.rsplit("."))
-            #print(plasmid_lit_db["NCBI_Accession"])
-            #print()
-            #by accession search
-            #idx = [i for i in range(0, len(literature_knowledge)) if len(re.findall(literature_accession_top_hit.rsplit(".")[0],plasmid_lit_db["NCBI_Accession"].values[i])) != 0]
-            #remove version "NC_002638.1" number
-
-            literature_accession_top_hit = literature_accession_top_hit.rsplit(".")[0]
-
-            literature_closest_seq_hit_df = pandas.DataFrame()
-            for i in range(0, plasmid_lit_db.shape[0]):
-                if re.findall(literature_accession_top_hit, str(plasmid_lit_db.iloc[i]["NCBI_Accession"])):
-                    #print(literature_accession_top_hit, plasmid_lit_db.iloc[i]["NCBI_Accession"])
-                    literature_closest_seq_hit_df = pandas.concat([literature_closest_seq_hit_df, plasmid_lit_db.iloc[[i]]])
-
-            if literature_closest_seq_hit_df.empty:
-                raise Exception("Literature top hit search failed! Check mash top hit return from the getClosestLiteratureRefPlasmid()")
-
-
-            if literature_closest_seq_hit_df.shape[0] != 1:
-                logger.warning("Literature top hit dataframe returned more than a single hit ... Expecting a single top hit.Some entries have multiple hits.")
-
-            #additional fields
-            report_dict.update(
-                                OrderedDict({"LiteratureClosestRefrencePlasmidAcc": literature_accession_top_hit,
-                                "LiteratureClosestReferencePlasmidName":literature_closest_seq_hit_df.loc[:,"Plasmid_Name"].values[0],
-                                "LiteratureClosestReferencePlasmidSize": int(literature_closest_seq_hit_df.loc[:,"Size"].values[0]),
-                                "LiteratureClosestReferenceMashDistance": literature_mash_dist_top_hit,
-                                "LiteratureClosestReferenceDonorStrain": literature_closest_seq_hit_df.loc[:,"Donor"].values[0],
-                                "LiteratureClosestReferenceRecipientStrain": literature_closest_seq_hit_df.loc[:, "Recipient"].values[0],
-                                "LiteratureClosestReferenceTransferRate": literature_closest_seq_hit_df.loc[:, "TransferRate"].values[0],
-                                "LiteratureClosestReferenceConjugationTemperature": literature_closest_seq_hit_df.loc[:, "ConjugationTemperature"].values[0]}))
-
 
         report_df = pandas.concat([report_df, pandas.DataFrame.from_dict([report_dict])],sort=False) #append results from different replicons (if multiple are present)
         lit_taxids_list = lit_taxids_list + lit_taxids
@@ -227,8 +188,6 @@ def getLiteratureBasedHostRange(replicon_names,plasmid_lit_db,input_seq=""):
     report_df.fillna("-", inplace=True)
 
     return report_df, lit_taxids_list
-    #report_table.to_csv(args.outputprefix+'_literature_report.txt',sep="\t",
-    #                    float_format='%.1E', index=False, na_rep="NA",mode="w")
 
 def collapseLiteratureReport(df):
     """
@@ -282,6 +241,8 @@ def collapseLiteratureReport(df):
         collapsedlitdf.loc[0, "LiteratureReportedHostRangeRankInPubs"] = "-"
         collapsedlitdf.loc[0,"LiteratureReportedHostRangeNameInPubs" ] = "-"
 
+    collapsedlitdf.loc[0, "LiteratureReportedHostRangeRankInPubs"] = "-"
+    collapsedlitdf.loc[0,"LiteratureReportedHostRangeNameInPubs" ] = "-"
 
     for field in ["LiteratureMinTransferRateRange","LiteratureMaxTransferRateRange", "LiteratureMeanTransferRateRange"]:
         filteredvals=[i for i in df[field].values if isinstance(i,int) or isinstance(i,float)]
@@ -301,7 +262,6 @@ def getClosestLiteratureRefPlasmid(input_fasta):
     :return: closest literature-curated plasmid accession number from the literature database and mash distance between query and reference
     """
     reference_db=os.path.dirname(os.path.abspath(__file__))+"/databases/literature_mined_plasmid_seq_db.fasta.msh"
-    #input_fasta="/Users/kirill/WORK/MOBSuiteHostRange2018/Source/mob-suite/mob_suite/tests/TestData/IncF/ET11_Ecoli_plasmid_529.fasta"
     p = subprocess.Popen(["mash dist -p 1 "+reference_db+" "+input_fasta],stdout=subprocess.PIPE, shell=True)
     stdout = p.communicate()[0].decode("utf-8")
 
@@ -419,53 +379,6 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
                       "replicon name list: "+str(replicon_name_list)+"; mob_cluster_id: "+
                        str(mob_cluster_id_list)+"; relaxase_name_acc_list: "+
                        str(relaxase_name_acc_list)+"; relaxase_name_list: "+str(relaxase_name_list)+";")
-        #print(ref_taxids_df)
-        #raise Exception("Empty dataframe returned from RefSeq plasmid database")
-
-
-    #select subset of ref data based on criteria (e.g. replicon name)
-    # if replicon_name_list != None and mob_cluster_id != None and relaxase_name_acc_list == None and relaxase_name_list == None:
-    #
-    #     #replicon_name="IncI1"; mob_cluster_id="476"
-    #     for replicon_name in replicon_name_list:
-    #         n_total_records_before = ref_taxids_df.shape[0]
-    #         logging.debug("Replicon name: {} MOB-Cluster: {}\n".format(replicon_name, mob_cluster_id))
-    #         ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, replicon_name, "Ref_rep_type(s)", matchtype)])
-    #         logging.debug("Extracted records (replicon): {}".format(ref_taxids_df.shape[0] - n_total_records_before))
-    #
-    #     #merge with cluster_id results too
-    #     ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, mob_cluster_id, "Ref_cluster_id", matchtype)])
-    #     logging.debug("Extracted total records (clusterid): {}".format(ref_taxids_df.shape[0]))
-    #
-    # elif replicon_name_list != None and mob_cluster_id == None and relaxase_name_acc_list != None and relaxase_name_list == None:
-    #     for replicon_name in replicon_name_list:
-    #         logging.debug("Replicon name: {}".format(replicon_name))
-    #         ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, replicon_name, "Ref_rep_type(s)", matchtype)])
-    #     for relaxase_name_acc in relaxase_name_acc_list:
-    #         ref_taxids_df = pandas.concat([ref_taxids_df,getHostRangeDBSubset(hr_obs_data, relaxase_name_acc, "Ref_relaxase_type(s)",matchtype)])
-    #         logging.debug("Relaxase accession: {}\n".format(relaxase_name_acc))
-    #
-    # elif replicon_name_list != None and mob_cluster_id == None and relaxase_name_acc_list == None and relaxase_name_list == None:
-    #     for replicon_name in replicon_name_list:
-    #         n_total_records_before = ref_taxids_df.shape[0]
-    #         logging.debug("Replicon name: {}\n".format(replicon_name, mob_cluster_id))
-    #         ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, replicon_name, "Ref_rep_type(s)", matchtype)])
-    #         logging.debug("Extracted records (replicon): {}".format(ref_taxids_df.shape[0]-n_total_records_before))
-    #
-    # elif replicon_name_list == None and mob_cluster_id == None and relaxase_name_list != None:
-    #     for relaxase_name in relaxase_name_list:
-    #         ref_taxids_df = pandas.concat([ref_taxids_df, getHostRangeDBSubset(hr_obs_data, relaxase_name, "Ref_relaxase_type(s)", matchtype)])
-    #
-    #     ref_taxids_df = getHostRangeDBSubset(hr_obs_data, relaxase_name_acc, "Ref_relaxase_type(s)", matchtype)
-    # elif replicon_name_list == None and mob_cluster_id != None and relaxase_name_acc == None:
-    #     print("MOBClusterID: {}".format(mob_cluster_id))
-    #     ref_taxids_df = getHostRangeDBSubset(hr_obs_data, mob_cluster_id, "Ref_cluster_id", matchtype)
-    # elif relaxase_name_list != None:
-    #     print("Relaxase Accession: {}".format(args.relaxase_accession))
-    #     ref_taxids_df = getHostRangeDBSubset(hr_obs_data, args.relaxase_accession, "Ref_relaxase_type_accession(s)", matchtype)
-    # else:
-    #     logging.error("No search paramenters specified (i.e. replicon, mob_cluster_id, relaxase family, relaxase accession #).")
-    #     exit("Missing ref plasmid database search parameters (e.g. replicon, relaxases, clusterID)")
 
     unfiltered_n_ref_hits = ref_taxids_df.shape[0]
     #QC: remove uncultured reference database hits as they thend to inflate host range
@@ -496,23 +409,13 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
                                                                                                                  n_ref_rep_hits-len(unique_ref_selected_taxids)))
 
     convergance_rank, converged_taxonomy_name = getHostRangeRankCovergence(ref_taxids)
-    #ref_taxids_str = ",".join(str(t) for t in sorted(unique_ref_taxids))
-
-
-    #counts_per_ref_taxid_dict = Counter(ref_taxids_df['taxid']) #Counter({562: 66, 624: 10, 573: 6} #where key is taxid
-
-
-    # #read selected taxonomy lineages from the reference file
 
     #create dictionary of ranks and taxnomy names for each reference database extracted lineage
     taxonony_lineages_dict_list = list()
     for key in ref_taxids:
          selection_idx = list(ref_taxids_df['taxid'] == key)
-         #taxid2species = ref_taxids_df.loc[selection_idx]['Organism'].iloc[0]
-         #print("Taxid:{}\tHits:{}\tOrganism:{}".format(key,value,taxid2species))
          tax_lineage_name_list = (ref_taxids_df.loc[selection_idx]['lineage_names'].iloc[0]).split(";")
          tax_lineage_rank_list = (ref_taxids_df.loc[selection_idx]['lineage_ranks'].iloc[0]).split(";")
-         #print(tax_lineage_rank_list);print(tax_lineage_name_list)
          taxonony_lineages_dict_list.append(OrderedDict(zip(tax_lineage_rank_list,tax_lineage_name_list)))
     #
     ranks=['superkingdom','phylum', 'class', 'order', 'family', 'genus', 'species'] #important to have them in hierarchical order
@@ -523,41 +426,6 @@ def getRefSeqHostRange(replicon_name_list,  mob_cluster_id_list, relaxase_name_a
          for rank in stats_host_range_dict.keys():
              stats_host_range_dict[rank].append(lineage_record.get(rank))
 
-    #
-    #print(stats_host_range_dict)
-
-    # missing_stats={}
-    # for key in stats_host_range_dict.keys():
-    #     taxa_list = stats_host_range_dict[key]
-    #     #print(taxa_list)
-    #     if any([i== None for i in taxa_list]):
-    #         missing_stats[key]=Counter(taxa_list)[None]/len(taxa_list)
-    #     else:
-    #         missing_stats[key]=0
-    #
-    # #print("MISSING RATES PER TAXONONIC RANK:\n", missing_stats)
-    #
-    # #get predicted host range rank
-    # convergance_rank="NA"; converged_taxonomy_name="NA"
-    # bottom_up_tax_ranks_list=[i for i in reversed(stats_host_range_dict.keys())]
-    # for tax_rank in bottom_up_tax_ranks_list: #rank:list(item names)
-    #     value = stats_host_range_dict[tax_rank]
-    #     n_unique_items = len(set(value))
-    #     unique_items = list(set(value))
-    #
-    #     if  (any([i == None for i in stats_host_range_dict[tax_rank]]) == True and n_unique_items == 2) or \
-    #         (n_unique_items == 1 and any([i != None for i in unique_items])):
-    #         convergance_rank = tax_rank
-    #         converged_taxonomy_name=list(set([i for i in value if i is not None]))[0] #host range is calculated here
-    #         break
-    #
-    #
-    # logging.info("HOST RANGE RESULT: {} (level) {} (rank)\n".format(converged_taxonomy_name, convergance_rank))
-    #
-    # #print("HOST RANGE:{} RANK LEVEL:{}\n".format(converged_taxonomy_name, convergance_rank))
-    #
-    # #for rank in ranks:
-    # #    print("{}: {}".format(rank,dict(Counter(stats_host_range_dict[rank]))))
 
     return(convergance_rank, converged_taxonomy_name, unique_ref_selected_taxids, ref_taxids_df,stats_host_range_dict)
 
@@ -612,23 +480,6 @@ def writeOutHostRangeReports(   filename_prefix = None,
         logger.info("Wrote phylogeny stats into {}".format(filename_prefix+"_refseqhostrange_report.txt"))
     fp.close()
 
-    #if no_header_flag is True: #flag to write header in the report file
-    #    with open(file=filename_prefix + "_hostrange_refseqhostrange_report.txt", mode="w") as fp:
-    #        fp.write("{}\t{}\t{}\t{}\t{}\t{}\n".format("QueryReplicon(s)", "QueryClusterID", "QueryRelaxase(s)",
-    #                                                       "QueryRelaxaseAccession", "RefSeqRank", "RefSeqHostRange"))
-
-    #with open(file=filename_prefix+"_hostrange_refseqhostrange_report.txt", mode="a") as fp:
-    #        fp.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(replicons, mob_cluster_id,
-    #                                                       relaxases, relaxase_name_acc, convergance_rank,
-    #                                                       convergance_taxonomy))
-    #fp.close()
-    #logging.info("Wrote RefSeq host range report results into {}".format(
-    #     filename_prefix + "_hostrange_refseqhostrange_report.txt"))  # replicon,relaxase,cluster,host range
-
-
-
-    #decompose resulting phylogenetic tree into frequency counts per reach taxonomic rank (hierachy level)
-    #strings2file = ["rank\tsci_name\tRefSeq_db_hits\tQueryReplicon(s)\tQueryClusterID\tQueryRelaxase(s)\tQueryRelaxaseAccession\tRefSeqRank\tRefSeqHostRange\n"]
     taxonomical_hits_breakdown_stats_per_taxonomical_rank(filename_prefix,stats_host_range_dict,dbtype="refseqhostrange")
 
 

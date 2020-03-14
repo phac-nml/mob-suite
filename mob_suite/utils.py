@@ -9,7 +9,84 @@ import pandas as pd
 
 default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
 
-MOB_CLUSTER_INFO_HEADER = ['id','size','gc_content','md5','organism','primary_cluster_id','primary_dist','secondary_cluster_id','secondary_dist',"rep_type(s)","rep_type_accession(s)","relaxase_type(s)","relaxase_type_accession(s)"]
+MOB_CLUSTER_INFO_HEADER = ['id','size','gc_content','md5','organism','primary_cluster_id','primary_dist',
+                           'secondary_cluster_id','secondary_dist',"rep_type(s)","rep_type_accession(s)",
+                           "relaxase_type(s)","relaxase_type_accession(s)"]
+
+
+
+
+
+
+
+'''
+INPUT: Read file into pandas df
+Returns: list of lines in file with a dict of key value pairs from the header
+'''
+def read_file_to_dict(file,header,separater="\t"):
+    data = pd.read_csv(file, sep=separater, header=0, names=header, encoding = "UTF-8")
+    records = []
+    header_len = len(header)
+    for index, row in data.iterrows():
+        report = {}
+        for i in range(0, header_len):
+            name = header[i]
+            if name in row:
+                report[name] = row[name]
+            else:
+                report[name] = '-'
+        records.append(report)
+    return records
+
+
+'''
+    Input: Dictionary with format key :{dict}
+    Output: Dictionary indexed by alternate key specified by user
+'''
+def dict_from_alt_key(dictionary,new_key):
+    new_dict = {}
+    for id in dictionary:
+        values = dictionary[id]
+        if new_key in values:
+            if not values[new_key] in new_dict:
+                new_dict[values[new_key]] = {}
+            new_dict[values[new_key]][id] = values
+    return new_dict
+
+
+
+
+'''
+    Input: Dictionary with format key :{dict}
+    Output: Dictionary indexed by alternate key specified by user
+'''
+def dict_from_alt_key_list(data,new_key):
+    new_dict = {}
+
+    for d in data:
+        if new_key in d:
+            if not d[new_key] in new_dict:
+                new_dict[d[new_key]] = {}
+            new_dict[d[new_key]] = d
+
+    return new_dict
+'''
+
+'''
+def get_data_associated_with_key(look_up_key,look_up_value,value_key,dictionary):
+    asc_values = []
+
+    for id in dictionary:
+        values = dictionary[id]
+        if look_up_key in values:
+            if values[look_up_key] != look_up_value:
+                continue
+            if value_key in values and values[value_key] != 'nan':
+                asc_values.append(values[value_key])
+
+
+    return asc_values
+
 
 
 '''
@@ -33,8 +110,6 @@ def read_sequence_info(file):
                 else:
                     v = row[MOB_CLUSTER_INFO_HEADER[i]]
             sequences[index][MOB_CLUSTER_INFO_HEADER[i]] = v
-
-
 
     return sequences
 
@@ -122,7 +197,6 @@ def verify_init(logger, database_dir):
                   shell=False)
 
         stdout,stderr = p.communicate()
-        print(stdout.decode(), stderr.decode()) #After completion print both streams
         return_code = p.returncode
         logger.info("Return code {}".format(return_code))
 
@@ -246,7 +320,6 @@ def mob_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_res
         blast_df = filter_overlaping_records(blast_df, overlap, 'sseqid', 'sstart', 'send', 'bitscore')
         prev_size = size
         size = str(len(blast_df))
-    #print(blast_df)
     return blast_df
 
 
@@ -333,6 +406,30 @@ def getMashBestHit(mash_results):
         'top_hit_size': top_hit_size,
     }
 
+def getMashBestHitMultiSeq(mash_results):
+
+    hits = {}
+
+    for line in mash_results:
+        row = line.strip("\n").split("\t")
+        seqid = row[0]
+        query_id = row[1]
+        score = float(row[2])
+
+        if query_id not in hits:
+            hits[query_id] = {
+                'top_hit': seqid,
+                'mash_hit_score': float(score),
+            }
+        else:
+            if hits[query_id]['mash_hit_score'] > score:
+                hits[query_id]['top_hit'] = seqid
+                hits[query_id]['mash_hit_score'] = score
+
+
+    return hits
+
+
 ''''
     Accepts fasta file and returns size, number of sequence records and gc %
 '''
@@ -346,8 +443,8 @@ def calcFastaStatsIndividual(fasta):
         gc = GC(seq)
         md5 = calc_md5(seq)
         stats[id] = {
-            'size': genome_size,
-            'gc_content': gc,
+            'total_length': genome_size,
+            'gc': gc,
             'md5': md5
         }
 
@@ -463,3 +560,17 @@ def run_mob_typer(plasmid_file_abs_path, outdir, mash_db,replicon_ref,plasmid_me
     else:
         logger.error("File {} does not exist. Perhaps there is an issue with the mob_typer or some dependencies are missing (e.g. ete3)".format(mob_typer_report_file))
 
+
+def writeReport(data_list,header,outfile):
+    with open(outfile,'w') as fh:
+        fh.write("{}\n".format("\t".join(header)))
+        for i in range(0,len(data_list)):
+            data = data_list[i]
+            row = []
+            for h in header:
+                if h in data:
+                    row.append(str(data[h]))
+                else:
+                    row.append("-")
+            fh.write("{}\n".format("\t".join(row)))
+        fh.close()
