@@ -413,7 +413,7 @@ def hostrange(replion_types, relaxase_types, mob_cluster_id,ncbi,lit):
         lit_replicon_taxids = lit_replicon_taxids + getAssocValues(replion_types, 'rep_type(s)', 'host_taxid', lit)
         pmids = list(set(getAssocValues(replion_types, 'rep_type(s)', 'pmid', lit)))
         sorted(pmids)
-        host_range_predictions['associated_pmid(s)'] = '; '.join(str(int(x)) for x in pmids)
+        host_range_predictions['associated_pmid(s)'] = '; '.join(str(filter_invalid_taxids(x)) for x in pmids)
 
     else:
         ncbi_replicon_taxids = []
