@@ -295,7 +295,6 @@ def replicon_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blas
 
 
 def mob_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_results_file,overlap=5,num_threads=1):
-    num_threads=1
     blast_runner = BlastRunner(input_fasta, tmp_dir)
     blast_runner.makeblastdb(ref_db, 'nucl')
     blast_runner.run_tblastn(query_fasta_path=input_fasta, blast_task='megablast', db_path=ref_db,

@@ -54,7 +54,6 @@ class BlastRunner:
 
 
     def run_tblastn(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1,max_target_seqs=100000):
-
         p = Popen(['tblastn',
                    '-query', query_fasta_path,
                    '-num_threads','{}'.format(num_threads),
@@ -85,7 +84,7 @@ class BlastRunner:
                 raise Exception(ex_msg)
 
     def run_blast(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1,word_size=11,max_target_seqs=100000):
-
+        print("---->{}".format(num_threads))
         p = Popen(['blastn',
                    '-task', blast_task,
                    '-query', query_fasta_path,
