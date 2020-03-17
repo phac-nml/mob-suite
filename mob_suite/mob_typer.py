@@ -413,7 +413,8 @@ def hostrange(replion_types, relaxase_types, mob_cluster_id,ncbi,lit):
         lit_replicon_taxids = lit_replicon_taxids + getAssocValues(replion_types, 'rep_type(s)', 'host_taxid', lit)
         pmids = list(set(getAssocValues(replion_types, 'rep_type(s)', 'pmid', lit)))
         sorted(pmids)
-        host_range_predictions['associated_pmid(s)'] = '; '.join(str(filter_invalid_taxids(x)) for x in pmids)
+        pmids = filter_invalid_taxids(list(set(pmids)))
+        host_range_predictions['associated_pmid(s)'] = '; '.join(str(x) for x in pmids)
 
     else:
         ncbi_replicon_taxids = []
@@ -734,23 +735,34 @@ def main():
     reference_sequence_meta = read_sequence_info(plasmid_meta)
 
 
-    # run individual marker blasts
+    #run individual marker blasts
     logger.info('Running replicon blast on {}'.format(replicon_ref))
     replicon_contigs = getRepliconContigs(
         replicon_blast(replicon_ref, fixed_fasta, min_rep_ident, min_rep_cov, min_rep_evalue, tmp_dir, replicon_blast_results,
                        num_threads=num_threads))
-    logger.info('Running relaxase blast on {}'.format(mob_ref))
+
+    found_replicons = sort_biomarkers(getBioMarkerContigs(replicon_contigs))
+    del(replicon_contigs)
+
     mob_contigs = getRepliconContigs(
         mob_blast(mob_ref, fixed_fasta, min_mob_ident, min_mob_cov, min_mob_evalue, tmp_dir, mob_blast_results, num_threads=num_threads))
+
+    found_mob = sort_biomarkers(getBioMarkerContigs(mob_contigs))
+    del(mob_contigs)
 
     logger.info('Running mpf blast on {}'.format(mob_ref))
     mpf_contigs = getRepliconContigs(
         mob_blast(mpf_ref, fixed_fasta, min_mpf_ident, min_mpf_cov, min_mpf_evalue, tmp_dir, mpf_blast_results, num_threads=num_threads))
 
-    logger.info('Running orit blast on {}'.format(replicon_ref))
+    found_mpf = sort_biomarkers(getBioMarkerContigs(mpf_contigs))
+    del(mpf_contigs)
+
+    logger.info('Running orit blast on {}'.format(orit_ref))
     orit_contigs = getRepliconContigs(
         replicon_blast(orit_ref, fixed_fasta, min_ori_ident, min_ori_cov, min_ori_evalue, tmp_dir, orit_blast_results,
                        num_threads=num_threads))
+    found_orit = sort_biomarkers(getBioMarkerContigs(orit_contigs))
+    del(orit_contigs)
 
     # Get closest neighbor by mash distance in the entire plasmid database
 
@@ -799,10 +811,7 @@ def main():
 
 
 
-    found_replicons = sort_biomarkers(getBioMarkerContigs(replicon_contigs))
-    found_mob = sort_biomarkers(getBioMarkerContigs(mob_contigs))
-    found_mpf = sort_biomarkers(getBioMarkerContigs(mpf_contigs))
-    found_orit = sort_biomarkers(getBioMarkerContigs(orit_contigs))
+
 
     #merge all of the biomarkers if all contig sequences should be treated beloning to one plasmid
     biomarkers = {}

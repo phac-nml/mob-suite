@@ -16,9 +16,6 @@ MOB_CLUSTER_INFO_HEADER = ['id','size','gc_content','md5','organism','primary_cl
 
 
 
-
-
-
 '''
 INPUT: Read file into pandas df
 Returns: list of lines in file with a dict of key value pairs from the header
@@ -326,11 +323,10 @@ def mob_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_res
 
 def repetitive_blast(input_fasta, ref_db, min_ident, min_cov, evalue, min_length, tmp_dir, blast_results_file,num_threads=1):
     blast_runner = BlastRunner(input_fasta, tmp_dir)
-    #blast_runner.makeblastdb(ref_db, 'nucl')
     blast_runner.run_blast(query_fasta_path=input_fasta, blast_task='megablast', db_path=ref_db,
                            db_type='nucl', min_cov=min_cov, min_ident=min_ident, evalue=evalue,
-                           blast_outfile=blast_results_file,
-                              num_threads=num_threads)
+                          blast_outfile=blast_results_file,
+                             num_threads=num_threads)
     if os.path.getsize(blast_results_file) == 0:
         return dict()
 
