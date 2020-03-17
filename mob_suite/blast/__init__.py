@@ -56,7 +56,6 @@ class BlastRunner:
     def run_tblastn(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1,max_target_seqs=100000):
 
         p = Popen(['tblastn',
-                   '-num_threads', str(num_threads),
                    '-query', query_fasta_path,
                    '-num_threads','{}'.format(num_threads),
                    '-db', '{}'.format(db_path),
@@ -66,10 +65,10 @@ class BlastRunner:
                    '-outfmt', '6 {}'.format(' '.join(BLAST_TABLE_COLS))],
                   stdout=PIPE,
                   stderr=PIPE)
-
         p.wait()
         stdout = p.stdout.read()
         stderr = p.stderr.read()
+
         if stdout is not None and stdout != '':
             logger.debug('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
 

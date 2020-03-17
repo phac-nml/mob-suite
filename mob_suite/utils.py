@@ -76,9 +76,10 @@ def get_data_associated_with_key(look_up_key,look_up_value,value_key,dictionary)
     for id in dictionary:
         values = dictionary[id]
         if look_up_key in values:
-            if not look_up_value in values[look_up_key] :
+            terms = values[look_up_key].split(',')
+            if not look_up_value in terms :
                 continue
-            if value_key in values and values[value_key] != 'nan':
+            if value_key in values and str(values[value_key]) != 'nan':
                 asc_values.append(values[value_key])
 
 
