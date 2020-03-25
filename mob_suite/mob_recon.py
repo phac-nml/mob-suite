@@ -304,15 +304,42 @@ def contig_blast_group(blast_results_file, overlap_threshold,reference_sequence_
 
 
     for index, row in blast_df.iterrows():
+        query = row['qseqid']
         pID = row['sseqid']
         if pID not in reference_sequence_meta:
+            print("->{}\t{}".format(query,pID))
             continue
         else:
             clust_id = reference_sequence_meta[pID]['primary_cluster_id']
 
         score = row['bitscore']
+        pLen = row['slen']
         contig_id = row['qseqid']
+        mlength = row['length']
 
+        if not query in query_hit_scores:
+            query_hit_scores[query] = {}
+
+        if not pID in query_hit_scores[query]:
+            query_hit_scores[query][pID] = {'score': 0, 'length': pLen, 'covered_bases': 0, 'clust_id': clust_id}
+
+        query_hit_scores[query][pID]['score']+= score
+        query_hit_scores[query][pID]['covered_bases'] += mlength
+
+        if not pID in hits:
+            hits[pID] = {'score': 0, 'length': pLen, 'covered_bases': 0, 'clust_id': clust_id}
+
+        if not clust_id in cluster_scores:
+            cluster_scores[clust_id] = score
+
+        elif score > cluster_scores[clust_id]:
+            cluster_scores[clust_id] = score
+
+        if not clust_id in groups:
+            groups[clust_id] = dict()
+
+        if not query in groups[clust_id]:
+            groups[clust_id][query] = dict()
 
         if not contig_id in contigs:
             contigs[contig_id] = dict()
@@ -323,13 +350,24 @@ def contig_blast_group(blast_results_file, overlap_threshold,reference_sequence_
         if contigs[contig_id][clust_id] < score:
             contigs[contig_id][clust_id] = score
 
+        groups[clust_id][query][contig_id] = score
+
+        hits[pID]['score'] += score
+        hits[pID]['covered_bases'] += mlength
+
+
+
+    #sorted_cluster_scores = OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
 
     unassigned_contigs = contigs
+    print(len(unassigned_contigs))
     while len(unassigned_contigs) > 0 and len(sorted_cluster_scores) > 0:
         clust_id = next(iter(sorted_cluster_scores))
         (unassigned_contigs, assigned_contigs, sorted_cluster_scores) = assign_contigs(clust_id, contigs, query_hit_scores, sorted_cluster_scores)
         for contig_id in assigned_contigs:
             contigs[contig_id] = assigned_contigs[contig_id]
+        print(len(unassigned_contigs))
+        print(sorted_cluster_scores)
 
         remove_contig_list = []
 
@@ -344,6 +382,8 @@ def contig_blast_group(blast_results_file, overlap_threshold,reference_sequence_
         for contig_id in remove_contig_list:
             if contig_id in unassigned_contigs:
                 del(unassigned_contigs[contig_id])
+
+
 
     return (contigs,hits,query_hit_scores)
 
@@ -1032,10 +1072,18 @@ def main():
                 found_mob_string = ','.join(list(mob_ids.keys()))
                 found_mob_id_string = ','.join(list(mob_hit_ids.keys()))
 
-            results_fh.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(re.sub("\.(fasta|fa|fas){1,1}","",file_id), 'chromosome', contig_id,
+            results_fh.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(sample_id,
+                                                                                       'chromosome',
+                                                                                       '-', contig_id,
                                                                                        len(contig_seqs[contig_id]),
-                                                                                       contig_status, found_replicon_string, found_replicon_id_string, found_mob_string, found_mob_id_string,
-                                                                                       '', '', rep_dna_info))
+                                                                                       contig_status,
+                                                                                       found_replicon_string,
+                                                                                       found_replicon_id_string,
+                                                                                       found_mob_string,
+                                                                                       found_mob_id_string,
+                                                                                       '-',
+                                                                                       '-',
+                                                                                       rep_dna_info))
     results_fh.close()
     write_fasta_dict(chr_contigs, chromosome_file)
 
