@@ -217,10 +217,10 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
 
 
     for index, row in blast_df.iterrows():
-        contig_id = row['sseqid']
-        contig_start = row['sstart']
-        contig_end = row['send']
-        score = row['bitscore']
+        contig_id = row[contig_id_col]
+        contig_start = row[contig_start_col]
+        contig_end = row[contig_end_col]
+        score = row[bitscore_col]
 
         if prev_contig_id == '':
             prev_index = index

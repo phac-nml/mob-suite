@@ -41,6 +41,9 @@ def parse_args():
     parser.add_argument('-i', '--infile', type=str, required=True, help='Input assembly fasta file to process')
     parser.add_argument('-n', '--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
     parser.add_argument('-s', '--sample_id', type=str, required=False, help='Sample Prefix for reports')
+    parser.add_argument('-f', '--force', required=False, help='Overwrite existing directory',
+                        action='store_true')
+    parser.add_argument('-b', '--filter_db', type=str, required=False, help='Path to fasta file for filtering, such as closed chromosomes')
     parser.add_argument('--max_contig_size', type=int, required=False,
                         help='Maximum size of a contig to be considered a plasmid',
                         default=310000)
@@ -187,12 +190,12 @@ def contig_blast(input_fasta, plasmid_db, min_ident, min_cov, evalue, min_length
 def membership_voting(reference_sequence_hits,contig_hit_scores):
     filtered_reference_hits = {}
     filtered_cluster_ids = {}
+
     for ref_id in reference_sequence_hits:
         if float(reference_sequence_hits[ref_id]['covered_bases'])/reference_sequence_hits[ref_id]['length'] < 0.8:
             continue
         filtered_reference_hits[ref_id] = reference_sequence_hits[ref_id]
         filtered_cluster_ids[reference_sequence_hits[ref_id]['clust_id']] = reference_sequence_hits[ref_id]['score']
-
     memberships = {}
 
     for contig_id in contig_hit_scores:
@@ -220,16 +223,69 @@ def membership_voting(reference_sequence_hits,contig_hit_scores):
                 if clust_id in filtered_cluster_ids:
                     memberships[contig_id] = {'ref_id': hit_id, 'clust_id': reference_sequence_hits[hit_id]['clust_id'],'score':reference_sequence_hits[hit_id]['score']}
                     break
+
+
     return memberships
+
+def calc_hit_coverage(blast_df,overlap_threshold,reference_sequence_meta):
+    blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
+    hit_scores = {}
+    size = str(len(blast_df))
+    prev_size = 0
+    while size != prev_size:
+        blast_df = filter_overlaping_records(blast_df, overlap_threshold, 'qseqid', 'qstart', 'qend', 'bitscore')
+        prev_size = size
+        size = str(len(blast_df))
+
+    for index, row in blast_df.iterrows():
+        query = row['qseqid']
+        pID = row['sseqid']
+        score = row['bitscore']
+
+        if pID not in reference_sequence_meta:
+            print("->{}\t{}".format(query,pID))
+            continue
+        else:
+            clust_id = reference_sequence_meta[pID]['primary_cluster_id']
+
+
+        if query not in hit_scores:
+            hit_scores[query] = {}
+
+        if clust_id not in hit_scores[query]:
+            hit_scores[query][clust_id] = 0
+
+        if hit_scores[query][clust_id] < score:
+            hit_scores[query][clust_id] = score
+
+    cluster_scores = {}
+
+    for q in hit_scores:
+        for clust_id in hit_scores[q]:
+            if clust_id not in cluster_scores:
+                cluster_scores[clust_id] = 0
+            cluster_scores[clust_id] += hit_scores[q][clust_id]
+
+    sorted_cluster_scores = OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
+
+    return sorted_cluster_scores
+
+
+
+
 
 
 def contig_blast_group(blast_results_file, overlap_threshold,reference_sequence_meta):
     if os.path.getsize(blast_results_file) == 0:
         return ({},{},{})
     blast_df = BlastReader(blast_results_file).df
-    blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
+    blast_df = blast_df.sort_values(['qseqid', 'sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, True, False])
+
 
     blast_df = filter_overlaping_records(blast_df, overlap_threshold, 'sseqid', 'sstart', 'send', 'bitscore')
+    blast_df = blast_df.sort_values(['qseqid', 'sseqid', 'qstart', 'qend', 'bitscore'], ascending=[True, True, True, True, False])
+    blast_df = filter_overlaping_records(blast_df, overlap_threshold, 'sseqid', 'qstart', 'qend', 'bitscore')
+
     size = str(len(blast_df))
     prev_size = 0
     while size != prev_size:
@@ -237,45 +293,26 @@ def contig_blast_group(blast_results_file, overlap_threshold,reference_sequence_
         prev_size = size
         size = str(len(blast_df))
 
+    sorted_cluster_scores = calc_hit_coverage(blast_df, overlap_threshold,reference_sequence_meta)
+
+
     cluster_scores = dict()
     groups = dict()
     hits = dict()
     contigs = dict()
     query_hit_scores = dict()
+
+
     for index, row in blast_df.iterrows():
-        query = row['qseqid']
         pID = row['sseqid']
         if pID not in reference_sequence_meta:
             continue
         else:
             clust_id = reference_sequence_meta[pID]['primary_cluster_id']
+
         score = row['bitscore']
-        pLen = row['slen']
         contig_id = row['qseqid']
-        mlength = row['length']
 
-        if not query in query_hit_scores:
-            query_hit_scores[query] = {}
-
-        if not pID in query_hit_scores[query]:
-            query_hit_scores[query][pID] = {'score': 0, 'length': pLen, 'covered_bases': 0, 'clust_id': clust_id}
-
-        query_hit_scores[query][pID]['score']+= score
-        query_hit_scores[query][pID]['covered_bases'] += mlength
-
-        if not pID in hits:
-            hits[pID] = {'score': 0, 'length': pLen, 'covered_bases': 0, 'clust_id': clust_id}
-
-        if not clust_id in cluster_scores:
-            cluster_scores[clust_id] = score
-        elif score > cluster_scores[clust_id]:
-            cluster_scores[clust_id] = score
-
-        if not clust_id in groups:
-            groups[clust_id] = dict()
-
-        if not query in groups[clust_id]:
-            groups[clust_id][query] = dict()
 
         if not contig_id in contigs:
             contigs[contig_id] = dict()
@@ -286,25 +323,90 @@ def contig_blast_group(blast_results_file, overlap_threshold,reference_sequence_
         if contigs[contig_id][clust_id] < score:
             contigs[contig_id][clust_id] = score
 
-        groups[clust_id][query][contig_id] = score
 
-        hits[pID]['score'] += score
-        hits[pID]['covered_bases'] += mlength
+    unassigned_contigs = contigs
+    while len(unassigned_contigs) > 0 and len(sorted_cluster_scores) > 0:
+        clust_id = next(iter(sorted_cluster_scores))
+        (unassigned_contigs, assigned_contigs, sorted_cluster_scores) = assign_contigs(clust_id, contigs, query_hit_scores, sorted_cluster_scores)
+        for contig_id in assigned_contigs:
+            contigs[contig_id] = assigned_contigs[contig_id]
 
-    sorted_d = OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
+        remove_contig_list = []
 
-    for clust_id in sorted_d:
-        score = sorted_d[clust_id]
-        for contig_id in contigs:
-            if clust_id in contigs[contig_id]:
-                contigs[contig_id] = {clust_id: contigs[contig_id][clust_id]}
+        for contig_id in unassigned_contigs:
+            clust_found = False
+            for contig_clust_id in unassigned_contigs[contig_id]:
+                if contig_clust_id in sorted_cluster_scores:
+                    clust_found = True
+            if not clust_found:
+                remove_contig_list.append(contig_id)
+
+        for contig_id in remove_contig_list:
+            if contig_id in unassigned_contigs:
+                del(unassigned_contigs[contig_id])
 
     return (contigs,hits,query_hit_scores)
+
+
+def assign_contigs(clust_id,contigs,query_hit_scores,cluster_scores):
+    print(cluster_scores)
+    unassigned_contigs = {}
+    assigned_contigs = {}
+    for contig_id in contigs:
+        if len(contigs[contig_id]) <= 1:
+            print(contigs[contig_id])
+            continue
+        print("---->{}\t{}".format(contig_id,clust_id))
+        print(contigs[contig_id])
+        if clust_id in contigs[contig_id]:
+            assigned_contigs[contig_id] = {clust_id: contigs[contig_id][clust_id]}
+            for hit_id in query_hit_scores[contig_id]:
+                score = query_hit_scores[contig_id][hit_id]['score']
+                hit_clust_id = query_hit_scores[contig_id][hit_id]['clust_id']
+
+                if hit_clust_id in cluster_scores:
+                    print("==>Found")
+                    print(cluster_scores[hit_clust_id])
+                    cluster_scores[hit_clust_id] -= score
+                    print(cluster_scores[hit_clust_id])
+                    if cluster_scores[hit_clust_id] <= 0:
+                        del(cluster_scores[hit_clust_id])
+
+        else:
+            print("{}\t{}-unasigned".format(clust_id,contig_id))
+            unassigned_contigs[contig_id] = contigs[contig_id]
+    if(clust_id in cluster_scores):
+        del(cluster_scores[clust_id])
+    cluster_scores = OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
+
+    return(unassigned_contigs,assigned_contigs,cluster_scores)
+
+
+
 
 
 def circularize(input_fasta, outdir):
     c = detectCircularity()
     return c.run(input_fasta, outdir)
+
+def filter_user_sequences(input_fasta,filter_db,out_dir,blast_filter,min_con_ident, min_con_cov, min_con_evalue, num_threads=1):
+
+    blast_runner = BlastRunner(input_fasta, out_dir)
+    blast_runner.run_blast(query_fasta_path=input_fasta, blast_task='megablast', db_path=filter_db,
+                           db_type='nucl', min_cov=min_con_cov, min_ident=min_con_ident, evalue=min_con_evalue,
+                           blast_outfile=blast_filter, num_threads=num_threads, word_size=11)
+    if os.path.getsize(blast_filter) == 0:
+        return []
+
+    blast_df = BlastReader(blast_filter).df
+    blast_df = blast_df.loc[blast_df['pident'] >= min_con_ident]
+    blast_df = blast_df.loc[blast_df['evalue'] <= min_con_evalue]
+    blast_df = blast_df.loc[blast_df['qcovs'] >= min_con_cov]
+    blast_df = blast_df.reset_index(drop=True)
+    blast_df.to_csv(blast_filter, sep='\t', header=False, line_terminator='\n', index=False)
+
+    return list(set(blast_df['qseqid'].tolist()))
+
 
 
 
@@ -339,6 +441,12 @@ def main():
 
     if not os.path.isdir(args.outdir):
         os.mkdir(args.outdir, 0o755)
+    elif not args.force:
+        logger.error("Error output directory exisits, please specify a new directory or use --force to overwrite")
+        sys.exit(-1)
+    else:
+        shutil.rmtree(args.outdir)
+        os.mkdir(args.outdir, 0o755)
 
     max_contig_size = args.max_contig_size
     max_plasmid_size = args.max_plasmid_size
@@ -351,6 +459,7 @@ def main():
         sample_id = re.sub(r"\.(fasta|fa|fas){1,1}", "", os.path.basename(args.infile))
     else:
         sample_id = args.sample_id
+
 
 
     if not (args.primary_cluster_dist >= 0 and args.primary_cluster_dist <= 1):
@@ -377,6 +486,7 @@ def main():
     mob_blast_results = os.path.join(tmp_dir, 'mobrecon_blast_results.txt')
     repetitive_blast_results = os.path.join(tmp_dir, 'repetitive_blast_results.txt')
     contig_blast_results = os.path.join(tmp_dir, 'contig_blast_results.txt')
+
 
 
     # Input numeric params
@@ -509,8 +619,6 @@ def main():
     reference_sequence_meta = read_sequence_info(plasmid_meta)
 
 
-
-
     check_dependencies(logger)
 
     needed_dbs = [plasmid_ref_db, replicon_ref, mob_ref, mash_db, repetitive_mask_file,"{}.nin".format(repetitive_mask_file)]
@@ -534,12 +642,44 @@ def main():
 
     logger.info('Creating tmp working directory {}'.format(tmp_dir))
 
+    if args.filter_db:
+        filter_db = args.filter_db
+        logger.info('Filter sequences provided: {}'.format(filter_db))
+        if not os.path.isfile(filter_db + '.nsq') or \
+            os.path.isfile(filter_db + '.nin') or \
+            os.path.isfile(filter_db + '.nhr'):
+            br = BlastRunner(filter_db,os.path.dirname(filter_db))
+            br.makeblastdb(filter_db,dbtype='nucl')
+
+        run_filter = True
+    else:
+        run_filter = False
+
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir, 0o755)
 
     logger.info('Writing cleaned header input fasta file from {} to {}'.format(input_fasta, fixed_fasta))
     fix_fasta_header(input_fasta, fixed_fasta)
     contig_seqs = read_fasta_dict(fixed_fasta)
+
+    #Filter out sequences based on user filter
+    if run_filter:
+        logger.info('Blasting input fasta {} against filter db {}'.format(input_fasta, filter_db))
+        blast_filter = os.path.join(out_dir, 'contig_filter_report.txt')
+        seq_filter = filter_user_sequences(fixed_fasta,filter_db,out_dir,blast_filter,min_con_ident, min_con_cov, min_con_evalue, num_threads)
+
+        filtered_seqs = {}
+        for seq_id in contig_seqs:
+            if seq_id not in seq_filter:
+                filtered_seqs[seq_id] = contig_seqs[seq_id]
+
+        write_fasta_dict(filtered_seqs,fixed_fasta)
+        del(filtered_seqs)
+
+        if os.path.getsize(fixed_fasta) == 0:
+            logger.error('Error no sequences are present in fasta file {} after filtering against filter db {}'.format(input_fasta, filter_db))
+            sys.exit()
+
 
     logger.info('Running replicon blast on {}'.format(replicon_ref))
     replicon_contigs = getRepliconContigs(
@@ -558,6 +698,7 @@ def main():
 
     (pcl_clusters,reference_sequence_hits,contig_hit_scores) = contig_blast_group(filtered_blast, min_overlapp,reference_sequence_meta)
     contig_cluster_membership = membership_voting(reference_sequence_hits,contig_hit_scores)
+
     for contig_id in contig_cluster_membership:
         if contig_id in pcl_clusters:
             pcl_clusters[contig_id] = {contig_cluster_membership[contig_id]['clust_id']:contig_cluster_membership[contig_id]['score']}
@@ -639,7 +780,6 @@ def main():
 
     # Add sequences with known relaxases regardless of whether they belong to a mcl cluster
 
-    count_replicons = dict()
     for contig_id in replicon_contigs:
         if not contig_id in pcl_clusters:
             if contig_id in contig_seqs:
@@ -684,12 +824,9 @@ def main():
 
             refined_clusters[id][contig_id] = cluster[contig_id]
 
-    seq_clusters = refined_clusters
 
+    seq_clusters = refined_clusters
     m = mash()
-    mash_distances = dict()
-    mash_top_dists = dict()
-    contig_report = list()
 
     results_fh = open(contig_report_file, 'w', encoding="utf-8")
     results_fh.write("sample_id\tprimary_cluster_id\tsecondary_cluster_id\tcontig_id\tcontig_length\tcircularity_status\trep_type\t" \
@@ -740,8 +877,8 @@ def main():
         mash_results = m.read_mash(mash_file)
         mash_top_hit = getMashBestHit(mash_results)
 
-        plasmid_primary_acs = "{}_novel_counter".format(counter)
-        plasmid_secondary_acs = "{}_novel_counter".format(counter)
+        plasmid_primary_acs = "{}_novel".format(counter)
+        plasmid_secondary_acs = "{}_novel".format(counter)
 
         if mash_top_hit['top_hit'] in reference_sequence_meta:
             if mash_top_hit['mash_hit_score'] <= primary_distance:

@@ -1,14 +1,13 @@
 from datetime import datetime
 import logging
 
-import shutil
 
 from subprocess import Popen, PIPE
 import os
 
 import pandas as pd
 from pandas.io.common import EmptyDataError
-import re
+
 
 
 BLAST_TABLE_COLS = '''
@@ -84,7 +83,6 @@ class BlastRunner:
                 raise Exception(ex_msg)
 
     def run_blast(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1,word_size=11,max_target_seqs=100000):
-        print("---->{}".format(num_threads))
         p = Popen(['blastn',
                    '-task', blast_task,
                    '-query', query_fasta_path,
