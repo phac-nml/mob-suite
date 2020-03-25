@@ -496,7 +496,7 @@ def main():
     verify_init(logger, database_dir)
 
     if args.sample_id is None:
-        sample_id = re.sub(r"\.(fasta|fa|fas){1,1}", "", os.path.basename(args.infile))
+        sample_id = re.sub(r"\.(fasta|fas|fa){1,1}", "", os.path.basename(args.infile))
     else:
         sample_id = args.sample_id
 
