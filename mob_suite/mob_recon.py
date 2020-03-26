@@ -7,6 +7,7 @@ from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 from mob_suite.wrappers import mash
 from mob_suite.wrappers import detectCircularity
+import glob
 
 from mob_suite.mob_typer import  MOB_TYPER_REPORT_HEADER
 
@@ -43,7 +44,12 @@ def parse_args():
     parser.add_argument('-s', '--sample_id', type=str, required=False, help='Sample Prefix for reports')
     parser.add_argument('-f', '--force', required=False, help='Overwrite existing directory',
                         action='store_true')
-    parser.add_argument('-b', '--filter_db', type=str, required=False, help='Path to fasta file for filtering, such as closed chromosomes')
+    parser.add_argument('-b', '--filter_db', type=str, required=False, help='Path to fasta file to mask sequences')
+    parser.add_argument('-g', '--genome_filter_db_prefix', type=str, required=False,
+                        help='Prefix of mash sketch and blastdb of closed chromosomes to use for auto selection of close genomes for filtering')
+    parser.add_argument('--mash_genome_neighbor_threshold', type=int, required=False,
+                        help='Mash distance selecting valid closed genomes to filter', default=0.002)
+
     parser.add_argument('--max_contig_size', type=int, required=False,
                         help='Maximum size of a contig to be considered a plasmid',
                         default=310000)
@@ -162,6 +168,59 @@ def init_console_logger(lvl=2):
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
 
     return logging.getLogger(__name__)
+
+
+def find_mash_genomes(reference_mash_sketch,fasta_query,outfile,cutoff_distance,num_threads=1):
+    cutoff_distance = float(cutoff_distance)
+    if (not os.path.isfile(fasta_query)):
+        logger.error('Error query fasta file missing "{}"'.format(fasta_query))
+        sys.exit(-1)
+
+    if (not os.path.isfile(reference_mash_sketch)):
+        logger.error('Error genome mash sketch file missing "{}"'.format(reference_mash_sketch))
+        sys.exit(-1)
+
+    output_fh = open(outfile,'w',encoding="utf-8")
+    m = mash()
+    m.run_mash(reference_mash_sketch,fasta_query,output_fh,num_threads=num_threads)
+    output_fh.close()
+    mash_results = m.read_mash(outfile)
+
+    genomes = []
+
+    for line in mash_results:
+        row = line.strip("\n").split("\t")
+        seqid = row[0]
+        score = float(row[2])
+        matches = row[4]
+        if score < cutoff_distance:
+            genomes.append(seqid)
+
+    return genomes
+
+
+def blast_closed_genomes(input_fasta,filter_db,out_dir,blast_filter,min_con_ident, min_con_cov, min_con_evalue, include_list=[], seq_id_file=None, num_threads=1):
+    blast_runner = BlastRunner(input_fasta, out_dir)
+    blast_runner.run_blast(query_fasta_path=input_fasta, blast_task='megablast', db_path=filter_db,
+                           db_type='nucl', min_cov=min_con_cov, min_ident=min_con_ident, evalue=min_con_evalue,
+                           blast_outfile=blast_filter, num_threads=num_threads, word_size=11,seq_id_file=seq_id_file )
+
+
+    if os.path.getsize(blast_filter) == 0:
+        return []
+
+    blast_df = BlastReader(blast_filter).df
+    blast_df = blast_df.loc[blast_df['pident'] >= min_con_ident]
+    blast_df = blast_df.loc[blast_df['evalue'] <= min_con_evalue]
+    blast_df = blast_df.loc[blast_df['qcovs'] >= min_con_cov]
+    blast_df = blast_df[blast_df['sseqid'].isin(include_list)]
+    blast_df = blast_df.reset_index(drop=True)
+    blast_df.to_csv(blast_filter, sep='\t', header=True, line_terminator='\n', index=False)
+
+    return list(set(blast_df['qseqid'].tolist()))
+
+
+
 
 
 
@@ -307,7 +366,6 @@ def contig_blast_group(blast_results_file, overlap_threshold,reference_sequence_
         query = row['qseqid']
         pID = row['sseqid']
         if pID not in reference_sequence_meta:
-            print("->{}\t{}".format(query,pID))
             continue
         else:
             clust_id = reference_sequence_meta[pID]['primary_cluster_id']
@@ -681,6 +739,61 @@ def main():
         logger.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
 
     logger.info('Creating tmp working directory {}'.format(tmp_dir))
+    if not os.path.isdir(tmp_dir):
+        os.mkdir(tmp_dir, 0o755)
+
+    #Filtering against chromosome database
+
+    chrom_filter = False
+    if args.genome_filter_db_prefix:
+        chrom_filter = True
+        genome_filter_db_prefix = args.genome_filter_db_prefix
+        logger.info('Genome filter sequences provided: {}'.format(genome_filter_db_prefix))
+        matched = (glob.glob(genome_filter_db_prefix+"*"))
+        extensions = ['nsq','nin','nhr','nal']
+        found = [0,0,0,0]
+        for f in matched:
+            for i in range(0,len(extensions)):
+                e = extensions[i]
+                if e in f:
+                    found[i]+=1
+
+        for i in found:
+            if i == 0:
+                logger.error('Error blast database not found with prefix: {}'.format(genome_filter_db_prefix))
+                sys.exit()
+        if not os.path.isfile(genome_filter_db_prefix + '.msh') :
+            logger.error('Error mash sketch not found with prefix: {}'.format(genome_filter_db_prefix))
+            sys.exit()
+
+    logger.info('Writing cleaned header input fasta file from {} to {}'.format(input_fasta, fixed_fasta))
+    fix_fasta_header(input_fasta, fixed_fasta)
+    contig_seqs = read_fasta_dict(fixed_fasta)
+
+
+    seq_filter = []
+
+    if chrom_filter:
+        cutoff_distance = float(args.mash_genome_neighbor_threshold)
+        chr_blast_filter = os.path.join(out_dir, 'contig_filter_report.txt')
+        chr_mash_sketch = genome_filter_db_prefix + ".msh"
+        close_genome_reps = find_mash_genomes(chr_mash_sketch , fixed_fasta, chr_blast_filter, cutoff_distance, num_threads=1)
+        logger.info('Found close genome matches: {}'.format(",".join(close_genome_reps)))
+        if len(close_genome_reps) > 0:
+            seq_id_file = os.path.join(tmp_dir,"seqids.txt")
+            sf = open(seq_id_file,'w')
+            for s in close_genome_reps:
+                sf.write("{}\n".format(s))
+            sf.close()
+
+            #fix labels to match the seq id format parsed by makeblastdb
+            for i in range(0,len(close_genome_reps)):
+                close_genome_reps[i] = "ref|{}|".format(close_genome_reps[i])
+
+            seq_filter = blast_closed_genomes(fixed_fasta, genome_filter_db_prefix, out_dir, chr_blast_filter, min_con_ident, min_con_cov,
+                                 min_con_evalue, close_genome_reps,seq_id_file, num_threads)
+
+
 
     if args.filter_db:
         filter_db = args.filter_db
@@ -695,19 +808,16 @@ def main():
     else:
         run_filter = False
 
-    if not os.path.isdir(tmp_dir):
-        os.mkdir(tmp_dir, 0o755)
 
-    logger.info('Writing cleaned header input fasta file from {} to {}'.format(input_fasta, fixed_fasta))
-    fix_fasta_header(input_fasta, fixed_fasta)
-    contig_seqs = read_fasta_dict(fixed_fasta)
+
 
     #Filter out sequences based on user filter
     if run_filter:
         logger.info('Blasting input fasta {} against filter db {}'.format(input_fasta, filter_db))
         blast_filter = os.path.join(out_dir, 'contig_filter_report.txt')
-        seq_filter = filter_user_sequences(fixed_fasta,filter_db,out_dir,blast_filter,min_con_ident, min_con_cov, min_con_evalue, num_threads)
+        seq_filter = seq_filter  + filter_user_sequences(fixed_fasta,filter_db,out_dir,blast_filter,min_con_ident, min_con_cov, min_con_evalue, num_threads)
 
+    if run_filter or chrom_filter:
         filtered_seqs = {}
         for seq_id in contig_seqs:
             if seq_id not in seq_filter:

@@ -16,6 +16,7 @@ MOB_CLUSTER_INFO_HEADER = ['id','size','gc_content','md5','organism','primary_cl
 
 
 
+
 '''
 INPUT: Read file into pandas df
 Returns: list of lines in file with a dict of key value pairs from the header
