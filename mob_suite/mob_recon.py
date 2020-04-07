@@ -1495,7 +1495,7 @@ def main():
     if len(contig_blast_df) > 0:
         contig_blast_df = filter_overlaping_records(fixStart(contig_blast_df.drop(0)), 500, 'qseqid', 'qstart', 'qend',
                                   'bitscore')
-
+        contig_blast_df.reset_index(drop=True)
         #remove blast formatting of seq id
         for index,row in contig_blast_df.iterrows():
             line = row['sseqid'].split('|')
@@ -1504,6 +1504,7 @@ def main():
 
         #remove any hits which are not found in the reference sequence metadata
         contig_blast_df = contig_blast_df[contig_blast_df.sseqid.isin(list(reference_sequence_meta.keys()))]
+        contig_blast_df.reset_index(drop=True)
         contig_info = assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info,tmp_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads)
 
     results = []
