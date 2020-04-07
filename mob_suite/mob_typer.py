@@ -176,12 +176,12 @@ def initMOBTyperReportTemplate(header):
     return data
 
 def getHeirarchy(taxid):
-    if not isETE3DBTAXAFILEexists():
+    if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
         initETE3Database()
 
     ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
-    if not isETE3DBTAXAFILEexists():
+    if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         logging.error("Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(ETE3DBTAXAFILE))
         return ['-','-']
 
