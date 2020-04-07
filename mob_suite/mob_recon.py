@@ -641,7 +641,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
             if contig_id in relaxase_contigs:
                 group_membership[contig_id]['mob_type'] = relaxase_contigs[contig_id]
                 group_membership[contig_id]['contains_relaxase'] = True
-
+    contig_blast_df.reset_index(drop=True)
     indicies = contig_blast_df[contig_blast_df.qseqid.isin(list(group_membership.keys()))]
     indicies = indicies.index.tolist()
 
@@ -1500,13 +1500,18 @@ def main():
         for index,row in contig_blast_df.iterrows():
             line = row['sseqid'].split('|')
             if len(line) >= 2:
-                contig_blast_df.at['sseqid', index] = line[1]
+                contig_blast_df.at[index, 'sseqid'] = line[1]
+
+        indicies = contig_blast_df[contig_blast_df.qseqid.isin(list(reference_sequence_meta.keys()))]
+        indicies = indicies.index.tolist()
 
         #remove any hits which are not found in the reference sequence metadata
-        contig_blast_df = contig_blast_df[contig_blast_df.sseqid.isin(list(reference_sequence_meta.keys()))]
+        contig_blast_df = contig_blast_df[indicies]
         contig_blast_df.reset_index(drop=True)
-        contig_info = assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info,tmp_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads)
 
+        print(contig_blast_df)
+        contig_info = assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info,tmp_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads)
+        print(contig_info)
     results = []
     contig_memberships = {'chromosome':{},'plasmid':{}}
     for contig_id in contig_info:
