@@ -3,8 +3,6 @@
 import logging
 import os, re, pandas, collections, shutil, sys, time, tempfile
 from argparse import (ArgumentParser, FileType)
-from collections import OrderedDict,Counter
-from operator import itemgetter
 from ete3 import NCBITaxa
 from mob_suite.version import __version__
 import mob_suite.mob_init
@@ -20,44 +18,27 @@ from mob_suite.utils import \
     check_dependencies, \
     read_sequence_info, \
     read_file_to_dict,\
-    default_database_dir, \
     dict_from_alt_key_list, \
     get_data_associated_with_key, \
     writeReport, \
     getMashBestHitMultiSeq, \
-    calcFastaStatsIndividual
+    calcFastaStatsIndividual, \
+    sort_biomarkers, \
+    isETE3DBTAXAFILEexists, \
+    initETE3Database, \
+    ETE3_db_status_check
 
 
-MOB_TYPER_REPORT_HEADER = ['sample_id', 'num_contigs', 'total_length', 'gc', 'md5','rep_type(s)',
-                           'rep_type_accession(s)', 'relaxase_type(s)', 'relaxase_type_accession(s)',
-                           'mpf_type', 'mpf_type_accession(s)', 'orit_type(s)', 'orit_accession(s)',
-                           'predicted_mobility', 'mash_nearest_neighbor', 'mash_neighbor_distance',
-                           'primary_cluster_id', 'secondary_cluster_id', 'predicted_host_range_overall_rank',
-                           'predicted_host_range_overall_name', 'observed_host_range_ncbi_rank',
-                           'observed_host_range_ncbi_name', 'reported_host_range_lit_rank',
-                           'reported_host_range_lit_name', 'associated_pmid(s)' ]
-
-database_directory = os.path.abspath(default_database_dir)
-ETE3DBTAXAFILE = os.path.abspath(database_directory + "/taxa.sqlite")
-
-
-NCBI_PLASMID_TAXONOMY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),"databases/host_range_ncbirefseq_plasmidDB.txt")
-NCBI_PLASMID_TAXONOMY_HEADER = [
-                                'sample_id', 'num_contigs', 'total_length', 'gc', 'md5','rep_type(s)',
-                                'rep_type_accession(s)', 'relaxase_type(s)', 'relaxase_type_accession(s)',
-                                'mpf_type', 'mpf_type_accession(s)', 'orit_type(s)', 'orit_accession(s)',
-                                'predicted_mobility', 'mash_nearest_neighbor', 'mash_neighbor_distance',
-                                'primary_cluster_id', 'secondary_cluster_id', 'organism', 'taxid'
-]
-
-LIT_PLASMID_TAXONOMY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),"databases/host_range_literature_plasmidDB.txt")
-LIT_PLASMID_TAXONOMY_HEADER = [
-                                'sample_id', 'rep_type(s)', 'length', 'host_species', 'host_taxid', 'reported_host_range_taxid', 'pmid',
-                                'pmcid', 'doi', 'year', 'author', 'notes'
-]
-
-
-
+from mob_suite.constants import  ETE3DBTAXAFILE, \
+    LIT_PLASMID_TAXONOMY_HEADER, \
+    MOB_TYPER_REPORT_HEADER, \
+    MOB_CLUSTER_INFO_HEADER, \
+    MOB_RECON_INFO_HEADER,\
+    default_database_dir, \
+    NCBI_PLASMID_TAXONOMY_FILE, \
+    NCBI_PLASMID_TAXONOMY_HEADER, \
+    LIT_PLASMID_TAXONOMY_FILE, \
+    ETE3_LOCK_FILE
 
 def init_console_logger(lvl=2):
     root = logging.getLogger()
@@ -172,51 +153,6 @@ def parse_args():
     parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
     return parser.parse_args()
 
-
-def isETE3DBTAXAFILEexists():
-    if not os.path.exists(ETE3DBTAXAFILE):
-        return False
-    else:
-        return True
-def initETE3Database():
-    lockfilepath = os.path.join(database_directory, ".lock")
-
-    if os.path.exists(lockfilepath) == False:
-        open(file=lockfilepath, mode="w").close()
-        logging.info("Placed lock file at {}".format(lockfilepath))
-    else:
-        while os.path.exists(lockfilepath):
-            elapsed_time = time.time() - os.path.getmtime(lockfilepath)
-            logging.info("Lock file found at {}. Waiting for other processes to finish ete3 database init ...".format(lockfilepath))
-            logging.info("Elapsed time {} min. Will continue processing after 16 min mark.".format(int(elapsed_time/60)))
-            if elapsed_time >= 1000:
-                logging.info("Elapsed time {} min. Assuming previous process completed all init steps. Continue ...".format(int(elapsed_time/60)))
-                try: #if previous process failed, no processes are running and > 16 min passed since the lock was created
-                    os.remove(lockfilepath)
-                except: #continue if file was removed by other process
-                    pass
-                break
-            time.sleep(60) #recheck every 1 min if lock file was removed by other process
-        logging.info("Lock file no longer exists. Assuming init process completed successfully")
-
-    ncbi = NCBITaxa()
-    ncbi.dbfile = ETE3DBTAXAFILE
-    ncbi.update_taxonomy_database()
-
-    try:
-        os.remove(lockfilepath)
-        logging.info("Lock file removed.")
-    except:
-        logging.warning("Lock file is already removed by some other process.")
-        pass
-
-    try:
-        os.remove(os.path.join(os.getcwd(), "taxdump.tar.gz"))
-        logging.info("Removed residual taxdump.tar.gz as ete3 is not doing proper cleaning job.")
-    except:
-        pass
-    logging.info("ETE3 database init completed successfully.")
-
 def determine_mpf_type(hits):
     types = dict()
     for hit in hits:
@@ -316,12 +252,13 @@ def getTaxid(taxon):
 
 
 def getTaxonConvergence(taxids):
-    if not isETE3DBTAXAFILEexists():
+    if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
-        initETE3Database()
+        initETE3Database(ETE3DBTAXAFILE)
 
     ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
-    if not isETE3DBTAXAFILEexists():
+
+    if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         logging.error(
             "Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(
                 ETE3DBTAXAFILE))
@@ -481,26 +418,7 @@ def getBioMarkerContigs(contig_dict):
 
     return  biomarkers
 
-def sort_biomarkers(biomarker_dict):
 
-    for id in biomarker_dict:
-        acs = biomarker_dict[id]['acs']
-        types = biomarker_dict[id]['types']
-
-        if len(acs) == 0:
-            continue
-
-        tmp_dict = {}
-
-        for i in range(0,len(acs)):
-            tmp_dict[acs[i]] = types[i]
-
-        tmp_dict = OrderedDict(sorted(tmp_dict.items(), key=itemgetter(1), reverse=False))
-
-        biomarker_dict[id]['acs'] = list(tmp_dict.keys())
-        biomarker_dict[id]['types'] = list(tmp_dict.values())
-
-    return  biomarker_dict
 
 
 
@@ -543,7 +461,6 @@ def predict_mobility(biomarker_dict):
 
 
 def main():
-    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     args = parse_args()
 
     if args.debug:
@@ -730,36 +647,41 @@ def main():
         mobtyper_results[sample_id]['num_contigs'] = fastaSeqStats['num_seq']
         mobtyper_results[sample_id]['gc'] = fastaSeqStats['gc_content']
 
+    #Test that ETE3 db is ok and lock process check
+    dbstatus = ETE3_db_status_check(1, ETE3_LOCK_FILE, ETE3DBTAXAFILE, logging)
+    if dbstatus == False:
+        logging.error("Exiting due to lock file not removed: {}".format(ETE3_LOCK_FILE))
+        sys.exit(-1)
 
     #Get cluster information
-    reference_sequence_meta = read_sequence_info(plasmid_meta)
+    reference_sequence_meta = read_sequence_info(plasmid_meta,MOB_CLUSTER_INFO_HEADER)
 
 
     #run individual marker blasts
     logger.info('Running replicon blast on {}'.format(replicon_ref))
     replicon_contigs = getRepliconContigs(
-        replicon_blast(replicon_ref, fixed_fasta, min_rep_ident, min_rep_cov, min_rep_evalue, tmp_dir, replicon_blast_results,
+        replicon_blast(replicon_ref, fixed_fasta, min_rep_ident, min_rep_cov, min_rep_evalue, tmp_dir, replicon_blast_results,logging=logging,
                        num_threads=num_threads))
 
     found_replicons = sort_biomarkers(getBioMarkerContigs(replicon_contigs))
     del(replicon_contigs)
 
     mob_contigs = getRepliconContigs(
-        mob_blast(mob_ref, fixed_fasta, min_mob_ident, min_mob_cov, min_mob_evalue, tmp_dir, mob_blast_results, num_threads=num_threads))
+        mob_blast(mob_ref, fixed_fasta, min_mob_ident, min_mob_cov, min_mob_evalue, tmp_dir, mob_blast_results, logging=logging,num_threads=num_threads))
 
     found_mob = sort_biomarkers(getBioMarkerContigs(mob_contigs))
     del(mob_contigs)
 
     logger.info('Running mpf blast on {}'.format(mob_ref))
     mpf_contigs = getRepliconContigs(
-        mob_blast(mpf_ref, fixed_fasta, min_mpf_ident, min_mpf_cov, min_mpf_evalue, tmp_dir, mpf_blast_results, num_threads=num_threads))
+        mob_blast(mpf_ref, fixed_fasta, min_mpf_ident, min_mpf_cov, min_mpf_evalue, tmp_dir, mpf_blast_results, logging=logging,num_threads=num_threads))
 
     found_mpf = sort_biomarkers(getBioMarkerContigs(mpf_contigs))
     del(mpf_contigs)
 
     logger.info('Running orit blast on {}'.format(orit_ref))
     orit_contigs = getRepliconContigs(
-        replicon_blast(orit_ref, fixed_fasta, min_ori_ident, min_ori_cov, min_ori_evalue, tmp_dir, orit_blast_results,
+        replicon_blast(orit_ref, fixed_fasta, min_ori_ident, min_ori_cov, min_ori_evalue, tmp_dir, orit_blast_results,logging=logging,
                        num_threads=num_threads))
     found_orit = sort_biomarkers(getBioMarkerContigs(orit_contigs))
     del(orit_contigs)
@@ -876,8 +798,6 @@ def main():
             for key in mob_cluster_memberships[sid]:
                 if key in mobtyper_results[sid]:
                     mobtyper_results[sid][key] = mob_cluster_memberships[sid][key]
-
-
 
         if len(biomarkers[sid]['found_replicons']['types']) > 0:
             mobtyper_results[sid]['rep_type(s)'] = ",".join(biomarkers[sid]['found_replicons']['types'])

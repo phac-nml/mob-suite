@@ -10,7 +10,8 @@ from mob_suite.wrappers import mash
 import shutil
 import datetime
 import time #waiting for other processes
-from mob_suite.utils import default_database_dir, init_console_logger
+from mob_suite.utils import init_console_logger
+from mob_suite.constants import  default_database_dir
 from ete3 import NCBITaxa
 
 logger = init_console_logger(3)

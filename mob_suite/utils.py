@@ -2,19 +2,97 @@ from Bio import SeqIO
 from Bio.SeqUtils import GC
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
-import os, re
+import logging, os, shutil, sys, operator,re, time
 from subprocess import Popen, PIPE, STDOUT
-import shutil,sys, logging, hashlib, string
+import shutil,sys, logging, hashlib, string, random
 import pandas as pd
-
-default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
-
-MOB_CLUSTER_INFO_HEADER = ['id','size','gc_content','md5','organism','primary_cluster_id','primary_dist',
-                           'secondary_cluster_id','secondary_dist',"rep_type(s)","rep_type_accession(s)",
-                           "relaxase_type(s)","relaxase_type_accession(s)"]
+from collections import OrderedDict
+from operator import itemgetter
+from ete3 import NCBITaxa
 
 
+def isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
+    if not os.path.exists(ETE3DBTAXAFILE):
+        return False
+    else:
+        return True
 
+def initETE3Database(database_directory,ETE3DBTAXAFILE,logging):
+
+    lockfilepath = os.path.join(database_directory, ".lock")
+
+    if os.path.exists(lockfilepath) == False:
+        open(file=lockfilepath, mode="w").close()
+        logging.info("Placed lock file at {}".format(lockfilepath))
+    else:
+        while os.path.exists(lockfilepath):
+            elapsed_time = time.time() - os.path.getmtime(lockfilepath)
+            logging.info("Lock file found at {}. Waiting for other processes to finish ete3 database init ...".format(lockfilepath))
+            logging.info("Elapsed time {} min. Will continue processing after 16 min mark.".format(int(elapsed_time/60)))
+            if elapsed_time >= 1000:
+                logging.info("Elapsed time {} min. Assuming previous process completed all init steps. Continue ...".format(int(elapsed_time/60)))
+                try: #if previous process failed, no processes are running and > 16 min passed since the lock was created
+                    os.remove(lockfilepath)
+                except: #continue if file was removed by other process
+                    pass
+                break
+            time.sleep(60) #recheck every 1 min if lock file was removed by other process
+        logging.info("Lock file no longer exists. Assuming init process completed successfully")
+
+    ncbi = NCBITaxa()
+    ncbi.dbfile = ETE3DBTAXAFILE
+    ncbi.update_taxonomy_database()
+
+    try:
+        os.remove(lockfilepath)
+        logging.info("Lock file removed.")
+    except:
+        logging.warning("Lock file is already removed by some other process.")
+        pass
+
+    try:
+        os.remove(os.path.join(os.getcwd(), "taxdump.tar.gz"))
+        logging.info("Removed residual taxdump.tar.gz as ete3 is not doing proper cleaning job.")
+    except:
+        pass
+    logging.info("ETE3 database init completed successfully.")
+
+
+
+def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE,logging):
+
+    max_time = 300
+    elapsed_time = 0
+
+    while os.path.exists(lockfilepath) == True and elapsed_time < max_time:
+        interval = int(random.randrange(10,60))
+        logging.info("Taxonomy lock file {} exists..waiting {}s for other process to complete".format(lockfilepath,interval))
+        time.sleep(interval)
+        elapsed_time += interval
+
+    if os.path.exists(lockfilepath) == True:
+        logging.error("Taxonomy lock file {} still exists after several attempts. Please delete lock file to continue".format(lockfilepath))
+        return False
+
+    else:
+        logging.info("Creating Lock file {}".format(lockfilepath))
+        open(file=lockfilepath, mode="w").close()
+
+        logging.info("Testing ETE3 taxonomy db {}".format(ETE3DBTAXAFILE))
+        ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
+
+        lineage = ncbi.get_lineage(taxid)
+
+        try:
+            os.remove(lockfilepath)
+            logging.info("Lock file removed.")
+        except:
+            logging.warning("Lock file is already removed by some other process.")
+
+        if len(lineage) > 0:
+            return True
+        else:
+            return False
 
 
 '''
@@ -92,23 +170,22 @@ def get_data_associated_with_key(look_up_key,look_up_value,value_key,dictionary)
     Input: Path to TSV file with MOB_CLUSTER_INFO_HEADER fields as the header lines
     Output: Dictionary of sequence indexed by sequence identifier
 '''
-def read_sequence_info(file):
+def read_sequence_info(file,header):
     if os.path.getsize(file) == 0:
         return dict()
-    data = pd.read_csv(file, sep='\t', header=0,names=MOB_CLUSTER_INFO_HEADER,index_col=0)
+    data = pd.read_csv(file, sep='\t', header=0,names=header,index_col=0)
     sequences = dict()
     for index, row in data.iterrows():
-        record = list()
         sequences[index] = {}
-        for i in range(0,len(MOB_CLUSTER_INFO_HEADER)):
-            if MOB_CLUSTER_INFO_HEADER[i] == 'id':
+        for i in range(0,len(header)):
+            if header[i] == 'id':
                 v = index
             else:
-                if str(row[MOB_CLUSTER_INFO_HEADER[i]]) == 'nan' :
+                if str(row[header[i]]) == 'nan' :
                     v = ''
                 else:
-                    v = row[MOB_CLUSTER_INFO_HEADER[i]]
-            sequences[index][MOB_CLUSTER_INFO_HEADER[i]] = v
+                    v = row[header[i]]
+            sequences[index][header[i]] = v
 
     return sequences
 
@@ -139,14 +216,15 @@ def calc_md5(seq):
 
 def fixStart(blast_df):
     for index, row in blast_df.iterrows():
-        sstart = blast_df.at[index, 'sstart']
-        send = blast_df.at[index, 'send']
+
+        sstart = int(blast_df.at[index, 'sstart'])
+        send = int(blast_df.at[index, 'send'])
         if send < sstart:
             temp = sstart
             blast_df.at[index, 'sstart'] = send
             blast_df.at[index, 'send'] = temp
-        qstart = blast_df.at[index, 'qstart']
-        qend = blast_df.at[index, 'qend']
+        qstart = int(blast_df.at[index, 'qstart'])
+        qend = int(blast_df.at[index, 'qend'])
         if qend < qstart:
             temp = qstart
             blast_df.at[index, 'qstart'] = qend
@@ -215,13 +293,11 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
     filter_indexes = list()
     exclude_filter = dict()
 
-
-
     for index, row in blast_df.iterrows():
         contig_id = row[contig_id_col]
-        contig_start = row[contig_start_col]
-        contig_end = row[contig_end_col]
-        score = row[bitscore_col]
+        contig_start = int(row[contig_start_col])
+        contig_end = int(row[contig_end_col])
+        score = float(row[bitscore_col])
 
         if prev_contig_id == '':
             prev_index = index
@@ -257,6 +333,7 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
     for index in exclude_filter:
         filter_indexes.append(index)
     indexes = dict()
+
     for i in blast_df.iterrows():
         indexes[i[0]] = ''
 
@@ -264,8 +341,14 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
 
     return blast_df.reset_index(drop=True)
 
-
-
+def recursive_filter_overlap_records(blast_df, overlap_threshold,contig_id_col,contig_start_col,contig_end_col,bitscore_col):
+    size = len(blast_df)
+    prev_size = 0
+    while size != prev_size:
+        blast_df = filter_overlaping_records(blast_df, overlap_threshold, contig_id_col, contig_start_col, contig_end_col, bitscore_col)
+        prev_size = size
+        size = len(blast_df)
+    return blast_df
 
 
 def replicon_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_results_file,overlap=5,num_threads=1):
@@ -342,8 +425,9 @@ def repetitive_blast(input_fasta, ref_db, min_ident, min_cov, evalue, min_length
 
     contig_list = dict()
     for index, row in blast_df.iterrows():
+        row['qseqid'] = str(row['qseqid'])
         if not row['qseqid'] in contig_list:
-            contig_list[row['qseqid']] = {'id': row['sseqid'], 'score': row['bitscore'], 'contig_start': row['sstart'],
+            contig_list[str(row['qseqid'])] = {'id': row['sseqid'], 'score': row['bitscore'], 'contig_start': row['sstart'],
                                           'contig_end': row['send']}
         else:
             if contig_list[row['qseqid']]['score'] > row['bitscore']:
@@ -358,11 +442,11 @@ def getRepliconContigs(blast_df):
     if isinstance(blast_df,dict) or blast_df is None:
         return contigs
     for index, row in blast_df.iterrows():
-        contig_id = row['sseqid']
+        contig_id = str(row['sseqid'])
         ident = row['pident']
         start = row['sstart']
         end = row['send']
-        hit_id = row['qseqid']
+        hit_id = str(row['qseqid'])
         coverage = row['qcovs']
         if not contig_id in contigs:
             contigs[contig_id] = dict()
@@ -393,7 +477,7 @@ def getMashBestHit(mash_results):
         row = line.strip("\n").split("\t")
 
         if float(score) > float(row[2]):
-            seqid = row[0]
+            seqid = str(row[0])
             score = row[2]
             matches = row[4]
 
@@ -409,8 +493,8 @@ def getMashBestHitMultiSeq(mash_results):
 
     for line in mash_results:
         row = line.strip("\n").split("\t")
-        seqid = row[0]
-        query_id = row[1]
+        seqid = str(row[0])
+        query_id = str(row[1])
         score = float(row[2])
 
         if query_id not in hits:
@@ -572,3 +656,33 @@ def writeReport(data_list,header,outfile):
                     row.append("-")
             fh.write("{}\n".format("\t".join(row)))
         fh.close()
+
+def sort_biomarkers(biomarker_dict):
+
+    for id in biomarker_dict:
+        acs = biomarker_dict[id]['acs']
+        types = biomarker_dict[id]['types']
+
+        if len(acs) == 0:
+            continue
+
+        tmp_dict = {}
+
+        for i in range(0,len(acs)):
+            tmp_dict[acs[i]] = types[i]
+
+        tmp_dict = OrderedDict(sorted(tmp_dict.items(), key=itemgetter(1), reverse=False))
+
+        biomarker_dict[id]['acs'] = list(tmp_dict.keys())
+        biomarker_dict[id]['types'] = list(tmp_dict.values())
+
+    return  biomarker_dict
+
+def determine_mpf_type(hits):
+    types = dict()
+    for hit in hits:
+        if not hit in types:
+            types[hit] = 0
+        types[hit] += 1
+
+    return max(types, key=lambda i: types[i])

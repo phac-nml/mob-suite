@@ -40,7 +40,7 @@ class BlastRunner:
     def __init__(self, fasta_path, tmp_work_dir):
         self.fasta_path = fasta_path
 
-    def makeblastdb(self,fasta_path,dbtype):
+    def makeblastdb(self,fasta_path,dbtype,logging):
         p = Popen(['makeblastdb',
                   '-in', fasta_path,
                    '-parse_seqids',
@@ -50,29 +50,50 @@ class BlastRunner:
         p.wait()
         stdout = p.stdout.read()
         stderr = p.stderr.read()
+        if stderr is not None and (str(stderr) != '' and str(stderr) != "b''" ) :
+            logging.error('makeblastdb on {} had the following messages STDERR: {}'.format(fasta_path, stderr))
 
 
 
-    def run_tblastn(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1,max_target_seqs=100000):
-        p = Popen(['tblastn',
-                   '-query', query_fasta_path,
-                   '-num_threads','{}'.format(num_threads),
-                   '-db', '{}'.format(db_path),
-                   '-evalue', '{}'.format(evalue),
-                   '-out', blast_outfile,
-                   '-max_target_seqs','{}'.format(max_target_seqs),
-                   '-outfmt', '6 {}'.format(' '.join(BLAST_TABLE_COLS))],
-                  stdout=PIPE,
-                  stderr=PIPE)
+
+
+    def run_tblastn(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,logging,num_threads=1,max_target_seqs=100000,seq_id_file=None):
+        if seq_id_file:
+            p = Popen(['tblastn',
+                       '-query', query_fasta_path,
+                       '-seqidlist', '{}'.format(seq_id_file),
+                       '-num_threads','{}'.format(num_threads),
+                       '-db', '{}'.format(db_path),
+                       '-evalue', '{}'.format(evalue),
+                       '-out', blast_outfile,
+                       '-max_target_seqs','{}'.format(max_target_seqs),
+                       '-outfmt', '6 {}'.format(' '.join(BLAST_TABLE_COLS))],
+                      stdout=PIPE,
+                      stderr=PIPE)
+        else:
+            p = Popen(['tblastn',
+                       '-query', query_fasta_path,
+                       '-num_threads','{}'.format(num_threads),
+                       '-db', '{}'.format(db_path),
+                       '-evalue', '{}'.format(evalue),
+                       '-out', blast_outfile,
+                       '-max_target_seqs','{}'.format(max_target_seqs),
+                       '-outfmt', '6 {}'.format(' '.join(BLAST_TABLE_COLS))],
+                      stdout=PIPE,
+                      stderr=PIPE)
         p.wait()
         stdout = p.stdout.read()
         stderr = p.stderr.read()
 
         if stdout is not None and stdout != '':
-            logger.debug('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
+            logging.debug('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
 
-        if stderr is not None and stderr != '':
-            logger.debug('blastn on db {} and query {} STDERR: {}'.format(query_fasta_path, db_path, stderr))
+        if stderr is None or str(stderr) != '' or str(stderr) != "b''" :
+            if os.path.exists(blast_outfile):
+                return blast_outfile
+
+        if stderr is not None and (str(stderr) != '' and str(stderr) != "b''" ) :
+            logging.debug('blastn on db {} and query {} STDERR: {}'.format(query_fasta_path, db_path, stderr))
             if os.path.exists(blast_outfile):
                 return blast_outfile
             else:
@@ -80,10 +101,10 @@ class BlastRunner:
                     query_fasta_path,
                     db_path,
                     blast_outfile)
-                logger.error(ex_msg)
+                logging.error(ex_msg)
                 raise Exception(ex_msg)
 
-    def run_blast(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,num_threads=1,word_size=11,max_target_seqs=100000,seq_id_file=None):
+    def run_blast(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,logging,num_threads=1,word_size=11,max_target_seqs=100000,seq_id_file=None):
 
 
         if seq_id_file :
@@ -119,12 +140,17 @@ class BlastRunner:
         p.wait()
         stdout = p.stdout.read()
         stderr = p.stderr.read()
-        print(stderr)
-        if stdout is not None and stdout != '':
-            logger.debug('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
+
+
+        if stdout is not None and stdout != '' and str(stdout) != "b''":
+            logging.debug('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
+
+        if stderr is None or str(stderr) != '' or str(stderr) != "b''" :
+            if os.path.exists(blast_outfile):
+                return blast_outfile
 
         if stderr is not None and stderr != '':
-            logger.debug('blastn on db {} and query {} STDERR: {}'.format(query_fasta_path, db_path, stderr))
+            logging.debug('blastn on db {} and query {} STDERR: {}'.format(query_fasta_path, db_path, stderr))
             if os.path.exists(blast_outfile):
                 return blast_outfile
             else:
@@ -132,7 +158,7 @@ class BlastRunner:
                     query_fasta_path,
                     db_path,
                     blast_outfile)
-                logger.error(ex_msg)
+                logging.error(ex_msg)
                 raise Exception(ex_msg)
 
 
@@ -140,7 +166,7 @@ class BlastReader:
     df = None
 
 
-    def __init__(self, blast_outfile):
+    def __init__(self, blast_outfile,logging):
         """Read BLASTN output file into a pandas DataFrame
         Sort the DataFrame by BLAST bitscore.
         If there are no BLASTN results, then no results can be returned.
@@ -152,6 +178,16 @@ class BlastReader:
         self.blast_outfile = blast_outfile
         try:
             #self.df = pd.read_table(self.blast_outfile, header=None)
+            if not os.path.isfile(blast_outfile):
+                logging.warning('No BLASTN results to parse from file %s', blast_outfile)
+                self.df = pd.DataFrame()
+                return
+
+            if os.path.getsize(blast_outfile) == 0:
+                logging.warning('No BLASTN results to parse from file %s', blast_outfile)
+                self.df = pd.DataFrame()
+                return
+
             self.df = pd.read_csv(self.blast_outfile,sep="\t",header=None)
 
             self.df.columns = BLAST_TABLE_COLS
@@ -159,8 +195,9 @@ class BlastReader:
             logger.debug(self.df.head())
             self.is_missing = False
 
+
         except EmptyDataError as exc:
-            logger.warning('No BLASTN results to parse from file %s', blast_outfile)
+            logging.warning('No BLASTN results to parse from file %s', blast_outfile)
             self.is_missing = True
             self.df = pd.DataFrame(index=['A'], columns='A')
 
