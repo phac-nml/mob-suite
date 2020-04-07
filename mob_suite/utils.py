@@ -64,6 +64,7 @@ def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE,logging):
     max_time = 300
     elapsed_time = 0
 
+
     while os.path.exists(lockfilepath) == True and elapsed_time < max_time:
         interval = int(random.randrange(10,60))
         logging.info("Taxonomy lock file {} exists..waiting {}s for other process to complete".format(lockfilepath,interval))
@@ -71,7 +72,13 @@ def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE,logging):
         elapsed_time += interval
 
     if os.path.exists(lockfilepath) == True:
-        logging.error("Taxonomy lock file {} still exists after several attempts. Please delete lock file to continue".format(lockfilepath))
+        #delete lock file older than 1 hour
+        modTimesinceEpoc = os.path.getmtime(lockfilepath)
+        elapsedTime = (time.time() - modTimesinceEpoc) / 60
+        if elapsedTime > 60:
+            os.remove(lockfilepath)
+        else:
+            logging.error("Taxonomy lock file {} still exists after several attempts. Please delete lock file to continue".format(lockfilepath))
         return False
 
     else:
