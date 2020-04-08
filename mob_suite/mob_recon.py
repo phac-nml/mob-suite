@@ -641,11 +641,10 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
             if contig_id in relaxase_contigs:
                 group_membership[contig_id]['mob_type'] = relaxase_contigs[contig_id]
                 group_membership[contig_id]['contains_relaxase'] = True
-    contig_blast_df.reset_index(drop=True)
-    indicies = contig_blast_df[contig_blast_df.qseqid.isin(list(group_membership.keys()))]
-    indicies = indicies.index.tolist()
 
-    reference_hit_coverage = filter_contig_df_by_index(indicies, contig_blast_df, reference_hit_coverage)
+    contig_blast_df = contig_blast_df[contig_blast_df.qseqid.isin(list(group_membership.keys()))]
+    contig_blast_df.reset_index(drop=True)
+
     cluster_contig_links = get_seq_links(reference_hit_coverage)
     cluster_scores = calc_cluster_scores(reference_hit_coverage)
 
@@ -963,8 +962,9 @@ def calc_feature_associations(reference_sequence_meta):
 def build_mobtyper_report(plasmid_contig_info,out_dir,outfile,seq_dict,ncbi,lit):
     mob_typer_results = {}
     for clust_id in plasmid_contig_info:
-        cluster_file = open(os.path.join(out_dir,"plasmid_{}.fasta".format(clust_id)),'w')
 
+        cluster_file = open(os.path.join(out_dir,"plasmid_{}.fasta".format(clust_id)),'w')
+        logging.info("Writting plasmid sequences to {}".format(os.path.join(out_dir,"plasmid_{}.fasta".format(clust_id))))
         if clust_id not in mob_typer_results:
             mob_typer_results[clust_id] = {}
         for field in MOB_TYPER_REPORT_HEADER:
@@ -1532,7 +1532,14 @@ def main():
     if len(results) > 0:
         writeReport(results, MOB_RECON_INFO_HEADER, contig_report)
 
+        logging.info("Writting chromosome sequences to {}".format(chromosome_file))
+        chr_fh = open(chromosome_file,'w')
+        for contig_id in contig_memberships['chromosome']:
+            if contig_id in contig_seqs:
+                chr_fh.write(">{}\n{}\n".format(contig_id,contig_seqs[contig_id]))
+        chr_fh.close()
         if len(contig_memberships['plasmid']) > 0:
+
             ncbi = dict_from_alt_key_list(
                 read_file_to_dict(NCBI_PLASMID_TAXONOMY_FILE, NCBI_PLASMID_TAXONOMY_HEADER, separater="\t"),
                 "sample_id")
