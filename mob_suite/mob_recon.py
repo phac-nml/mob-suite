@@ -577,7 +577,7 @@ def calc_cluster_scores(reference_hit_coverage):
     return OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
 
 def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_info,out_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads=1):
-    #reference_feature_associations = calc_feature_associations(reference_sequence_meta)
+    reference_feature_associations = calc_feature_associations(reference_sequence_meta)
 
     #Individual reference sequence coverage and overall score along with contig associations
     reference_hit_coverage = calc_hit_coverage(contig_blast_df, 1000, reference_sequence_meta)
@@ -646,7 +646,6 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
     contig_blast_df.reset_index(drop=True)
 
     cluster_contig_links = get_seq_links(reference_hit_coverage)
-    print(cluster_contig_links)
     cluster_scores = calc_cluster_scores(reference_hit_coverage)
 
     contig_link_counts = {}
@@ -746,11 +745,27 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                 continue
 
             if lowest_dist <= primary_distance:
-                contig_info[contig_id]['primary_cluster_id'] = clust_id
-                contig_info[contig_id]['molecule_type'] = 'plasmid'
-                contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
-                contig_info[contig_id]['mash_neighbor_distance'] = lowest_dist
-                contig_info[contig_id]['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
+                if (len(contained_replicons) > 0 or len(contained_relaxases) > 0) or lowest_dist <= secondary_distance:
+                    contig_info[contig_id]['primary_cluster_id'] = clust_id
+                    contig_info[contig_id]['molecule_type'] = 'plasmid'
+                    contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
+                    contig_info[contig_id]['mash_neighbor_distance'] = lowest_dist
+                    contig_info[contig_id]['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
+                elif (len(contained_replicons) == 0 or len(contained_relaxases) == 0):
+                    #delete clusters which should have a rep or relaxase but do not
+                    assoc_rep = reference_feature_associations['cluster_replicon'][clust_id]
+                    assoc_mob = reference_feature_associations['cluster_relaxase'][clust_id]
+                    if len(assoc_mob) > 0 or len(assoc_rep) > 0:
+                        contig_info[contig_id]['primary_cluster_id'] = ''
+                        contig_info[contig_id]['molecule_type'] = 'chromosome'
+                    else:
+                        contig_info[contig_id]['primary_cluster_id'] = clust_id
+                        contig_info[contig_id]['molecule_type'] = 'plasmid'
+                        contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
+                        contig_info[contig_id]['mash_neighbor_distance'] = lowest_dist
+                        contig_info[contig_id]['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
+
+
 
                 if lowest_dist <= secondary_distance:
                     contig_info[contig_id]['secondary_cluster_id'] = reference_sequence_meta[top_ref_id]['secondary_cluster_id']
