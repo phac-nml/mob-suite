@@ -67,7 +67,7 @@ def parse_args():
     parser.add_argument('-g', '--genome_filter_db_prefix', type=str, required=False,
                         help='Prefix of mash sketch and blastdb of closed chromosomes to use for auto selection of close genomes for filtering')
     parser.add_argument('--mash_genome_neighbor_threshold', type=int, required=False,
-                        help='Mash distance selecting valid closed genomes to filter', default=0.003)
+                        help='Mash distance selecting valid closed genomes to filter', default=0.002)
 
     parser.add_argument('--max_contig_size', type=int, required=False,
                         help='Maximum size of a contig to be considered a plasmid',
@@ -646,11 +646,47 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
     contig_blast_df.reset_index(drop=True)
 
     cluster_contig_links = get_seq_links(reference_hit_coverage)
+    print(cluster_contig_links)
     cluster_scores = calc_cluster_scores(reference_hit_coverage)
+
+    contig_link_counts = {}
+    contig_clust_assoc = {}
+    for clust_id in cluster_contig_links:
+        contigs = cluster_contig_links[clust_id]
+        for contig_id in contigs:
+            if not contig_id in contig_link_counts:
+                contig_link_counts[contig_id] = 0
+                contig_clust_assoc[contig_id] = {}
+            contig_link_counts[contig_id]+=1
+            contig_clust_assoc[contig_id][clust_id] = cluster_scores[clust_id]
+
+    for contig_id in contig_clust_assoc:
+        contig_clust_assoc[contig_id] = OrderedDict(sorted(iter(contig_clust_assoc[contig_id].items()), key=lambda x: x[1], reverse=True))
+
+    contig_link_counts = OrderedDict(sorted(iter(contig_link_counts.items()), key=lambda x: x[1], reverse=False))
+
+
+
+
+    for contig_id in contig_link_counts:
+        clust_id = next(iter(contig_clust_assoc[contig_id]))
+        for c_id in cluster_contig_links[clust_id]:
+            print("{}\t{}\t{}\t{}".format(contig_id,c_id,clust_id,cluster_scores[clust_id]))
+            if contig_info[c_id]['filtering_reason'] in ['chromosome', 'user filter']:
+                continue
+            contig_clust_id = contig_info[c_id]['primary_cluster_id']
+            if contig_clust_id != '':
+                continue
+            contig_info[c_id]['primary_cluster_id'] = clust_id
+            contig_info[c_id]['molecule_type'] = 'plasmid'
+
+
+
 
     for clust_id in cluster_scores:
         if clust_id in cluster_contig_links:
             contigs = cluster_contig_links[clust_id]
+            print("{}\t{}".format(clust_id,contigs))
             for contig_id in contigs:
 
                 # Skip contigs which were flagged to be filtered
@@ -662,8 +698,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                     continue
                 contig_info[contig_id]['primary_cluster_id'] = clust_id
                 contig_info[contig_id]['molecule_type'] = 'plasmid'
-
-
+    print(contig_info)
     cluster_links = {}
 
     for contig_id in contig_info:
@@ -1476,6 +1511,8 @@ def main():
         if mash_screen_results[id] > 0.7:
             candidate_plasmids[id] =  mash_screen_results[id]
 
+    sorted(iter(list(candidate_plasmids.items())), key=lambda x: x[1], reverse=True)
+
     #write seq_filter
     seq_filterfile = os.path.join(tmp_dir,"plasmid_candidates.txt")
     seq_filter = open(seq_filterfile,'w')
@@ -1503,6 +1540,7 @@ def main():
                 contig_blast_df.at[index, 'sseqid'] = line[1]
 
         contig_blast_df = contig_blast_df[contig_blast_df.sseqid.isin(list(reference_sequence_meta.keys()))]
+
         contig_blast_df.reset_index(drop=True)
         contig_info = assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info,tmp_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads)
 
