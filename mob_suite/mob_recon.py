@@ -577,6 +577,7 @@ def calc_cluster_scores(reference_hit_coverage):
     return OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
 
 def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_info,out_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads=1):
+    print(contig_info)
     reference_feature_associations = calc_feature_associations(reference_sequence_meta)
 
     #Individual reference sequence coverage and overall score along with contig associations
@@ -679,7 +680,68 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
             contig_info[c_id]['primary_cluster_id'] = clust_id
             contig_info[c_id]['molecule_type'] = 'plasmid'
 
+    cluster_prioritzation = {}
+    print('-------->')
+    for clust_id in cluster_contig_links:
+        if not clust_id in cluster_prioritzation:
+            cluster_prioritzation[clust_id] = {
+                'score': 0,
+                'is_circular':False,
+                'num_contigs':0,
+                'contains_replicon': False,
+                'contains_relaxase': False,
+                'contigs': [],
+            }
 
+        cluster_prioritzation[clust_id]['contigs'] = cluster_contig_links[clust_id]
+        cluster_prioritzation[clust_id]['num_contigs'] = len(cluster_contig_links[clust_id])
+        cluster_prioritzation[clust_id]['score'] = cluster_scores[clust_id]
+
+        if cluster_prioritzation[clust_id]['num_contigs'] == 1:
+            contig_id = next(iter(cluster_prioritzation[clust_id]['contigs']))
+
+            if contig_id in circular_contigs:
+                cluster_prioritzation[clust_id]['is_circular'] = True
+
+        if contig_id in replicon_contigs:
+            cluster_prioritzation[clust_id]['contains_replicon'] = True
+
+        if contig_id in relaxase_contigs:
+            cluster_prioritzation[clust_id]['contains_relaxase'] = True
+
+    for clust_id in cluster_scores:
+        print("{}\t{}".format(clust_id,cluster_prioritzation[clust_id]))
+
+    unassigned_contigs = {}
+
+    for contig_id in contig_info:
+        if contig_info[contig_id]['filtering_reason'] in ['chromosome', 'user filter']:
+            continue
+
+        if contig_info[contig_id]['primary_cluster_id']  != '':
+            unassigned_contigs[contig_id] = ''
+
+    #prioritize replicon/relaxase containing clusters
+    for clust_id in cluster_scores:
+        if not cluster_prioritzation[clust_id]['contains_replicon'] and not cluster_prioritzation[clust_id]['contains_relaxase']:
+            continue
+
+        contigs = cluster_contig_links[clust_id]
+        # Skip contigs which were flagged to be filtered
+        if contig_info[contig_id]['filtering_reason'] in ['chromosome', 'user filter']:
+            continue
+
+        for contig_id in contigs:
+
+            # Skip contigs which were flagged to be filtered
+            if contig_info[contig_id]['filtering_reason'] in ['chromosome','user filter'] :
+                continue
+
+            contig_clust_id = contig_info[contig_id]['primary_cluster_id']
+            if len(contig_clust_id) > 0:
+                continue
+            contig_info[contig_id]['primary_cluster_id'] = clust_id
+            contig_info[contig_id]['molecule_type'] = 'plasmid'
 
 
     for clust_id in cluster_scores:
@@ -697,9 +759,9 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                     continue
                 contig_info[contig_id]['primary_cluster_id'] = clust_id
                 contig_info[contig_id]['molecule_type'] = 'plasmid'
-    print(contig_info)
-    cluster_links = {}
 
+    cluster_links = {}
+    print(contig_info)
     for contig_id in contig_info:
         clust_id = contig_info[contig_id]['primary_cluster_id']
         if len(clust_id) == 0:
@@ -711,6 +773,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
 
     recon_cluster_dists = get_reconstructed_cluster_dists(mash_db,0.1,cluster_links,out_dir,contig_seqs,num_threads)
 
+    print(recon_cluster_dists)
 
     #get lowest distance cluster
     counter = 0
@@ -733,6 +796,12 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
         contained_relaxases = list(set(list(relaxase_contigs.keys())) & set(cluster_links[clust_id]))
         contained_repettive = list(set(list(repetitive_contigs.keys())) & set(cluster_links[clust_id]))
 
+        #if lowest_dist > primary_distance:
+
+         #   if len(contained_replicons) == 0 and len(contained_relaxases) == 0:
+          #      return
+
+
         if increment:
             counter+=1
             increment = False
@@ -745,27 +814,11 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                 continue
 
             if lowest_dist <= primary_distance:
-                if (len(contained_replicons) > 0 or len(contained_relaxases) > 0) or lowest_dist <= secondary_distance:
-                    contig_info[contig_id]['primary_cluster_id'] = clust_id
-                    contig_info[contig_id]['molecule_type'] = 'plasmid'
-                    contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
-                    contig_info[contig_id]['mash_neighbor_distance'] = lowest_dist
-                    contig_info[contig_id]['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
-                elif (len(contained_replicons) == 0 or len(contained_relaxases) == 0):
-                    #delete clusters which should have a rep or relaxase but do not
-                    assoc_rep = reference_feature_associations['cluster_replicon'][clust_id]
-                    assoc_mob = reference_feature_associations['cluster_relaxase'][clust_id]
-                    if len(assoc_mob) > 0 or len(assoc_rep) > 0:
-                        contig_info[contig_id]['primary_cluster_id'] = ''
-                        contig_info[contig_id]['molecule_type'] = 'chromosome'
-                    else:
-                        contig_info[contig_id]['primary_cluster_id'] = clust_id
-                        contig_info[contig_id]['molecule_type'] = 'plasmid'
-                        contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
-                        contig_info[contig_id]['mash_neighbor_distance'] = lowest_dist
-                        contig_info[contig_id]['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
-
-
+                contig_info[contig_id]['primary_cluster_id'] = clust_id
+                contig_info[contig_id]['molecule_type'] = 'plasmid'
+                contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
+                contig_info[contig_id]['mash_neighbor_distance'] = lowest_dist
+                contig_info[contig_id]['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
 
                 if lowest_dist <= secondary_distance:
                     contig_info[contig_id]['secondary_cluster_id'] = reference_sequence_meta[top_ref_id]['secondary_cluster_id']
@@ -780,7 +833,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                 else:
                     contig_info[contig_id]['primary_cluster_id'] = ''
                     contig_info[contig_id]['molecule_type'] = 'chromosome'
-
+    print(contig_info)
     return contig_info
 
 
