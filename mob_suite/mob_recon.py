@@ -531,14 +531,6 @@ def calc_contig_reference_cov(blast_df,overlap_threshold,reference_sequence_meta
     size = str(len(blast_df))
     prev_size = 0
 
-    while size != prev_size:
-        blast_df = filter_overlaping_records(blast_df, overlap_threshold, 'sseqid', 'sstart', 'send', 'bitscore')
-        prev_size = size
-        size = str(len(blast_df))
-
-    blast_df['qseqid'].apply(str)
-    blast_df['sseqid'].apply(str)
-
     for index, row in blast_df.iterrows():
         query = str(row['qseqid'])
         pID = str(row['sseqid'])
@@ -561,6 +553,7 @@ def calc_contig_reference_cov(blast_df,overlap_threshold,reference_sequence_meta
     for contig_id in contig_scores:
         contig_scores[contig_id] = OrderedDict(
             sorted(iter(list(contig_scores[contig_id].items())), key=lambda x: x[1], reverse=True))
+        print("{}\t{}".format(contig_id,contig_scores[contig_id]))
 
     return contig_scores
 
@@ -576,76 +569,7 @@ def calc_cluster_scores(reference_hit_coverage):
 
     return OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
 
-def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_info,out_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads=1):
-    print(contig_info)
-    reference_feature_associations = calc_feature_associations(reference_sequence_meta)
-
-    #Individual reference sequence coverage and overall score along with contig associations
-    reference_hit_coverage = calc_hit_coverage(contig_blast_df, 1000, reference_sequence_meta)
-    contig_reference_coverage = calc_contig_reference_cov(contig_blast_df,1000,reference_sequence_meta)
-
-    group_membership = {}
-    replicon_contigs = {}
-    relaxase_contigs = {}
-    circular_contigs = {}
-    repetitive_contigs = {}
-
-    for contig_id in contig_info:
-
-        repetitive = contig_info[contig_id]['repetitive_dna_id']
-        if len(repetitive) > 0:
-            repetitive_contigs[contig_id] = repetitive
-
-        #Skip contigs which were flagged to be filtered
-        if contig_info[contig_id]['filtering_reason'] != 'none':
-            continue
-
-        replicon = contig_info[contig_id]['rep_type_accession(s)']
-        relaxase = contig_info[contig_id]['relaxase_type_accession(s)']
-        circular_status = contig_info[contig_id]['circularity_status']
-
-
-
-        if not contig_id in replicon_contigs:
-            if replicon != '-' and replicon != '':
-                replicon_contigs[contig_id] = replicon.split(',')
-
-        if not contig_id in relaxase_contigs:
-
-            if relaxase != '-' and relaxase != '':
-                relaxase_contigs[contig_id] = relaxase.split(',')
-
-        if circular_status == 'circular' and (contig_id in replicon_contigs or contig_id in relaxase_contigs):
-            circular_contigs[contig_id] = "circular"
-
-
-    #Use circular contigs with replicon or relaxase as the initial seed for group memberships
-    for contig_id in circular_contigs:
-
-        if contig_id in replicon_contigs or contig_id in relaxase_contigs:
-
-            if contig_id not in group_membership:
-                group_membership[contig_id] = {
-                    'clust_id': None,
-                    'score': 0,
-                    'is_circular': True,
-                    'contains_replicon': False,
-                    'contains_relaxase': False,
-                    'rep_type': '',
-                    'mob_type': ''
-                }
-
-            if contig_id in replicon_contigs:
-                group_membership[contig_id]['rep_type'] = replicon_contigs[contig_id]
-                group_membership[contig_id]['contains_replicon'] = True
-
-            if contig_id in relaxase_contigs:
-                group_membership[contig_id]['mob_type'] = relaxase_contigs[contig_id]
-                group_membership[contig_id]['contains_relaxase'] = True
-
-    contig_blast_df = contig_blast_df[contig_blast_df.qseqid.isin(list(group_membership.keys()))]
-    contig_blast_df.reset_index(drop=True)
-
+def get_contig_link_counts(reference_hit_coverage):
     cluster_contig_links = get_seq_links(reference_hit_coverage)
     cluster_scores = calc_cluster_scores(reference_hit_coverage)
 
@@ -665,112 +589,77 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
 
     contig_link_counts = OrderedDict(sorted(iter(contig_link_counts.items()), key=lambda x: x[1], reverse=False))
 
-
-
-
-    for contig_id in contig_link_counts:
-        clust_id = next(iter(contig_clust_assoc[contig_id]))
-        for c_id in cluster_contig_links[clust_id]:
-            print("{}\t{}\t{}\t{}".format(contig_id,c_id,clust_id,cluster_scores[clust_id]))
-            if contig_info[c_id]['filtering_reason'] in ['chromosome', 'user filter']:
-                continue
-            contig_clust_id = contig_info[c_id]['primary_cluster_id']
-            if contig_clust_id != '':
-                continue
-            contig_info[c_id]['primary_cluster_id'] = clust_id
-            contig_info[c_id]['molecule_type'] = 'plasmid'
-
-    cluster_prioritzation = {}
-    print('-------->')
-    for clust_id in cluster_contig_links:
-        if not clust_id in cluster_prioritzation:
-            cluster_prioritzation[clust_id] = {
-                'score': 0,
-                'is_circular':False,
-                'num_contigs':0,
-                'contains_replicon': False,
-                'contains_relaxase': False,
-                'contigs': [],
-            }
-
-        cluster_prioritzation[clust_id]['contigs'] = cluster_contig_links[clust_id]
-        cluster_prioritzation[clust_id]['num_contigs'] = len(cluster_contig_links[clust_id])
-        cluster_prioritzation[clust_id]['score'] = cluster_scores[clust_id]
-
-        if cluster_prioritzation[clust_id]['num_contigs'] == 1:
-            contig_id = next(iter(cluster_prioritzation[clust_id]['contigs']))
-
-            if contig_id in circular_contigs:
-                cluster_prioritzation[clust_id]['is_circular'] = True
-
-        if contig_id in replicon_contigs:
-            cluster_prioritzation[clust_id]['contains_replicon'] = True
-
-        if contig_id in relaxase_contigs:
-            cluster_prioritzation[clust_id]['contains_relaxase'] = True
-
-    for clust_id in cluster_scores:
-        print("{}\t{}".format(clust_id,cluster_prioritzation[clust_id]))
-
-    unassigned_contigs = {}
-
+def get_filtered_contigs(contig_info,reasons):
+    filtered = []
     for contig_id in contig_info:
-        if contig_info[contig_id]['filtering_reason'] in ['chromosome', 'user filter']:
+        if contig_info[contig_id]['filtering_reason'] in reasons:
+            filtered.append(contig_id)
+    return list(set(filtered))
+
+def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_info,out_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads=1):
+
+    #reference_feature_associations = calc_feature_associations(reference_sequence_meta)
+
+    #Individual reference sequence coverage and overall score along with contig associations
+    reference_hit_coverage = calc_hit_coverage(contig_blast_df, 1000, reference_sequence_meta)
+    contig_reference_coverage = calc_contig_reference_cov(contig_blast_df,1000,reference_sequence_meta)
+    print(contig_info)
+    filtered_contigs = get_filtered_contigs(contig_info,['user','chromosome'])
+    repetitive_contigs = get_filtered_contigs(contig_info,['repetitve element'])
+    print(repetitive_contigs)
+    print(filtered_contigs)
+    contig_list = list(contig_reference_coverage.keys())
+    print(contig_list)
+    unassigned_contigs = {}
+    for contig_id in contig_list:
+        if contig_id in filtered_contigs:
             continue
+        if contig_id not in unassigned_contigs:
+            unassigned_contigs[contig_id] = {}
 
-        if contig_info[contig_id]['primary_cluster_id']  != '':
-            unassigned_contigs[contig_id] = ''
+    #contig_link_counts = get_contig_link_counts(reference_hit_coverage)
+    print(reference_hit_coverage)
+    cluster_contig_links = get_seq_links2(contig_reference_coverage,reference_sequence_meta)
+    cluster_scores = calc_cluster_scores(reference_hit_coverage)
 
-    #prioritize replicon/relaxase containing clusters
-    for clust_id in cluster_scores:
-        if not cluster_prioritzation[clust_id]['contains_replicon'] and not cluster_prioritzation[clust_id]['contains_relaxase']:
+    group_membership = {}
+
+    print(unassigned_contigs)
+    print(cluster_contig_links)
+    print(cluster_scores)
+    max = len(cluster_scores)
+    iteration = 0
+    while iteration < max:
+        iteration += 1
+
+        clust_id = next(iter(cluster_scores))
+        if clust_id not in cluster_contig_links:
+            del(cluster_scores[clust_id])
             continue
 
         contigs = cluster_contig_links[clust_id]
-        # Skip contigs which were flagged to be filtered
-        if contig_info[contig_id]['filtering_reason'] in ['chromosome', 'user filter']:
-            continue
-
+        print("{}\t{}".format(clust_id,contigs ))
+        #assign contigs to clusters
         for contig_id in contigs:
 
-            # Skip contigs which were flagged to be filtered
-            if contig_info[contig_id]['filtering_reason'] in ['chromosome','user filter'] :
-                continue
-
-            contig_clust_id = contig_info[contig_id]['primary_cluster_id']
-            if len(contig_clust_id) > 0:
-                continue
-            contig_info[contig_id]['primary_cluster_id'] = clust_id
-            contig_info[contig_id]['molecule_type'] = 'plasmid'
-
-
-    for clust_id in cluster_scores:
-        if clust_id in cluster_contig_links:
-            contigs = cluster_contig_links[clust_id]
-            print("{}\t{}".format(clust_id,contigs))
-            for contig_id in contigs:
-
-                # Skip contigs which were flagged to be filtered
-                if contig_info[contig_id]['filtering_reason'] in ['chromosome','user filter'] :
-                    continue
-
-                contig_clust_id = contig_info[contig_id]['primary_cluster_id']
-                if len(contig_clust_id) > 0:
-                    continue
-                contig_info[contig_id]['primary_cluster_id'] = clust_id
-                contig_info[contig_id]['molecule_type'] = 'plasmid'
+            if contig_id not in group_membership:
+                group_membership[contig_id] = clust_id
+                #update cluster scores to remove contigs already assigned
+                if contig_id in contig_reference_coverage:
+                    for ref_hit_id in contig_reference_coverage[contig_id]:
+                        if ref_hit_id in reference_hit_coverage:
+                            reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][ref_hit_id]
+                    del(contig_reference_coverage[contig_id])
+        cluster_scores = calc_cluster_scores(reference_hit_coverage)
 
     cluster_links = {}
-    print(contig_info)
-    for contig_id in contig_info:
-        clust_id = contig_info[contig_id]['primary_cluster_id']
-        if len(clust_id) == 0:
-            continue
-        if not clust_id in cluster_links:
+    for contig_id in group_membership:
+        clust_id = group_membership[contig_id]
+        if clust_id not in cluster_links:
             cluster_links[clust_id] = []
-
         cluster_links[clust_id].append(contig_id)
 
+    print(cluster_links)
     recon_cluster_dists = get_reconstructed_cluster_dists(mash_db,0.1,cluster_links,out_dir,contig_seqs,num_threads)
 
     print(recon_cluster_dists)
@@ -792,21 +681,15 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
         if fail:
             continue
 
-        contained_replicons = list(set(list(replicon_contigs.keys())) & set(cluster_links[clust_id]))
-        contained_relaxases = list(set(list(relaxase_contigs.keys())) & set(cluster_links[clust_id]))
-        contained_repettive = list(set(list(repetitive_contigs.keys())) & set(cluster_links[clust_id]))
-
-        #if lowest_dist > primary_distance:
-
-         #   if len(contained_replicons) == 0 and len(contained_relaxases) == 0:
-          #      return
-
 
         if increment:
             counter+=1
             increment = False
 
+        contained_repettive = list(set(repetitive_contigs) & set(cluster_links[clust_id]))
+
         for contig_id in cluster_links[clust_id]:
+
             #skip clusters which are just repetitive elemenets
             if len(contained_repettive) == len(cluster_links[clust_id]):
                 contig_info[contig_id]['primary_cluster_id'] = ''
@@ -823,7 +706,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                 if lowest_dist <= secondary_distance:
                     contig_info[contig_id]['secondary_cluster_id'] = reference_sequence_meta[top_ref_id]['secondary_cluster_id']
             else:
-                if (len(contained_replicons) > 0 or len(contained_relaxases) > 0) and len(contained_repettive) != len(cluster_links[clust_id]):
+                if len(contained_repettive) != len(cluster_links[clust_id]):
                     contig_info[contig_id]['primary_cluster_id'] = "novel_{}".format(counter)
                     increment = True
                     contig_info[contig_id]['molecule_type'] = 'plasmid'
@@ -886,6 +769,20 @@ def get_seq_links(reference_hit_coverage):
 
     return reference_clust_members
 
+def get_seq_links2(contig_reference_coverage,reference_sequence_meta):
+    reference_clust_members = {}
+    for contig_id in contig_reference_coverage:
+
+        for ref_id in contig_reference_coverage[contig_id]:
+            if ref_id in reference_sequence_meta:
+                clust_id = reference_sequence_meta[ref_id]['primary_cluster_id']
+                if not clust_id in reference_clust_members:
+                    reference_clust_members[clust_id] = {}
+                if not contig_id in reference_clust_members[clust_id]:
+                    reference_clust_members[clust_id][contig_id] = 0
+                reference_clust_members[clust_id][contig_id] += 1
+
+    return reference_clust_members
 
 
 def update_group_members(target_contigs,group_membership,contig_reference_coverage,reference_sequence_meta,group_membership_key,reference_seq_key):
@@ -1596,20 +1493,24 @@ def main():
 
     logging.info("Filtering contig blast results: {}".format(contig_blast_results))
     contig_blast_df = BlastReader(contig_blast_results,logging).df
+    contig_blast_df.to_csv("/Users/jrobertson/Desktop/filtered_0.txt")
 
     if len(contig_blast_df) > 0:
-        contig_blast_df = filter_overlaping_records(fixStart(contig_blast_df.drop(0)), 500, 'qseqid', 'qstart', 'qend',
-                                  'bitscore')
+        contig_blast_df = fixStart(contig_blast_df.drop(0)).sort_values(['sseqid', 'qseqid','sstart', 'send', 'bitscore'])
+        contig_blast_df = filter_overlaping_records(contig_blast_df, 500, 'qseqid', 'qstart', 'qend','bitscore')
+        #contig_blast_df.to_csv("/Users/jrobertson/Desktop/filtered_1.txt")
         contig_blast_df.reset_index(drop=True)
         #remove blast formatting of seq id
         for index,row in contig_blast_df.iterrows():
             line = row['sseqid'].split('|')
             if len(line) >= 2:
                 contig_blast_df.at[index, 'sseqid'] = line[1]
-
+        #contig_blast_df.to_csv("/Users/jrobertson/Desktop/filtered_2.txt")
         contig_blast_df = contig_blast_df[contig_blast_df.sseqid.isin(list(reference_sequence_meta.keys()))]
-
+        #contig_blast_df.to_csv("/Users/jrobertson/Desktop/filtered_3.txt")
         contig_blast_df.reset_index(drop=True)
+       # contig_blast_df.to_csv("/Users/jrobertson/Desktop/filtered_4.txt")
+        logging.info("Assigning contigs to plasmid groups")
         contig_info = assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info,tmp_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads)
 
     results = []
