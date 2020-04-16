@@ -589,10 +589,17 @@ def get_contig_link_counts(reference_hit_coverage):
 
     contig_link_counts = OrderedDict(sorted(iter(contig_link_counts.items()), key=lambda x: x[1], reverse=False))
 
-def get_filtered_contigs(contig_info,reasons):
+def get_contigs_by_key_value(contig_info,column_key,reasons):
     filtered = []
     for contig_id in contig_info:
-        if contig_info[contig_id]['filtering_reason'] in reasons:
+        if contig_info[contig_id][column_key] in reasons:
+            filtered.append(contig_id)
+    return list(set(filtered))
+
+def get_contigs_with_value_set(contig_info,column_key):
+    filtered = []
+    for contig_id in contig_info:
+        if contig_info[contig_id][column_key] is not None and contig_info[contig_id][column_key] != '':
             filtered.append(contig_id)
     return list(set(filtered))
 
@@ -603,13 +610,15 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
     #Individual reference sequence coverage and overall score along with contig associations
     reference_hit_coverage = calc_hit_coverage(contig_blast_df, 1000, reference_sequence_meta)
     contig_reference_coverage = calc_contig_reference_cov(contig_blast_df,1000,reference_sequence_meta)
-    print(contig_info)
-    filtered_contigs = get_filtered_contigs(contig_info,['user','chromosome'])
-    repetitive_contigs = get_filtered_contigs(contig_info,['repetitve element'])
-    print(repetitive_contigs)
-    print(filtered_contigs)
+    filtered_contigs = get_contigs_by_key_value(contig_info,'filtering_reason',['user','chromosome'])
+    repetitive_contigs = get_contigs_by_key_value(contig_info,'filtering_reason',['repetitve element'])
+    circular_contigs = get_contigs_by_key_value(contig_info,'circularity_status',['circular'])
+    replicon_contigs = get_contigs_with_value_set(contig_info,'rep_type(s)')
+    relaxase_contigs = get_contigs_with_value_set(contig_info, 'relaxase_type(s)')
+
+
     contig_list = list(contig_reference_coverage.keys())
-    print(contig_list)
+
     unassigned_contigs = {}
     for contig_id in contig_list:
         if contig_id in filtered_contigs:
@@ -617,16 +626,21 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
         if contig_id not in unassigned_contigs:
             unassigned_contigs[contig_id] = {}
 
-    #contig_link_counts = get_contig_link_counts(reference_hit_coverage)
-    print(reference_hit_coverage)
+
+
     cluster_contig_links = get_seq_links2(contig_reference_coverage,reference_sequence_meta)
     cluster_scores = calc_cluster_scores(reference_hit_coverage)
+    clusters_with_biomarkers = {}
+    for clust_id in cluster_contig_links:
+        contigs = cluster_contig_links[clust_id]
+        for contig_id in contigs:
+            if contig_id in relaxase_contigs or contig_id in replicon_contigs:
+                if clust_id not in clusters_with_biomarkers:
+                    clusters_with_biomarkers[clust_id] = []
+                clusters_with_biomarkers[clust_id].append(contig_id)
 
     group_membership = {}
 
-    print(unassigned_contigs)
-    print(cluster_contig_links)
-    print(cluster_scores)
     max = len(cluster_scores)
     iteration = 0
     while iteration < max:
@@ -659,10 +673,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
             cluster_links[clust_id] = []
         cluster_links[clust_id].append(contig_id)
 
-    print(cluster_links)
     recon_cluster_dists = get_reconstructed_cluster_dists(mash_db,0.1,cluster_links,out_dir,contig_seqs,num_threads)
-
-    print(recon_cluster_dists)
 
     #get lowest distance cluster
     counter = 0
@@ -706,7 +717,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                 if lowest_dist <= secondary_distance:
                     contig_info[contig_id]['secondary_cluster_id'] = reference_sequence_meta[top_ref_id]['secondary_cluster_id']
             else:
-                if len(contained_repettive) != len(cluster_links[clust_id]):
+                if len(contained_repettive) != len(cluster_links[clust_id]) and clust_id in clusters_with_biomarkers:
                     contig_info[contig_id]['primary_cluster_id'] = "novel_{}".format(counter)
                     increment = True
                     contig_info[contig_id]['molecule_type'] = 'plasmid'
@@ -716,7 +727,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                 else:
                     contig_info[contig_id]['primary_cluster_id'] = ''
                     contig_info[contig_id]['molecule_type'] = 'chromosome'
-    print(contig_info)
+
     return contig_info
 
 
