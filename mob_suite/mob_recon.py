@@ -1493,7 +1493,6 @@ def main():
 
     logging.info("Filtering contig blast results: {}".format(contig_blast_results))
     contig_blast_df = BlastReader(contig_blast_results,logging).df
-    contig_blast_df.to_csv("/Users/jrobertson/Desktop/filtered_0.txt")
 
     if len(contig_blast_df) > 0:
         contig_blast_df = fixStart(contig_blast_df.drop(0)).sort_values(['sseqid', 'qseqid','sstart', 'send', 'bitscore'])
