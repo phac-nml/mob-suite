@@ -1,5 +1,5 @@
 from datetime import datetime
-import logging
+import logging, sys
 
 
 from subprocess import Popen, PIPE
@@ -48,11 +48,13 @@ class BlastRunner:
                   stdout=PIPE,
                   stderr=PIPE)
         p.wait()
-        stdout = p.stdout.read()
-        stderr = p.stderr.read()
-        if stderr is not None and (str(stderr) != '' and str(stderr) != "b''" ) :
-            logging.error('makeblastdb on {} had the following messages STDERR: {}'.format(fasta_path, stderr))
+        stdout = str(p.stdout.read())
+        stderr = str(p.stderr.read())
 
+        if stderr is not None and stderr != '' and stderr != "b''" :
+            logging.error('makeblastdb on {} had the following messages STDERR: {}'.format(fasta_path, stderr))
+            return False
+        return True
 
 
 
@@ -82,8 +84,8 @@ class BlastRunner:
                       stdout=PIPE,
                       stderr=PIPE)
         p.wait()
-        stdout = p.stdout.read()
-        stderr = p.stderr.read()
+        stdout = str(p.stdout.read())
+        stderr = str(p.stderr.read())
 
         if stdout is not None and stdout != '':
             logging.debug('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
@@ -138,28 +140,20 @@ class BlastRunner:
                       stderr=PIPE)
 
         p.wait()
-        stdout = p.stdout.read()
-        stderr = p.stderr.read()
+        stdout = str(p.stdout.read())
+        stderr = str(p.stderr.read())
 
 
         if stdout is not None and stdout != '' and str(stdout) != "b''":
-            logging.debug('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
+            logging.info('blastn on db {} and query {} STDOUT: {}'.format(query_fasta_path, db_path, stdout))
 
-        if stderr is None or str(stderr) != '' or str(stderr) != "b''" :
+        if stderr is None and stderr != '' and str(stderr) != "b''" :
             if os.path.exists(blast_outfile):
                 return blast_outfile
 
-        if stderr is not None and stderr != '':
-            logging.debug('blastn on db {} and query {} STDERR: {}'.format(query_fasta_path, db_path, stderr))
-            if os.path.exists(blast_outfile):
-                return blast_outfile
-            else:
-                ex_msg = 'blastn on db {} and query {} did not produce expected output file at {}'.format(
-                    query_fasta_path,
-                    db_path,
-                    blast_outfile)
-                logging.error(ex_msg)
-                raise Exception(ex_msg)
+        if stderr is not None and stderr != '' and stderr != "b''":
+            logging.error('blastn on db {} and query {} STDERR: {}'.format(query_fasta_path, db_path, stderr))
+
 
 
 class BlastReader:

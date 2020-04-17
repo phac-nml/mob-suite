@@ -23,7 +23,6 @@ MOB_TYPER_REPORT_HEADER = [
         'size',
         'gc',
         'md5',
-        'circularity_status',
         'rep_type(s)',
         'rep_type_accession(s)',
         'relaxase_type(s)',
