@@ -21,7 +21,7 @@ def determine_mpf_type(hits):
         if not hit in types:
             types[hit] = 0
         types[hit] += 1
-    print(types)
+
     return max(types, key=lambda i: types[i])
 
 def getAssocValues(query_list_values,look_up_key,value_key,data):
@@ -1008,7 +1008,7 @@ def writeReport(data_list,header,outfile):
         fh.close()
 
 def sort_biomarkers(biomarker_dict):
-    print(biomarker_dict)
+
     for id in biomarker_dict:
         acs = biomarker_dict[id]['acs']
         types = biomarker_dict[id]['types']
@@ -1017,7 +1017,6 @@ def sort_biomarkers(biomarker_dict):
             continue
 
         tmp_dict = {}
-        print(acs)
         for i in range(0,len(acs)):
             tmp_dict[acs[i]] = types[i]
 
@@ -1219,7 +1218,7 @@ def identify_biomarkers(contig_info,fixed_fasta,tmp_dir,min_length,logging,
                         num_threads=1):
     #blast replicon database
     logging.info("Blasting replicon sequences {} against {}".format(replicon_ref,fixed_fasta))
-    blastn(input_fasta=replicon_ref,blastdb=fixed_fasta,min_ident=min_rep_ident,min_cov=min_rep_cov,evalue=min_rep_evalue,min_length=25,out_dir=tmp_dir,
+    blastn(input_fasta=replicon_ref,blastdb=fixed_fasta,min_ident=min_rep_ident,min_cov=min_rep_cov,evalue=min_rep_evalue,min_length=80,out_dir=tmp_dir,
            blast_results_file=replicon_blast_results,num_threads=num_threads,logging=logging)
 
     logging.info("Filtering replicon blast results {} ".format(replicon_blast_results))
@@ -1284,7 +1283,7 @@ def identify_biomarkers(contig_info,fixed_fasta,tmp_dir,min_length,logging,
 
     #blast orit database
     logging.info("Blasting orit sequences {} against {}".format(plasmid_orit, fixed_fasta))
-    blastn(input_fasta=plasmid_orit,blastdb=fixed_fasta,min_ident=min_rep_ident,min_cov=min_rep_cov,evalue=min_rep_evalue,min_length=min_length,out_dir=tmp_dir,
+    blastn(input_fasta=plasmid_orit,blastdb=fixed_fasta,min_ident=min_rep_ident,min_cov=min_rep_cov,evalue=min_rep_evalue,min_length=80,out_dir=tmp_dir,
            blast_results_file=orit_blast_results,num_threads=num_threads,logging=logging)
 
     logging.info("Filtering orit blast results {} ".format(orit_blast_results))
