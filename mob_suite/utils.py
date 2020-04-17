@@ -13,16 +13,6 @@ from mob_suite.constants import  \
     MOB_TYPER_REPORT_HEADER, \
     ETE3DBTAXAFILE
 
-def determine_mpf_type(hits):
-    if isinstance(hits,str):
-        return hits
-    types = dict()
-    for hit in hits:
-        if not hit in types:
-            types[hit] = 0
-        types[hit] += 1
-
-    return max(types, key=lambda i: types[i])
 
 def getAssocValues(query_list_values,look_up_key,value_key,data):
     values = []
@@ -1017,6 +1007,8 @@ def sort_biomarkers(biomarker_dict):
             continue
 
         tmp_dict = {}
+        print(acs)
+        print(types)
         for i in range(0,len(acs)):
             tmp_dict[acs[i]] = types[i]
 
@@ -1086,6 +1078,7 @@ def build_mobtyper_report(plasmid_contig_info,out_dir,outfile,seq_dict,ncbi,lit)
         relaxase = sort_biomarkers({'mob':{'types':mob_typer_results[clust_id]['relaxase_type(s)'],'acs':mob_typer_results[clust_id]['relaxase_type_accession(s)']}})
         mob_typer_results[clust_id]['relaxase_type(s)'] = ",".join(relaxase['mob']['types'])
         mob_typer_results[clust_id]['relaxase_type_accession(s)'] = ",".join(relaxase['mob']['acs'])
+
         if len(mob_typer_results[clust_id]['mpf_type']) > 0:
             mob_typer_results[clust_id]['mpf_type'] = determine_mpf_type(mob_typer_results[clust_id]['mpf_type'].split(','))
         else:
@@ -1275,11 +1268,6 @@ def identify_biomarkers(contig_info,fixed_fasta,tmp_dir,min_length,logging,
                               contig_info_type_key='mpf_type', contig_info_acs_key='mpf_type_accession(s)', delimeter='|')
     del(mpf_blast_results)
 
-    #Assign overall mpf type
-    for contig_id in contig_info:
-        mpf_type = contig_info[contig_id]['mpf_type'].split(",")
-        if len(mpf_type) > 0:
-            contig_info[contig_id]['mpf_type'] = determine_mpf_type(mpf_type)
 
     #blast orit database
     logging.info("Blasting orit sequences {} against {}".format(plasmid_orit, fixed_fasta))
