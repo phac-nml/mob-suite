@@ -14,12 +14,14 @@ from mob_suite.constants import  \
     ETE3DBTAXAFILE
 
 def determine_mpf_type(hits):
+    if isinstance(hits,str):
+        return hits
     types = dict()
     for hit in hits:
         if not hit in types:
             types[hit] = 0
         types[hit] += 1
-
+    print(types)
     return max(types, key=lambda i: types[i])
 
 def getAssocValues(query_list_values,look_up_key,value_key,data):
@@ -1026,8 +1028,9 @@ def sort_biomarkers(biomarker_dict):
     return  biomarker_dict
 
 def determine_mpf_type(hits):
-    if len(hits)  == 0:
-        return ''
+
+    if len(hits)  == 0 or isinstance(hits,str):
+        return hits
     types = dict()
     for hit in hits:
         if not hit in types:

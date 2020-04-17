@@ -467,13 +467,19 @@ def main():
             record['sample_id'] = seq_id
             record['num_contigs'] = 1
             distances = OrderedDict(sorted(mash_results[seq_id].items(), key=itemgetter(1), reverse=False))
-            mash_neighbor_id = next(iter(distances))
-            dist = distances[mash_neighbor_id]
-            record['mash_nearest_neighbor'] = mash_neighbor_id
-            record['mash_neighbor_distance'] = dist
-            record['primary_cluster_id'] = reference_sequence_meta[mash_neighbor_id]['primary_cluster_id']
-            record['secondary_cluster_id'] = reference_sequence_meta[mash_neighbor_id]['secondary_cluster_id']
-            record['mash_neighbor_identification'] = reference_sequence_meta[mash_neighbor_id]['organism']
+
+
+            for mash_neighbor_id in distances:
+                dist = distances[mash_neighbor_id]
+                if mash_neighbor_id not in reference_sequence_meta:
+                    continue
+                else:
+                    record['mash_nearest_neighbor'] = mash_neighbor_id
+                    record['mash_neighbor_distance'] = dist
+                    record['primary_cluster_id'] = reference_sequence_meta[mash_neighbor_id]['primary_cluster_id']
+                    record['secondary_cluster_id'] = reference_sequence_meta[mash_neighbor_id]['secondary_cluster_id']
+                    record['mash_neighbor_identification'] = reference_sequence_meta[mash_neighbor_id]['organism']
+                    break
             mobtyper_results.append(record)
 
     else:

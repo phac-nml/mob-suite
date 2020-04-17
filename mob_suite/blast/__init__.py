@@ -40,17 +40,24 @@ class BlastRunner:
     def __init__(self, fasta_path, tmp_work_dir):
         self.fasta_path = fasta_path
 
-    def makeblastdb(self,fasta_path,dbtype,logging):
-        p = Popen(['makeblastdb',
-                  '-in', fasta_path,
-                   '-parse_seqids',
-                  '-dbtype',dbtype],
-                  stdout=PIPE,
-                  stderr=PIPE)
+    def makeblastdb(self,fasta_path,dbtype,logging,parse_seqids=False):
+        if parse_seqids:
+            p = Popen(['makeblastdb',
+                      '-in', fasta_path,
+                       '-parse_seqids',
+                      '-dbtype',dbtype],
+                      stdout=PIPE,
+                      stderr=PIPE)
+        else:
+            p = Popen(['makeblastdb',
+                      '-in', fasta_path,
+                      '-dbtype',dbtype],
+                      stdout=PIPE,
+                      stderr=PIPE)
+
         p.wait()
         stdout = str(p.stdout.read())
         stderr = str(p.stderr.read())
-
         if stderr is not None and stderr != '' and stderr != "b''" :
             logging.error('makeblastdb on {} had the following messages STDERR: {}'.format(fasta_path, stderr))
             return False

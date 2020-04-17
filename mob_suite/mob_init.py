@@ -212,11 +212,11 @@ def main():
     try:
         logger.info('Building repetitive mask database')
         blast_runner = BlastRunner(repetitive_fasta_file, database_directory)
-        blast_runner.makeblastdb(repetitive_fasta_file, 'nucl')
+        blast_runner.makeblastdb(repetitive_fasta_file, 'nucl',logger)
 
         logger.info('Building complete plasmid database')
         blast_runner = BlastRunner(plasmid_database_fasta_file, database_directory)
-        blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl')
+        blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl',logger,True)
 
         logger.info('Sketching complete plasmid database')
         mObj = mash()
