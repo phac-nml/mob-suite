@@ -1017,7 +1017,7 @@ def sort_biomarkers(biomarker_dict):
             continue
 
         tmp_dict = {}
-
+        print(acs)
         for i in range(0,len(acs)):
             tmp_dict[acs[i]] = types[i]
 
