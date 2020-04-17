@@ -1008,6 +1008,7 @@ def writeReport(data_list,header,outfile):
         fh.close()
 
 def sort_biomarkers(biomarker_dict):
+    print(biomarker_dict)
     for id in biomarker_dict:
         acs = biomarker_dict[id]['acs']
         types = biomarker_dict[id]['types']
