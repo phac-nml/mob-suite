@@ -14,7 +14,6 @@ import glob
 from mob_suite.constants import  \
     MOB_CLUSTER_INFO_HEADER,\
     MOB_RECON_INFO_HEADER,\
-    MOB_TYPER_REPORT_HEADER, \
     ETE3_LOCK_FILE, \
     ETE3DBTAXAFILE, \
     NCBI_PLASMID_TAXONOMY_FILE, \
@@ -881,6 +880,8 @@ def main():
         sample_id = re.sub(r"\.(fasta|fas|fa){1,1}", "", os.path.basename(args.infile))
     else:
         sample_id = args.sample_id
+
+    verify_init(logger, database_dir)
 
     run_overhang = args.run_overhang
     unicycler_contigs = args.unicycler_contigs

@@ -251,7 +251,7 @@ def main():
     else:
         sample_id = args.sample_id
 
-    verify_init(logger,database_dir)
+
 
     # Script arguments
     input_fasta = args.infile
@@ -294,6 +294,7 @@ def main():
         mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
         plasmid_orit = os.path.join(database_dir, 'orit.fas')
 
+    verify_init(logger, database_dir)
 
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')
