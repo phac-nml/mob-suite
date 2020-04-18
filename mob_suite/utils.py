@@ -1079,7 +1079,11 @@ def build_mobtyper_report(plasmid_contig_info,out_dir,outfile,seq_dict,ncbi,lit)
         mob_typer_results[clust_id]['relaxase_type_accession(s)'] = ",".join(relaxase['mob']['acs'])
 
         if len(mob_typer_results[clust_id]['mpf_type']) > 0:
-            mob_typer_results[clust_id]['mpf_type'] = determine_mpf_type(mob_typer_results[clust_id]['mpf_type'].split(','))
+            if isinstance(mob_typer_results[clust_id]['mpf_type'],str):
+                mob_typer_results[clust_id]['mpf_type'] = determine_mpf_type(mob_typer_results[clust_id]['mpf_type'].split(','))
+            else:
+                mob_typer_results[clust_id]['mpf_type'] = determine_mpf_type(
+                    mob_typer_results[clust_id]['mpf_type'])
         else:
             mob_typer_results[clust_id]['mpf_type'] = ''
 
