@@ -495,7 +495,9 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
 
 
     cluster_contig_links = get_seq_links(contig_reference_coverage,reference_sequence_meta)
+    print(cluster_contig_links)
     cluster_scores = calc_cluster_scores(reference_hit_coverage)
+    print(cluster_scores          )
     clusters_with_biomarkers = {}
     for clust_id in cluster_contig_links:
         contigs = cluster_contig_links[clust_id]
@@ -539,7 +541,9 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
             cluster_links[clust_id] = []
         cluster_links[clust_id].append(contig_id)
 
+    print(cluster_links)
     recon_cluster_dists = get_reconstructed_cluster_dists(mash_db,0.1,cluster_links,out_dir,contig_seqs,num_threads)
+    print(recon_cluster_dists)
 
     #get lowest distance cluster
     counter = 0
@@ -1116,25 +1120,14 @@ def main():
     m = mash()
     mash_screen_results = parseMashScreen(m.run_mash_screen(mash_db, fixed_fasta, winner_take_all=True, num_threads=num_threads))
     candidate_plasmids = {}
-    logging.info("Filtering plasmid candidates based on distance 0.8")
-    for id in mash_screen_results:
-        if mash_screen_results[id] > 0.7:
-            candidate_plasmids[id] =  mash_screen_results[id]
-
-    sorted(iter(list(candidate_plasmids.items())), key=lambda x: x[1], reverse=True)
-
-    #write seq_filter
-    seq_filterfile = os.path.join(tmp_dir,"plasmid_candidates.txt")
-    seq_filter = open(seq_filterfile,'w')
-    for id in candidate_plasmids:
-        seq_filter.write("{}\n".format(id))
-    seq_filter.close()
+    logging.info("Filtering plasmid candidates based on distance 0.4")
+    logging.info("Filtering plasmid candidates based on distance 0.4")
 
 
     #blast plasmid database
     logging.info("Blasting contigs against reference sequence db: {}".format(plasmid_ref_db))
     blastn(input_fasta=fixed_fasta,blastdb=plasmid_ref_db,min_ident=min_con_ident,min_cov=min_con_cov,evalue=min_con_evalue,min_length=min_length,out_dir=tmp_dir,
-           blast_results_file=contig_blast_results,num_threads=num_threads,logging=logging,seq_filterfile=seq_filterfile)
+           blast_results_file=contig_blast_results,num_threads=num_threads,logging=logging,seq_filterfile=None)
 
     logging.info("Filtering contig blast results: {}".format(contig_blast_results))
     contig_blast_df = BlastReader(contig_blast_results,logging).df
@@ -1142,18 +1135,14 @@ def main():
     if len(contig_blast_df) > 0:
         contig_blast_df = fixStart(contig_blast_df.drop(0)).sort_values(['sseqid', 'qseqid','sstart', 'send', 'bitscore'])
         contig_blast_df = filter_overlaping_records(contig_blast_df, 500, 'qseqid', 'qstart', 'qend','bitscore')
-        #contig_blast_df.to_csv("/Users/jrobertson/Desktop/filtered_1.txt")
         contig_blast_df.reset_index(drop=True)
         #remove blast formatting of seq id
         for index,row in contig_blast_df.iterrows():
             line = row['sseqid'].split('|')
             if len(line) >= 2:
                 contig_blast_df.at[index, 'sseqid'] = line[1]
-        #contig_blast_df.to_csv("/Users/jrobertson/Desktop/filtered_2.txt")
         contig_blast_df = contig_blast_df[contig_blast_df.sseqid.isin(list(reference_sequence_meta.keys()))]
-        #contig_blast_df.to_csv("/Users/jrobertson/Desktop/filtered_3.txt")
         contig_blast_df.reset_index(drop=True)
-       # contig_blast_df.to_csv("/Users/jrobertson/Desktop/filtered_4.txt")
         logging.info("Assigning contigs to plasmid groups")
         contig_info = assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info,tmp_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads)
 
