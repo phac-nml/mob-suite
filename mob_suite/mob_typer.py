@@ -574,7 +574,10 @@ def main():
         for field in host_range:
             record[field] = host_range[field]
 
-        record['mpf_type'] = determine_mpf_type(record['mpf_type'].split(','))
+        print(record['mpf_type'])
+        
+        record['mpf_type'] = determine_mpf_type(record['mpf_type'])
+        print(record['mpf_type'])
         for field in record:
             if isinstance(record[field],list):
                 record[field] = ",".join(record[field])
