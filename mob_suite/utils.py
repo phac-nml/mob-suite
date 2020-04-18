@@ -1007,8 +1007,7 @@ def sort_biomarkers(biomarker_dict):
             continue
 
         tmp_dict = {}
-        print(acs)
-        print(types)
+
         for i in range(0,len(acs)):
             tmp_dict[acs[i]] = types[i]
 
@@ -1287,32 +1286,33 @@ def identify_biomarkers(contig_info,fixed_fasta,tmp_dir,min_length,logging,
 
 
     #blast repetitive database
-    logging.info("Blasting contigs against repetitive sequences db: {}".format(repetitive_mask_file))
-    blastn(input_fasta=fixed_fasta,blastdb=repetitive_mask_file,min_ident=min_rpp_ident,min_cov=min_rpp_cov,evalue=min_rpp_evalue,min_length=min_length,out_dir=tmp_dir,
-           blast_results_file=repetitive_blast_results,num_threads=num_threads,logging=logging)
-    logging.info("Filtering repetitive blast results {} ".format(repetitive_blast_results))
+    if repetitive_mask_file is not None:
+        logging.info("Blasting contigs against repetitive sequences db: {}".format(repetitive_mask_file))
+        blastn(input_fasta=fixed_fasta,blastdb=repetitive_mask_file,min_ident=min_rpp_ident,min_cov=min_rpp_cov,evalue=min_rpp_evalue,min_length=min_length,out_dir=tmp_dir,
+               blast_results_file=repetitive_blast_results,num_threads=num_threads,logging=logging)
+        logging.info("Filtering repetitive blast results {} ".format(repetitive_blast_results))
 
-    repetitive_blast_df = BlastReader(repetitive_blast_results,logging).df
-    if len(repetitive_blast_df) > 0:
-        repetitive_blast_df = recursive_filter_overlap_records(fixStart(repetitive_blast_df.drop(0).sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])), 5, 'qseqid', 'qstart', 'qend',
-                                  'bitscore')
+        repetitive_blast_df = BlastReader(repetitive_blast_results,logging).df
+        if len(repetitive_blast_df) > 0:
+            repetitive_blast_df = recursive_filter_overlap_records(fixStart(repetitive_blast_df.drop(0).sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])), 5, 'qseqid', 'qstart', 'qend',
+                                      'bitscore')
 
-        repetitive_list = repetitive_blast_df['qseqid'].tolist()
-
-
-        #add filtering flag to contigs which are primarially a repetitive element
-        for contig_id in repetitive_list:
-            if contig_id in contig_info:
-                logging.info('Filtering contig: {} due to repetitive sequence'.format(contig_id))
-                contig_info[contig_id]['filtering_reason'] = 'repetitve element'
-            else:
-                logging.error('Contig: {} not found in contig_df this is likely an error'.format(contig_id))
+            repetitive_list = repetitive_blast_df['qseqid'].tolist()
 
 
-        add_biomarker_results(biomarker_df=repetitive_blast_df, df_column_name_biomarker='sseqid', df_column_name_seqid='qseqid', contig_info=contig_info,
-                              contig_info_type_key='repetitive_dna_type', contig_info_acs_key='repetitive_dna_id', delimeter='|',type_col_num=2,type_acs_num=1)
+            #add filtering flag to contigs which are primarially a repetitive element
+            for contig_id in repetitive_list:
+                if contig_id in contig_info:
+                    logging.info('Filtering contig: {} due to repetitive sequence'.format(contig_id))
+                    contig_info[contig_id]['filtering_reason'] = 'repetitve element'
+                else:
+                    logging.error('Contig: {} not found in contig_df this is likely an error'.format(contig_id))
 
 
-    del(repetitive_blast_df)
+            add_biomarker_results(biomarker_df=repetitive_blast_df, df_column_name_biomarker='sseqid', df_column_name_seqid='qseqid', contig_info=contig_info,
+                                  contig_info_type_key='repetitive_dna_type', contig_info_acs_key='repetitive_dna_id', delimeter='|',type_col_num=2,type_acs_num=1)
+
+
+        del(repetitive_blast_df)
     return contig_info
 

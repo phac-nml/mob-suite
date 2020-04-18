@@ -434,7 +434,7 @@ def main():
                         replicon_ref, min_rep_ident, min_rep_cov, min_rep_evalue, replicon_blast_results, \
                         mob_ref, min_mob_ident, min_mob_cov, min_mob_evalue, mob_blast_results, \
                         mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results, \
-                        repetitive_mask_file, min_rpp_ident, min_rpp_cov, min_rpp_evalue, \
+                        None, None, None, None, \
                         plasmid_orit, orit_blast_results, repetitive_blast_results, \
                         num_threads=1)
 
@@ -559,7 +559,7 @@ def main():
         record['rep_type_accession(s)'] = bio_markers[0]['acs']
         record['relaxase_type(s)'] = bio_markers[1]['types']
         record['relaxase_type_accession(s)'] = bio_markers[1]['acs']
-        record['mpf_type'] = determine_mpf_type(bio_markers[2]['types'])
+        record['mpf_type'] = bio_markers[2]['types']
         record['mpf_type_accession(s)'] = bio_markers[2]['acs']
         record['orit_type(s)'] = bio_markers[3]['types']
         record['orit_accession(s)'] = bio_markers[3]['acs']
@@ -574,10 +574,17 @@ def main():
         for field in host_range:
             record[field] = host_range[field]
 
-
+        record['mpf_type'] = determine_mpf_type(record['mpf_type'].split(','))
         for field in record:
             if isinstance(record[field],list):
                 record[field] = ",".join(record[field])
+
+        record['predicted_mobility'] = 'non-mobilizable'
+        if len(record['relaxase_type(s)']) > 0 and len(record['mpf_type']):
+            record['predicted_mobility'] = 'conjugative'
+        elif len(record['relaxase_type(s)']) > 0 or len(record['orit_type(s)']) > 0 :
+            record['predicted_mobility'] = 'mobilizable'
+
         mobtyper_results[i] = record
 
 
