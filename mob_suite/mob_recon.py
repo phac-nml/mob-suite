@@ -495,9 +495,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
 
 
     cluster_contig_links = get_seq_links(contig_reference_coverage,reference_sequence_meta)
-    print(cluster_contig_links)
     cluster_scores = calc_cluster_scores(reference_hit_coverage)
-    print(cluster_scores          )
     clusters_with_biomarkers = {}
     for clust_id in cluster_contig_links:
         contigs = cluster_contig_links[clust_id]
@@ -541,9 +539,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
             cluster_links[clust_id] = []
         cluster_links[clust_id].append(contig_id)
 
-    print(cluster_links)
     recon_cluster_dists = get_reconstructed_cluster_dists(mash_db,0.1,cluster_links,out_dir,contig_seqs,num_threads)
-    print(recon_cluster_dists)
 
     #get lowest distance cluster
     counter = 0
@@ -1114,14 +1110,6 @@ def main():
                 logger.error('Contig: {} not found in contig_df this is likely an error'.format(contig_id))
 
         del (user_filter_seqs)
-
-    #Identify plasmids likely contained in the sample
-    logging.info("Identifying candidate plasmids based on mash screen {}".format(plasmid_ref_db))
-    m = mash()
-    mash_screen_results = parseMashScreen(m.run_mash_screen(mash_db, fixed_fasta, winner_take_all=True, num_threads=num_threads))
-    candidate_plasmids = {}
-    logging.info("Filtering plasmid candidates based on distance 0.4")
-    logging.info("Filtering plasmid candidates based on distance 0.4")
 
 
     #blast plasmid database

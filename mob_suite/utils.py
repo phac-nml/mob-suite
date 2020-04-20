@@ -1082,8 +1082,11 @@ def build_mobtyper_report(plasmid_contig_info,out_dir,outfile,seq_dict,ncbi,lit)
             if isinstance(mob_typer_results[clust_id]['mpf_type'],str):
                 mob_typer_results[clust_id]['mpf_type'] = determine_mpf_type(mob_typer_results[clust_id]['mpf_type'].split(','))
             else:
-                mob_typer_results[clust_id]['mpf_type'] = determine_mpf_type(
-                    mob_typer_results[clust_id]['mpf_type'])
+                tmp = []
+                for i in range(0,len(mob_typer_results[clust_id]['mpf_type'])):
+                    tmp += mob_typer_results[clust_id]['mpf_type'][i].split(',')
+                mob_typer_results[clust_id]['mpf_type'] = determine_mpf_type(tmp)
+                del(tmp)
         else:
             mob_typer_results[clust_id]['mpf_type'] = ''
 
