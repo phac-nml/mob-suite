@@ -303,6 +303,8 @@ def blastn(input_fasta, blastdb, min_ident, min_cov, evalue, min_length, out_dir
         return False
 
     blast_df = BlastReader(blast_results_file,logging).df
+
+
     blast_df = blast_df.loc[blast_df['length'] >= min_length]
     blast_df = blast_df.loc[blast_df['qlen'] <= max_length]
     blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
@@ -329,6 +331,7 @@ def tblastn(input_fasta, blastdb, min_ident, min_covs, evalue, out_dir,blast_res
         return False
 
     blast_df = BlastReader(blast_results_file,logging).df
+
     blast_df = blast_df.loc[blast_df['pident'] >= min_ident]
     blast_df = blast_df.loc[blast_df['qcovs'] >= min_covs]
     blast_df = blast_df.loc[blast_df['qcovhsp'] >= min_covhsp]
@@ -566,6 +569,15 @@ def fixStart(blast_df):
             temp = qstart
             blast_df.at[index, 'qstart'] = qend
             blast_df.at[index, 'qend'] = temp
+
+    blast_df = blast_df.astype({"qstart":'int64',"qend":'int64',
+                                "sstart":'int64',"send":'int64',
+                                "evalue":'float',"bitscore":'int64',
+                                'length':'int64','qlen':'int64',
+                                'slen':'int64','mismatch':'int64',
+                                'pident':'float','qcovs':'float', 'qcovhsp':'float'})
+
+
     return blast_df
 
 
@@ -620,6 +632,69 @@ def verify_init(logger, database_dir):
                             "Check MOB-Suite databases directory and your Internet connection.")
             sys.exit(-1)
 
+def remove_split_hits(blast_df,query_col,contig_id_col,contig_start_col,contig_end_col,bitscore_col):
+    blast_df = blast_df.sort_values([query_col,contig_id_col,contig_start_col,contig_end_col,bitscore_col], ascending=[True, True, True, True, False])
+    hits = {}
+    for index, row in blast_df.iterrows():
+        query_id = row[query_col]
+        contig_id = row[contig_id_col]
+        contig_start = int(row[contig_start_col])
+        contig_end = int(row[contig_end_col])
+        length = row['slen']
+        if contig_start == 1 or contig_end == length:
+
+            if query_id not in hits:
+                hits[query_id] = {}
+
+            if contig_id not in hits[query_id]:
+                hits[query_id][contig_id] = {'start':{},'end':{}}
+
+            if contig_start == 1:
+                hits[query_id][contig_id]['start'][index] = row
+            else:
+                hits[query_id][contig_id]['end'][index] = row
+
+    filter = []
+
+    for query_id in hits:
+        for contig_id in hits[query_id]:
+            positions = hits[query_id][contig_id]
+
+            #skip records without both a begining and end hit
+            if len(positions['start']) == 0 or len(positions['end']) == 0:
+                continue
+
+            start_keys = list(positions['start'].keys())
+            end_keys = list(positions['end'].keys())
+            max_bitscore = 0
+            top_side = ''
+
+            for index in start_keys:
+                score = positions['start'][index][bitscore_col]
+                if score > max_bitscore:
+                    max_bitscore = score
+                    top_side = 'start'
+
+            for index in end_keys:
+                score = positions['end'][index][bitscore_col]
+                if score > max_bitscore:
+                    max_bitscore = score
+                    top_side = 'end'
+
+            if top_side == 'start':
+                filter += start_keys
+            else:
+                filter += end_keys
+
+    blast_df = blast_df[~blast_df.sseqid.isin(filter)]
+    blast_df.reset_index(drop=True)
+    return blast_df
+
+
+
+
+
+
 
 def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_start_col,contig_end_col,bitscore_col):
     prev_contig_id = ''
@@ -631,9 +706,11 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
     exclude_filter = dict()
 
     for index, row in blast_df.iterrows():
+
+
         contig_id = row[contig_id_col]
-        contig_start = int(row[contig_start_col])
-        contig_end = int(row[contig_end_col])
+        contig_start = row[contig_start_col]
+        contig_end = row[contig_end_col]
         score = float(row[bitscore_col])
 
         if prev_contig_id == '':
@@ -654,11 +731,12 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
 
         if (contig_start >= prev_contig_start and contig_start <= prev_contig_end) or (contig_end >= prev_contig_start and contig_end <= prev_contig_end):
             overlap = abs(contig_start - prev_contig_end)
+
             if overlap > overlap_threshold:
-                if prev_score > score:
-                    filter_indexes.append(index)
-                else:
+                if prev_score < score:
                     filter_indexes.append(prev_index)
+                else:
+                    filter_indexes.append(index)
 
 
         prev_index = index
@@ -669,10 +747,6 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
 
     for index in exclude_filter:
         filter_indexes.append(index)
-    indexes = dict()
-
-    for i in blast_df.iterrows():
-        indexes[i[0]] = ''
 
     blast_df.drop(filter_indexes, inplace=True)
 
@@ -681,115 +755,13 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
 def recursive_filter_overlap_records(blast_df, overlap_threshold,contig_id_col,contig_start_col,contig_end_col,bitscore_col):
     size = len(blast_df)
     prev_size = 0
+
     while size != prev_size:
-        blast_df = filter_overlaping_records(blast_df, overlap_threshold, contig_id_col, contig_start_col, contig_end_col, bitscore_col)
+        blast_df = filter_overlaping_records(blast_df, overlap_threshold, contig_id_col, contig_start_col, contig_end_col, bitscore_col).sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
         prev_size = size
         size = len(blast_df)
     return blast_df
 
-
-def replicon_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_results_file,overlap=5,num_threads=1):
-    blast_runner = BlastRunner(input_fasta, tmp_dir)
-    blast_runner.makeblastdb(ref_db, 'nucl')
-    blast_runner.run_blast(query_fasta_path=input_fasta, blast_task='megablast', db_path=ref_db,
-                             db_type='nucl', min_cov=min_cov, min_ident=min_ident, evalue=evalue,
-                             blast_outfile=blast_results_file,
-                              num_threads=num_threads)
-    if os.path.getsize(blast_results_file) == 0:
-        return dict()
-    blast_df = BlastReader(blast_results_file).df
-    blast_df = blast_df.loc[blast_df['pident'] >= min_ident]
-    blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
-    blast_df = blast_df.loc[blast_df['qcovhsp'] >= 25]
-    blast_df = fixStart(blast_df)
-    blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
-    blast_df = blast_df.reset_index(drop=True)
-    size = str(len(blast_df))
-    blast_df = filter_overlaping_records(blast_df, overlap, 'sseqid', 'sstart', 'send', 'bitscore')
-    prev_size = 0
-    while size != prev_size:
-        blast_df = filter_overlaping_records(blast_df, overlap, 'sseqid', 'sstart', 'send', 'bitscore')
-        prev_size = size
-        size = str(len(blast_df))
-
-    return blast_df
-
-
-def mob_blast(input_fasta, ref_db, min_ident, min_cov, evalue, tmp_dir,blast_results_file,overlap=5,num_threads=1):
-    blast_runner = BlastRunner(input_fasta, tmp_dir)
-    blast_runner.makeblastdb(ref_db, 'nucl')
-    blast_runner.run_tblastn(query_fasta_path=input_fasta, blast_task='megablast', db_path=ref_db,
-                             db_type='nucl', min_cov=min_cov, min_ident=min_ident, evalue=evalue,
-                             blast_outfile=blast_results_file,
-                              num_threads=num_threads)
-    if os.path.getsize(blast_results_file) == 0:
-        return dict()
-    blast_df = BlastReader(blast_results_file).df
-    blast_df = blast_df.loc[blast_df['pident'] >= min_ident]
-    blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
-    blast_df = blast_df.loc[blast_df['qcovhsp'] >= 25]
-    blast_df = fixStart(blast_df)
-    blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
-    blast_df = blast_df.reset_index(drop=True)
-    blast_df = filter_overlaping_records(blast_df, overlap, 'sseqid', 'sstart', 'send', 'bitscore')
-    prev_size = 0
-    size = str(len(blast_df))
-    while size != prev_size:
-        blast_df = filter_overlaping_records(blast_df, overlap, 'sseqid', 'sstart', 'send', 'bitscore')
-        prev_size = size
-        size = str(len(blast_df))
-    return blast_df
-
-
-
-def repetitive_blast(input_fasta, ref_db, min_ident, min_cov, evalue, min_length, tmp_dir, blast_results_file,num_threads=1):
-    blast_runner = BlastRunner(input_fasta, tmp_dir)
-    blast_runner.run_blast(query_fasta_path=input_fasta, blast_task='megablast', db_path=ref_db,
-                           db_type='nucl', min_cov=min_cov, min_ident=min_ident, evalue=evalue,
-                          blast_outfile=blast_results_file,
-                             num_threads=num_threads)
-    if os.path.getsize(blast_results_file) == 0:
-        return dict()
-
-    blast_df = BlastReader(blast_results_file).df
-    blast_df = blast_df.loc[blast_df['length'] >= min_length]
-    blast_df = blast_df.loc[blast_df['pident'] >= min_ident]
-    blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
-    blast_df = blast_df.loc[blast_df['qcovhsp'] >= 25]
-    blast_df = fixStart(blast_df)
-    blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
-    blast_df = blast_df.reset_index(drop=True)
-
-    contig_list = dict()
-    for index, row in blast_df.iterrows():
-        row['qseqid'] = str(row['qseqid'])
-        if not row['qseqid'] in contig_list:
-            contig_list[str(row['qseqid'])] = {'id': row['sseqid'], 'score': row['bitscore'], 'contig_start': row['sstart'],
-                                          'contig_end': row['send']}
-        else:
-            if contig_list[row['qseqid']]['score'] > row['bitscore']:
-                contig_list[row['qseqid']] = {'id': row['sseqid'], 'score': row['bitscore'],
-                                              'contig_start': row['sstart'], 'contig_end': row['send']}
-
-    return contig_list
-
-
-def getRepliconContigs(blast_df):
-    contigs = dict()
-    if isinstance(blast_df,dict) or blast_df is None:
-        return contigs
-    for index, row in blast_df.iterrows():
-        contig_id = str(row['sseqid'])
-        ident = row['pident']
-        start = row['sstart']
-        end = row['send']
-        hit_id = str(row['qseqid'])
-        coverage = row['qcovs']
-        if not contig_id in contigs:
-            contigs[contig_id] = dict()
-        contigs[contig_id][hit_id] = {'id': hit_id, 'ident': ident, 'start': start, 'end': end, 'coverage': coverage,
-                                      'length': abs(end - start)}
-    return contigs
 
 def fix_fasta_header(in_fasta, out_fasta):
     ids = []
@@ -913,74 +885,6 @@ def init_console_logger(lvl=2):
 
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
     return logging.getLogger(__name__)
-
-
-def run_mob_typer(plasmid_file_abs_path, out_file, mash_db,replicon_ref,plasmid_meta,mob_ref,mpf_ref,plasmid_orit, num_threads=1):
-    mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
-
-    logger = logging.getLogger(__name__)
-    logger.info("Launching mob_typer to type recently reconstructed plasmid {}".format(plasmid_file_abs_path))
-
-    outdir = os.path.dirname(plasmid_file_abs_path)
-
-    log_file = os.path.join(outdir,"mob-typer-stdout.txt")
-    err_file = os.path.join(outdir, "mob-typer-stderr.txt")
-
-    log = open(log_file,'w')
-    err = open(err_file,'w')
-
-
-    p = Popen([sys.executable, mob_typer_path,
-                '--infile', plasmid_file_abs_path,
-                '--out_file', out_file,
-                '--plasmid_meta',plasmid_meta,
-                '--plasmid_mash_db',mash_db,
-                '--plasmid_replicons',replicon_ref,
-                '--plasmid_mob',mob_ref,
-                '--plasmid_mpf',mpf_ref,
-                '--plasmid_orit', plasmid_orit,
-                '--keep_tmp',
-                '--num_threads', str(num_threads)],
-                  stdout=log,
-                  stderr=err, universal_newlines=True
-                  )
-
-    (stdout, stderr) = p.communicate()
-    return_code = p.wait()
-    err.close()
-    log.close()
-
-    if return_code == 1:
-        logger.error("Mob_typer return code {}".format(return_code))
-        raise Exception("MOB_typer could not type {} please check log files for details: {} , {} ".format(plasmid_file_abs_path,log_file,err_file))
-
-    mob_typer_report_file = os.path.join(outdir,"mobtyper_{}_report.txt".format(os.path.splitext(os.path.basename(plasmid_file_abs_path))[0]))
-    if os.path.exists(out_file):
-        logger.info("Typing plasmid {}".format(os.path.basename(plasmid_file_abs_path)))
-        if os.path.getsize(out_file) == 0:
-            logger.error(
-                "File {} is empty. Perhaps there is an issue with mob_typer or some dependencies are missing (e.g. ete3)".format(
-                    mob_typer_report_file))
-            return ''
-
-        df = pd.read_csv(out_file,header=0,sep="\t", encoding='utf8')
-        row = df.iloc[0].to_list()
-        for i in range(0,len(row)):
-            r = row[i]
-            if isinstance(r, str):
-
-                row[i] = r.encode('utf-8', errors="ignore").decode("utf-8", errors="ignore")
-                printable = set(string.printable)
-                row[i] = ''.join(filter(lambda x: x in printable, row[i]))
-            else:
-                row[i] = str(r)
-
-        mob_typer_results = "\t".join(str(v) for v in row)
-        os.remove(log_file)
-        os.remove(err_file)
-        return mob_typer_results
-    else:
-        logger.error("File {} does not exist. Perhaps there is an issue with the mob_typer or some dependencies are missing (e.g. ete3)".format(mob_typer_report_file))
 
 
 def writeReport(data_list,header,outfile):
@@ -1224,10 +1128,12 @@ def identify_biomarkers(contig_info,fixed_fasta,tmp_dir,min_length,logging,
     rep_blast_df = BlastReader(replicon_blast_results, logging=logging).df
     if len(rep_blast_df) > 0:
         rep_blast_df = rep_blast_df.drop(0)
-        rep_blast_df = fixStart(rep_blast_df).sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
-        rep_blast_df = recursive_filter_overlap_records(rep_blast_df, 5, 'sseqid', 'sstart', 'send',
-                                  'bitscore')
+        rep_blast_df = fixStart(rep_blast_df)
 
+        rep_blast_df = remove_split_hits(rep_blast_df,'qseqid','sseqid','sstart','send','bitscore').sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
+
+
+        rep_blast_df = recursive_filter_overlap_records(rep_blast_df, 5, 'sseqid', 'sstart', 'send','bitscore')
 
         contig_info = add_biomarker_results(biomarker_df=rep_blast_df, df_column_name_biomarker='qseqid', df_column_name_seqid='sseqid', contig_info=contig_info,
                               contig_info_type_key='rep_type(s)', contig_info_acs_key='rep_type_accession(s)', delimeter='|')
