@@ -641,6 +641,7 @@ def remove_split_hits(blast_df,query_col,contig_id_col,contig_start_col,contig_e
         contig_start = int(row[contig_start_col])
         contig_end = int(row[contig_end_col])
         length = row['slen']
+        score = row['bitscore']
         if contig_start == 1 or contig_end == length:
 
             if query_id not in hits:
@@ -650,9 +651,9 @@ def remove_split_hits(blast_df,query_col,contig_id_col,contig_start_col,contig_e
                 hits[query_id][contig_id] = {'start':{},'end':{}}
 
             if contig_start == 1:
-                hits[query_id][contig_id]['start'][index] = row
+                hits[query_id][contig_id]['start'][index] = {'start':contig_start,'end':contig_end,'score':score}
             else:
-                hits[query_id][contig_id]['end'][index] = row
+                hits[query_id][contig_id]['end'][index] = {'start':contig_start,'end':contig_end,'score':score}
 
     filter = []
 
@@ -670,13 +671,13 @@ def remove_split_hits(blast_df,query_col,contig_id_col,contig_start_col,contig_e
             top_side = ''
 
             for index in start_keys:
-                score = positions['start'][index][bitscore_col]
+                score = positions['start'][index]['score']
                 if score > max_bitscore:
                     max_bitscore = score
                     top_side = 'start'
 
             for index in end_keys:
-                score = positions['end'][index][bitscore_col]
+                score = positions['end'][index]['score']
                 if score > max_bitscore:
                     max_bitscore = score
                     top_side = 'end'
@@ -686,7 +687,7 @@ def remove_split_hits(blast_df,query_col,contig_id_col,contig_start_col,contig_e
             else:
                 filter += end_keys
 
-    blast_df = blast_df[~blast_df.sseqid.isin(filter)]
+    blast_df = blast_df[~blast_df.index.isin(filter)]
     blast_df.reset_index(drop=True)
     return blast_df
 
@@ -1129,9 +1130,7 @@ def identify_biomarkers(contig_info,fixed_fasta,tmp_dir,min_length,logging,
     if len(rep_blast_df) > 0:
         rep_blast_df = rep_blast_df.drop(0)
         rep_blast_df = fixStart(rep_blast_df)
-
         rep_blast_df = remove_split_hits(rep_blast_df,'qseqid','sseqid','sstart','send','bitscore').sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
-
 
         rep_blast_df = recursive_filter_overlap_records(rep_blast_df, 5, 'sseqid', 'sstart', 'send','bitscore')
 
@@ -1151,6 +1150,7 @@ def identify_biomarkers(contig_info,fixed_fasta,tmp_dir,min_length,logging,
     mob_blast_df = BlastReader(mob_blast_results,logging).df
     if len(mob_blast_df) > 0:
         mob_blast_df = fixStart(mob_blast_df.drop(0).sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False]))
+        mob_blast_df = remove_split_hits(mob_blast_df, 'qseqid', 'sseqid', 'sstart', 'send', 'bitscore').sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
         mob_blast_df = recursive_filter_overlap_records(mob_blast_df, 5, 'sseqid', 'sstart', 'send',
                                   'bitscore')
 
@@ -1171,6 +1171,8 @@ def identify_biomarkers(contig_info,fixed_fasta,tmp_dir,min_length,logging,
     if len(mpf_blast_df) > 0:
         mpf_blast_df = fixStart(mpf_blast_df.drop(0)).sort_values(['sseqid', 'sstart', 'send', 'bitscore'],
                                                           ascending=[True, True, True, False])
+        mpf_blast_df = remove_split_hits(mpf_blast_df, 'qseqid', 'sseqid', 'sstart', 'send', 'bitscore').sort_values(
+            ['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
         mpf_blast_df = recursive_filter_overlap_records(mpf_blast_df, 5, 'sseqid', 'sstart', 'send',
                                   'bitscore')
 
