@@ -367,7 +367,6 @@ def update_existing_db(new_seq_info,existing_seq_info,unique_new_seq,ref_mashdb,
         fasta_file = os.path.join(tmp_dir,"{}.fasta".format(id))
 
         # Run mash to get distances to the reference
-        out_dir = os.path.dirname(fasta_file)
         mashObj = mash()
         mashObj.mashsketch(fasta_file, output_path=fasta_file, sketch_ind=True, num_threads=1, kmer_size=21,
                            sketch_size=1000)
@@ -750,114 +749,6 @@ def main():
 
 
 
-
-
-
-
-
-'''
-
-def main():
-    args = parse_args()
-    logging = init_console_logger(3)
-    logging.info('Running Mob-Suite Clustering toolkit v. {}'.format(__version__))
-    logging.info('Processing fasta file {}'.format(args.infile))
-    logging.info('Analysis directory {}'.format(args.outdir))
-
-    input_fasta = args.infile
-    if not os.path.isfile(input_fasta):
-        logging.error('Error, input fasta specified does not exist: {}'.format(input_fasta ))
-        sys.exit()
-
-    out_dir = args.outdir
-    num_threads = args.num_threads
-    if not os.path.isdir(out_dir):
-        os.mkdir(out_dir, 0o755)
-    tmp_dir = os.path.join(out_dir, '__tmp')
-    if not os.path.isdir(tmp_dir):
-        os.mkdir(tmp_dir, 0o755)
-
-    mode = str(args.mode).lower()
-
-    fixed_fasta = os.path.join(tmp_dir,"fixed.fasta")
-
-    fix_fasta_header(input_fasta, fixed_fasta)
-    fastaSeqStats = calcFastaStatsIndividual(fixed_fasta)
-
-    if mode not in ('update','build'):
-        logging.error('Error you have not entered a valid mode of build or update, you entered: {}'.format(mode))
-        print(('Error you have not entered a valid mode of build or update, you entered: {}'.format(mode)))
-        sys.exit()
-
-    header = ('id', 0.06, 0.025)
-    tmp_cluster_file = os.path.join(out_dir, 'clusters.txt')
-    tmp_ref_fasta_file = os.path.join(tmp_dir, 'references_tmp.fasta')
-    update_fasta = os.path.join(out_dir, 'references_updated.fasta')
-
-    if mode == 'update':
-        if args.ref_cluster_file is None:
-            logging.error('Reference fasta file must be specified, please check help for parameter reference')
-            sys.exit()
-
-        ref_fasta = args.ref_fasta_file
-
-        if not os.path.isfile(ref_fasta ):
-            logging.error('Reference fasta file specified does not exist: {}'.format(ref_fasta))
-            sys.exit()
-
-        if args.ref_cluster_file is None:
-            logging.error('Reference cluster file must be specified, please check help for parameter reference')
-            sys.exit()
-
-        ref_cluster_file = args.ref_cluster_file
-
-        if not os.path.isfile(ref_cluster_file):
-            logging.error('Reference cluster file specified does not exist: {}'.format(ref_cluster_file))
-            sys.exit()
-
-        if args.ref_mash_db is None:
-            logging.error('Reference mash sketch file must be specified, please check help for parameter reference')
-            sys.exit()
-
-        ref_mash_db = args.ref_mash_db
-        if not os.path.isfile(ref_mash_db):
-            logging.error('Reference mash file specified does not exist: {}'.format(ref_mash_db))
-            sys.exit()
-
-        logging.info('Running mob-cluster in update mode with input file: {}'.format(input_fasta))
-        logging.info('Running mob-cluster in update mode with output directory: {}'.format(out_dir))
-        logging.info('Running mob-cluster in update mode on reference fasta file: {}'.format(ref_fasta))
-        logging.info('Reading previous cluster reference assignments from : {}'.format(ref_cluster_file))
-
-        shutil.copy(ref_cluster_file, tmp_cluster_file)
-        shutil.copy(ref_fasta, tmp_ref_fasta_file)
-        update_existing(input_fasta, tmp_dir, ref_mash_db, tmp_cluster_file, header, tmp_ref_fasta_file, update_fasta)
-
-        if args.overwrite:
-            shutil.move(update_fasta,ref_fasta)
-            shutil.move(tmp_cluster_file,ref_cluster_file)
-            mash_db_file = "{}.msh".format(input_fasta)
-            mObj = mash()
-            mObj.mashsketch(input_fasta, mash_db_file, num_threads=num_threads)
-            blast_runner = BlastRunner(ref_fasta, '')
-            blast_runner.makeblastdb(ref_fasta, 'nucl')
-    else:
-        mashObj = mash()
-        mashObj.mashsketch(input_fasta,input_fasta+".msh",num_threads=num_threads)
-        distance_matrix_file = os.path.join(tmp_dir,'mash_dist_matrix.txt')
-        mashfile_handle = open(distance_matrix_file,'w',encoding="utf-8")
-
-        mashObj.run_mash(input_fasta+'.msh', input_fasta+'.msh', mashfile_handle,table=True,num_threads=num_threads)
-        clust_assignments = build_cluster_db(distance_matrix_file, (0.06, 0.025))
-        writeClusterAssignments(tmp_cluster_file, header, clust_assignments)
-        clust_dict = selectCluster(clust_assignments, 0)
-        shutil.copy(input_fasta, tmp_ref_fasta_file)
-        updateFastaFile(tmp_ref_fasta_file ,update_fasta, clust_dict)
-
-
-
-
-'''
 
 
 # call main function

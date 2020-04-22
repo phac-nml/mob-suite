@@ -285,6 +285,7 @@ def main():
         repetitive_mask_file = args.repetitive_mask
         mpf_ref = args.plasmid_mpf
         plasmid_orit = args.plasmid_orit
+        verify_init(logger, database_dir)
     else:
         mob_ref = os.path.join(database_dir, 'mob.proteins.faa')
         mash_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas.msh')
@@ -294,7 +295,7 @@ def main():
         mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
         plasmid_orit = os.path.join(database_dir, 'orit.fas')
 
-    verify_init(logger, database_dir)
+
 
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')

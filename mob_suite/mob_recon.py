@@ -841,7 +841,6 @@ def main():
     out_dir = args.outdir
     num_threads = args.num_threads
     tmp_dir = os.path.join(out_dir, '__tmp')
-    file_id = os.path.basename(input_fasta)
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
     chromosome_file = os.path.join(out_dir, 'chromosome.fasta')
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')
@@ -866,6 +865,7 @@ def main():
         repetitive_mask_file = args.repetitive_mask
         mpf_ref = args.plasmid_mpf
         plasmid_orit = args.plasmid_orit
+        verify_init(logger, database_dir)
     else:
         plasmid_ref_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas')
         mob_ref = os.path.join(database_dir, 'mob.proteins.faa')

@@ -291,7 +291,7 @@ def hostrange(replion_types, relaxase_types, mob_cluster_id,ncbi,lit):
 
 
 
-def blastn(input_fasta, blastdb, min_ident, min_cov, evalue, min_length, out_dir, blast_results_file,logging,seq_filterfile=None,num_threads=1,max_length=400000):
+def blastn(input_fasta, blastdb, min_ident, min_cov, evalue, min_length, out_dir, blast_results_file,logging,seq_filterfile=None,num_threads=1,max_length=400000,min_hsp_cov=1):
 
     blast_runner = BlastRunner(input_fasta, out_dir)
     blast_runner.run_blast(query_fasta_path=input_fasta, blast_task='megablast', db_path=blastdb,
@@ -308,6 +308,7 @@ def blastn(input_fasta, blastdb, min_ident, min_cov, evalue, min_length, out_dir
     blast_df = blast_df.loc[blast_df['length'] >= min_length]
     blast_df = blast_df.loc[blast_df['qlen'] <= max_length]
     blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
+    blast_df = blast_df.loc[blast_df['qcovhsp'] >= min_hsp_cov]
     blast_df = blast_df.loc[blast_df['evalue'] <= evalue]
     blast_df = blast_df.loc[blast_df['pident'] >= min_ident]
 
@@ -1123,7 +1124,7 @@ def identify_biomarkers(contig_info,fixed_fasta,tmp_dir,min_length,logging,
     #blast replicon database
     logging.info("Blasting replicon sequences {} against {}".format(replicon_ref,fixed_fasta))
     blastn(input_fasta=replicon_ref,blastdb=fixed_fasta,min_ident=min_rep_ident,min_cov=min_rep_cov,evalue=min_rep_evalue,min_length=80,out_dir=tmp_dir,
-           blast_results_file=replicon_blast_results,num_threads=num_threads,logging=logging)
+           blast_results_file=replicon_blast_results,num_threads=num_threads,logging=logging,min_hsp_cov=30)
 
     logging.info("Filtering replicon blast results {} ".format(replicon_blast_results))
     rep_blast_df = BlastReader(replicon_blast_results, logging=logging).df
