@@ -111,7 +111,7 @@ def parse_args():
 
     parser.add_argument('--min_con_cov', type=int, required=False,
                         help='Minimum percentage coverage of assembly contig by the plasmid reference database to be considered',
-                        default=70)
+                        default=60)
 
     parser.add_argument('--min_rpp_cov', type=int, required=False,
                         help='Minimum percentage coverage of contigs by repetitive elements',
@@ -435,8 +435,7 @@ def calc_cluster_scores(reference_hit_coverage):
 
     return OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
 
-def get_contig_link_counts(reference_hit_coverage):
-    cluster_contig_links = get_seq_links(reference_hit_coverage)
+def get_contig_link_counts(reference_hit_coverage,cluster_contig_links):
     cluster_scores = calc_cluster_scores(reference_hit_coverage)
 
     contig_link_counts = {}
@@ -453,7 +452,7 @@ def get_contig_link_counts(reference_hit_coverage):
     for contig_id in contig_clust_assoc:
         contig_clust_assoc[contig_id] = OrderedDict(sorted(iter(contig_clust_assoc[contig_id].items()), key=lambda x: x[1], reverse=True))
 
-    contig_link_counts = OrderedDict(sorted(iter(contig_link_counts.items()), key=lambda x: x[1], reverse=False))
+    return OrderedDict(sorted(iter(contig_link_counts.items()), key=lambda x: x[1], reverse=False))
 
 def get_contigs_by_key_value(contig_info,column_key,reasons):
     filtered = []
@@ -495,7 +494,45 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
 
 
     cluster_contig_links = get_seq_links(contig_reference_coverage,reference_sequence_meta)
+    contig_link_counts = get_contig_link_counts(reference_hit_coverage,cluster_contig_links)
     cluster_scores = calc_cluster_scores(reference_hit_coverage)
+
+    contig_cluster_scores = {}
+
+    for clust_id in cluster_contig_links:
+        for contig_id in cluster_contig_links[clust_id]:
+            score = cluster_scores[clust_id]
+            if not contig_id in contig_cluster_scores:
+                contig_cluster_scores[contig_id] = {}
+            contig_cluster_scores[contig_id][clust_id] = float(score)
+
+
+    for contig_id in contig_cluster_scores:
+        contig_cluster_scores[contig_id] = OrderedDict(sorted(iter(contig_cluster_scores[contig_id].items()), key=lambda x: x[1], reverse=True))
+
+    group_membership = {}
+    for c_id in contig_link_counts:
+        count = contig_link_counts[c_id]
+        if count > 5:
+            break
+        scores =  contig_cluster_scores[c_id]
+        for clust_id in scores:
+            score = scores[clust_id]
+
+            for contig_id in cluster_contig_links[clust_id]:
+                if contig_id not in group_membership:
+                    group_membership[contig_id] = clust_id
+                    # update cluster scores to remove contigs already assigned
+                    if contig_id in contig_reference_coverage:
+                        for ref_hit_id in contig_reference_coverage[contig_id]:
+                            if ref_hit_id in reference_hit_coverage:
+                                reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][
+                                    ref_hit_id]
+                        del (contig_reference_coverage[contig_id])
+            break
+
+
+
     clusters_with_biomarkers = {}
     for clust_id in cluster_contig_links:
         contigs = cluster_contig_links[clust_id]
@@ -505,7 +542,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                     clusters_with_biomarkers[clust_id] = []
                 clusters_with_biomarkers[clust_id].append(contig_id)
 
-    group_membership = {}
+
 
     max = len(cluster_scores)
     iteration = 0
@@ -521,7 +558,6 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
 
         #assign contigs to clusters
         for contig_id in contigs:
-
             if contig_id not in group_membership:
                 group_membership[contig_id] = clust_id
                 #update cluster scores to remove contigs already assigned
