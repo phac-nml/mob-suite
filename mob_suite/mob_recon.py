@@ -779,7 +779,7 @@ def filter_contig_df_by_index(indicies,contig_blast_df,reference_hit_coverage):
             reference_hit_coverage[pID]['score'] -= score
             reference_hit_coverage[pID]['covered_bases'] -= aln_length
         else:
-            print("{} not found".format(pID))
+            logging.warning("{} not found".format(pID))
 
     return reference_hit_coverage
 
