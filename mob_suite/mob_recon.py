@@ -482,6 +482,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
     relaxase_contigs = get_contigs_with_value_set(contig_info, 'relaxase_type(s)')
 
 
+
     contig_list = list(contig_reference_coverage.keys())
 
     unassigned_contigs = {}
@@ -510,7 +511,41 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
     for contig_id in contig_cluster_scores:
         contig_cluster_scores[contig_id] = OrderedDict(sorted(iter(contig_cluster_scores[contig_id].items()), key=lambda x: x[1], reverse=True))
 
+    #find plasmids
+    high_confidence_references = {}
+    for ref_id in reference_hit_coverage:
+        data = reference_hit_coverage[ref_id]
+        score = data['score']
+        coverage = data['covered_bases']/data['length']
+
+        if coverage > 0.8:
+            high_confidence_references[ref_id] = score
+
+    #Assign contigs according to highly coverged plasmids
+    high_confidence_references = OrderedDict(sorted(iter(high_confidence_references.items()), key=lambda x: x[1], reverse=True))
+
     group_membership = {}
+    for ref_id in high_confidence_references:
+        if not ref_id in reference_sequence_meta:
+            continue
+        clust_id = reference_sequence_meta[ref_id]['primary_cluster_id']
+        data = reference_hit_coverage[ref_id]
+        contigs = data['contigs']
+        for contig_id in contigs:
+            if contig_id not in group_membership:
+                group_membership[contig_id] = clust_id
+                # update cluster scores to remove contigs already assigned
+                if contig_id in contig_reference_coverage:
+                    for ref_hit_id in contig_reference_coverage[contig_id]:
+                        if ref_hit_id in reference_hit_coverage:
+                            reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][
+                                ref_hit_id]
+                    del (contig_reference_coverage[contig_id])
+
+
+
+
+
     for c_id in contig_link_counts:
         count = contig_link_counts[c_id]
         if count > 5:
