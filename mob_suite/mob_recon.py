@@ -543,9 +543,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                     del (contig_reference_coverage[contig_id])
 
 
-
-
-
+    #Assign low linkage contigs first
     for c_id in contig_link_counts:
         count = contig_link_counts[c_id]
         if count > 5:
@@ -665,7 +663,64 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                     contig_info[contig_id]['primary_cluster_id'] = ''
                     contig_info[contig_id]['molecule_type'] = 'chromosome'
 
+    return evaluate_contig_assignments(contig_info,primary_distance,secondary_distance)
+
+
+def evaluate_contig_assignments(contig_info,primary_distance,secondary_distance):
+    cluster_membership = {}
+    biomarker_clusters = {}
+    circular_contigs = []
+    for contig_id in contig_info:
+        data = contig_info[contig_id]
+        cluster_id = data['primary_cluster_id']
+
+        if cluster_id == '':
+            continue
+
+        if data['circularity_status'] == 'circular':
+            circular_contigs.append(contig_id)
+
+        if data['rep_type(s)'] != '' or data['relaxase_type(s)']:
+            biomarker_clusters[cluster_id] = ''
+
+        if not cluster_id in cluster_membership:
+            cluster_membership[cluster_id] = []
+
+        cluster_membership[cluster_id].append(contig_id)
+
+
+    for contig_id in contig_info:
+        data = contig_info[contig_id]
+        cluster_id = data['primary_cluster_id']
+
+        if cluster_id == '':
+            continue
+
+        if cluster_id not in biomarker_clusters:
+            if contig_id in circular_contigs:
+                continue
+            if data['mash_neighbor_distance'] > primary_distance:
+                contig_info[contig_id]['primary_cluster_id'] = ''
+                contig_info[contig_id]['secondary_cluster_id'] = ''
+                contig_info[contig_id]['molecule_type'] = 'chromosome'
+                contig_info[contig_id]['mash_nearest_neighbor'] = ''
+                contig_info[contig_id]['mash_neighbor_distance'] = ''
+                contig_info[contig_id]['mash_neighbor_identification'] = ''
+
     return contig_info
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def get_reconstructed_cluster_dists(mash_db,mash_distance,cluster_contig_links,out_dir,contig_seqs,num_threads=1):
