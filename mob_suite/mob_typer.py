@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
 import logging
-import os, re, pandas, collections, shutil, sys, time, tempfile
+import os, re, shutil, sys, tempfile
 from argparse import (ArgumentParser, FileType)
-from ete3 import NCBITaxa
 from mob_suite.version import __version__
 import mob_suite.mob_init
 from collections import OrderedDict
 from operator import itemgetter
-from mob_suite.blast import BlastReader,BlastRunner
+from mob_suite.blast import BlastRunner
 from mob_suite.wrappers import mash
 from mob_suite.utils import fix_fasta_header, \
     calcFastaStats, \
@@ -155,65 +154,6 @@ def initMOBTyperReportTemplate(header):
     for i in header:
         data[i] = '-'
     return data
-
-
-def getBioMarkerContigs(contig_dict):
-
-    biomarkers = {}
-
-    for contig_id in contig_dict:
-        if not contig_id in biomarkers:
-            biomarkers[contig_id] = {'acs':[],'types':[]}
-        hits = contig_dict[contig_id]
-
-        if len(hits)== 0:
-            continue
-
-        for hit in hits:
-            info = hit.split("|")
-            biomarkers[contig_id]['acs'].append(info[0])
-            biomarkers[contig_id]['types'].append(info[1])
-
-    return  biomarkers
-
-
-
-
-
-def mergeBiomarkers(biomarkers,sample_id):
-    acs = []
-    types = []
-    tmp_dict = {}
-    for contig_id in biomarkers:
-        acs = acs + biomarkers[contig_id]['acs']
-        types = types + biomarkers[contig_id]['types']
-
-    tmp_dict[sample_id] = {}
-    tmp_dict[sample_id]['acs'] = acs
-    tmp_dict[sample_id]['types'] = types
-
-    return  tmp_dict
-
-def predict_mobility(biomarker_dict):
-
-
-    for sample_id in biomarker_dict:
-        mobility = 'non-mobilizable'
-        biomarkers = biomarker_dict[sample_id]
-        if 'found_mob' in biomarkers and 'found_mpf' and 'found_orit':
-            if len(biomarkers['found_mob']['acs']) > 0:
-                if len(biomarkers['found_mpf']['acs']) > 0:
-                    mobility = 'conjugative'
-                else:
-                    mobility = 'mobilizable'
-            elif len(biomarkers['found_orit']['acs']) > 0:
-                mobility = 'mobilizable'
-        biomarker_dict[sample_id]['predicted_mobility'] = mobility
-
-    return biomarker_dict
-
-
-
 
 
 
@@ -427,9 +367,6 @@ def main():
         sys.exit()
 
     #run individual marker blasts
-    # blast replicon database
-
-    #Blast reference databases
 
     contig_info = identify_biomarkers(contig_info, fixed_fasta, tmp_dir, 25, logging, \
                         replicon_ref, min_rep_ident, min_rep_cov, min_rep_evalue, replicon_blast_results, \

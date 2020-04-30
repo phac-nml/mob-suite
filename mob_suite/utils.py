@@ -2,9 +2,9 @@ from Bio import SeqIO
 from Bio.SeqUtils import GC
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
-import logging, os, shutil, sys, operator,re, time
-from subprocess import Popen, PIPE, STDOUT
-import shutil,sys, logging, hashlib, string, random
+import os, re, time
+from subprocess import Popen, PIPE
+import shutil,sys, logging, hashlib, random
 import pandas as pd
 from collections import OrderedDict
 from operator import itemgetter
@@ -514,19 +514,20 @@ def get_data_associated_with_key(look_up_key,look_up_value,value_key,dictionary)
 def read_sequence_info(file,header):
     if os.path.getsize(file) == 0:
         return dict()
-    data = pd.read_csv(file, sep='\t', header=0,names=header,index_col=0)
+    data = pd.read_csv(file, sep='\t', header=0,names=header)
     sequences = dict()
     for index, row in data.iterrows():
-        sequences[index] = {}
+        sample_id = row['sample_id']
+        sequences[sample_id] = {}
         for i in range(0,len(header)):
             if header[i] == 'id':
                 v = index
             else:
                 if str(row[header[i]]) == 'nan' :
-                    v = ''
+                    v = '-'
                 else:
                     v = row[header[i]]
-            sequences[index][header[i]] = v
+            sequences[sample_id][header[i]] = v
 
     return sequences
 
@@ -780,51 +781,6 @@ def fix_fasta_header(in_fasta, out_fasta):
     return  ids
 
 
-def getMashBestHit(mash_results):
-    score = 1
-    matches = 0
-    top_hit = ''
-    top_hit_size = 0
-    seqid = ''
-
-    for line in mash_results:
-        row = line.strip("\n").split("\t")
-
-        if float(score) > float(row[2]):
-            seqid = str(row[0])
-            score = row[2]
-            matches = row[4]
-
-    return {
-        'top_hit': seqid,
-        'mash_hit_score': float(score),
-        'top_hit_size': top_hit_size,
-    }
-
-def getMashBestHitMultiSeq(mash_results):
-
-    hits = {}
-
-    for line in mash_results:
-        row = line.strip("\n").split("\t")
-        seqid = str(row[0])
-        query_id = str(row[1])
-        score = float(row[2])
-
-        if query_id not in hits:
-            hits[query_id] = {
-                'top_hit': seqid,
-                'mash_hit_score': float(score),
-            }
-        else:
-            if hits[query_id]['mash_hit_score'] > score:
-                hits[query_id]['top_hit'] = seqid
-                hits[query_id]['mash_hit_score'] = score
-
-
-    return hits
-
-
 ''''
     Accepts fasta file and returns size, number of sequence records and gc %
 '''
@@ -897,7 +853,10 @@ def writeReport(data_list,header,outfile):
             row = []
             for h in header:
                 if h in data:
-                    row.append(str(data[h]))
+                    if data[h] != '':
+                        row.append(str(data[h]))
+                    else:
+                        row.append('-')
                 else:
                     row.append("-")
             fh.write("{}\n".format("\t".join(row)))

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from mob_suite.version import __version__
 from collections import OrderedDict
-import logging, os, shutil, sys, operator,re
+import logging, os, shutil, sys, re
 import pandas as pd
-from argparse import (ArgumentParser, FileType)
+from argparse import (ArgumentParser)
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 from mob_suite.wrappers import mash
@@ -31,27 +31,21 @@ from mob_suite.utils import \
     write_fasta_dict, \
     filter_overlaping_records, \
     fix_fasta_header, \
-    getMashBestHit, \
     verify_init, \
     check_dependencies, \
     read_sequence_info, \
     fixStart, \
     calc_md5, \
-    sort_biomarkers, \
     GC, \
-    recursive_filter_overlap_records, \
-    determine_mpf_type, \
     ETE3_db_status_check, \
     writeReport, \
     dict_from_alt_key_list, \
     read_file_to_dict, \
     blastn, \
-    tblastn, \
-    add_biomarker_results, \
     identify_biomarkers, \
     build_mobtyper_report, \
-    parseMashScreen, \
     parseMash
+
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
@@ -470,7 +464,6 @@ def get_contigs_with_value_set(contig_info,column_key):
 
 def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_info,out_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads=1):
 
-    #reference_feature_associations = calc_feature_associations(reference_sequence_meta)
 
     #Individual reference sequence coverage and overall score along with contig associations
     reference_hit_coverage = calc_hit_coverage(contig_blast_df, 1000, reference_sequence_meta)
@@ -511,7 +504,33 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
     for contig_id in contig_cluster_scores:
         contig_cluster_scores[contig_id] = OrderedDict(sorted(iter(contig_cluster_scores[contig_id].items()), key=lambda x: x[1], reverse=True))
 
-    #find plasmids
+
+    black_list_clusters = {}
+    group_membership = {}
+    #assign circular contigs with replicon or relaxase first
+    for contig_id in circular_contigs:
+        if contig_id in repetitive_contigs:
+            continue
+        if contig_id in replicon_contigs or contig_id in relaxase_contigs:
+            if contig_id not in contig_cluster_scores:
+                continue
+            for clust_id in contig_cluster_scores[contig_id]:
+
+                if contig_id not in group_membership:
+                    black_list_clusters[clust_id] = contig_id
+                    group_membership[contig_id] = clust_id
+                    # update cluster scores to remove contigs already assigned
+                    if contig_id in contig_reference_coverage:
+                        for ref_hit_id in contig_reference_coverage[contig_id]:
+                            if ref_hit_id in reference_hit_coverage:
+                                reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][
+                                    ref_hit_id]
+                        del (contig_reference_coverage[contig_id])
+                        break
+
+    cluster_scores = calc_cluster_scores(reference_hit_coverage)
+
+    #find plasmids well covered by contigs
     high_confidence_references = {}
     for ref_id in reference_hit_coverage:
         data = reference_hit_coverage[ref_id]
@@ -524,11 +543,12 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
     #Assign contigs according to highly coverged plasmids
     high_confidence_references = OrderedDict(sorted(iter(high_confidence_references.items()), key=lambda x: x[1], reverse=True))
 
-    group_membership = {}
     for ref_id in high_confidence_references:
         if not ref_id in reference_sequence_meta:
             continue
         clust_id = reference_sequence_meta[ref_id]['primary_cluster_id']
+        if clust_id in black_list_clusters:
+            continue
         data = reference_hit_coverage[ref_id]
         contigs = data['contigs']
         for contig_id in contigs:
@@ -541,7 +561,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                             reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][
                                 ref_hit_id]
                     del (contig_reference_coverage[contig_id])
-
+    cluster_scores = calc_cluster_scores(reference_hit_coverage)
 
     #Assign low linkage contigs first
     for c_id in contig_link_counts:
@@ -551,6 +571,8 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
         scores =  contig_cluster_scores[c_id]
         for clust_id in scores:
             score = scores[clust_id]
+            if clust_id in black_list_clusters:
+                continue
 
             for contig_id in cluster_contig_links[clust_id]:
                 if contig_id not in group_membership:
@@ -575,8 +597,6 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                     clusters_with_biomarkers[clust_id] = []
                 clusters_with_biomarkers[clust_id].append(contig_id)
 
-
-
     max = len(cluster_scores)
     iteration = 0
     while iteration < max:
@@ -600,7 +620,6 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                             reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][ref_hit_id]
                     del(contig_reference_coverage[contig_id])
         cluster_scores = calc_cluster_scores(reference_hit_coverage)
-
     cluster_links = {}
     for contig_id in group_membership:
         clust_id = group_membership[contig_id]
@@ -609,6 +628,14 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
         cluster_links[clust_id].append(contig_id)
 
     recon_cluster_dists = get_reconstructed_cluster_dists(mash_db,0.1,cluster_links,out_dir,contig_seqs,num_threads)
+    cluster_md5 = {}
+    for clust_id in cluster_contig_links:
+        contigs = cluster_contig_links[clust_id]
+        seq = []
+        for contig_id in contigs:
+            if contig_id in contig_seqs[contig_id]:
+                seq.append(contig_seqs[contig_id])
+        cluster_md5[clust_id] = calc_md5(''.join(seq))
 
     #get lowest distance cluster
     counter = 0
@@ -653,7 +680,7 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                     contig_info[contig_id]['secondary_cluster_id'] = reference_sequence_meta[top_ref_id]['secondary_cluster_id']
             else:
                 if len(contained_repettive) != len(cluster_links[clust_id]) and clust_id in clusters_with_biomarkers:
-                    contig_info[contig_id]['primary_cluster_id'] = "novel_{}".format(counter)
+                    contig_info[contig_id]['primary_cluster_id'] = "novel_{}".format(cluster_md5[clust_id])
                     increment = True
                     contig_info[contig_id]['molecule_type'] = 'plasmid'
                     contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
@@ -664,7 +691,6 @@ def assign_contigs_to_clusters(contig_blast_df,reference_sequence_meta,contig_in
                     contig_info[contig_id]['molecule_type'] = 'chromosome'
 
     return evaluate_contig_assignments(contig_info,primary_distance,secondary_distance)
-
 
 def evaluate_contig_assignments(contig_info,primary_distance,secondary_distance):
     cluster_membership = {}
@@ -708,19 +734,6 @@ def evaluate_contig_assignments(contig_info,primary_distance,secondary_distance)
                 contig_info[contig_id]['mash_neighbor_identification'] = ''
 
     return contig_info
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def get_reconstructed_cluster_dists(mash_db,mash_distance,cluster_contig_links,out_dir,contig_seqs,num_threads=1):
@@ -855,7 +868,6 @@ def main():
     validate_args(args,logger)
 
     keep_tmp = args.keep_tmp
-    plasmid_files = []
     input_fasta = args.infile
     out_dir = args.outdir
     num_threads = args.num_threads
@@ -1152,6 +1164,46 @@ def main():
         contig_blast_df.reset_index(drop=True)
         logging.info("Assigning contigs to plasmid groups")
         contig_info = assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info,tmp_dir,contig_seqs,mash_db,primary_distance,secondary_distance,num_threads)
+
+    #Triage Novel plasmids with biomarkers but not enough similaririty for valid contig hits
+    for contig_id in contig_info:
+        data = contig_info[contig_id]
+        if data['circularity_status'] == 'circular' and data['repetitive_dna_id'] == '' and data['primary_cluster_id'] == '':
+            rep_types = data['rep_type(s)']
+            mob_types = data['relaxase_type(s)']
+
+            if rep_types == '' or mob_types == '':
+                continue
+            md5 = data['md5']
+            primary_clust_id = "{}".format(md5)
+            data['primary_cluster_id'] = "novel_{}".format(primary_clust_id)
+            data['secondary_cluster_id'] = ""
+            data['molecule_type'] = 'plasmid'
+            data['mash_nearest_neighbor'] = ''
+            data['mash_neighbor_distance'] = ''
+            data['mash_neighbor_identification'] = ''
+
+            cluster_dists = get_reconstructed_cluster_dists(mash_db, 0.1, {primary_clust_id:  [contig_id]}, out_dir, contig_seqs,num_threads)
+
+            for clust_id in cluster_dists:
+                fail = False
+                for top_ref_id in cluster_dists[clust_id]:
+                    lowest_dist = cluster_dists[clust_id][top_ref_id]
+                    if top_ref_id not in reference_sequence_meta:
+                        fail = True
+                        continue
+                    else:
+                        fail = False
+                        break
+                if fail:
+                    continue
+
+            if lowest_dist <= 0.1:
+                data['mash_nearest_neighbor'] = top_ref_id
+                data['mash_neighbor_distance'] = lowest_dist
+                data['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
+
+            contig_info[contig_id] = data
 
     results = []
     contig_memberships = {'chromosome':{},'plasmid':{}}

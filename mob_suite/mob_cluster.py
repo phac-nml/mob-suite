@@ -1,54 +1,24 @@
-import logging
-import os
-import shutil
-import sys
-import re
+import logging, os, shutil, sys, re, scipy
 from argparse import (ArgumentParser)
 from mob_suite.version import __version__
 import pandas as pd
-import scipy
 import scipy.cluster.hierarchy as sch
 from Bio import SeqIO
-import glob
+
 from scipy.cluster.hierarchy import fcluster
-from mob_suite.mob_typer import getRepliconContigs
 from mob_suite.blast import BlastRunner
 from mob_suite.utils import \
-    read_fasta_dict, \
-    calcFastaStatsIndividual, \
-    fix_fasta_header, \
     filterFastaByIDs, \
-    run_mob_typer, \
-    write_individual_fasta, \
-    replicon_blast, \
     check_dependencies,\
-    mob_blast, \
     read_sequence_info, \
-    dict_from_alt_key
+    dict_from_alt_key, \
+    read_file_to_dict, \
+    read_fasta_dict
 
 from mob_suite.wrappers import mash
 
-ACS_LETTER_VALUES = {
-                    'A':0, 'B':1, 'C':2, 'D':3, 'E':4, 'F':5, 'G':6, 'H':7, 'I':8, 'J':9,
-                    'K':10, 'L':11, 'M':12, 'N':13, 'O':14, 'P':15, 'Q':16, 'R':17, 'S':18,
-                    'T':19, 'U':20, 'V':21, 'W':22, 'X':23, 'Y':24, 'Z':25
-                     }
-
-ACS_VALUES_TO_LETTERS = {
-                        0:'A', 1:'B', 2:'C', 3:'D', 4:'E', 5:'F', 6:'G', 7:'H', 8:'I', 9:'J',
-                        10:'K', 11:'L', 12:'M', 13:'N', 14:'O', 15:'P', 16:'Q', 17:'R', 18:'S',
-                        19:'T', 20:'U', 21:'V', 22:'W', 23:'X', 24:'Y', 25:'Z'
-                        }
-
-
-MAX_ACS_VALUE = 650999
-ACS_FORMAT_VALUES = [26000,1000,1]
-
-MOB_CLUSTER_INFO_HEADER = ['id','size','gc_content','md5','organism','primary_cluster_id','primary_dist','secondary_cluster_id','secondary_dist',"rep_type(s)","rep_type_accession(s)","relaxase_type(s)","relaxase_type_accession(s)"]
-MOB_CLUSTER_MINIMAL_INFO = ['id','organism']
-
-
-LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+from mob_suite.constants import LOG_FORMAT, ACS_LETTER_VALUES, ACS_FORMAT_VALUES, ACS_VALUES_TO_LETTERS, MAX_ACS_VALUE, \
+    MOB_TYPER_REPORT_HEADER, MOB_CLUSTER_INFO_HEADER
 
 def init_console_logger(lvl):
     logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
@@ -62,55 +32,15 @@ def parse_args():
     default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     parser = ArgumentParser(description="MOB-Cluster: Generate and update existing plasmid clusters' version: {}".format(__version__))
     parser.add_argument('-m','--mode', type=str, required=True, help='Build: Create a new database from scratch, Update: Update an existing database with one or more sequences')
+    parser.add_argument('-r','--mob_typer_file', type=str, required=True, help='MOB-typer report file for new sequences')
+    parser.add_argument('-t', '--taxonomy', type=str, required=True,help='TSV file for new sequences with the fields "id, organism"')
     parser.add_argument('-o','--outdir', type=str, required=True, help='Output Directory to put results')
-    parser.add_argument('-i','--infile', type=str, required=True, help='Input fasta file of one or more closed plasmids to process')
-    parser.add_argument('-t', '--sequence_meta', type=str, required=True,
-                        help='TSV file for new sequences with the fields "id, header"')
-    parser.add_argument('-c','--ref_cluster_file', type=str, required=False, help='Reference mob-cluster file')
-    parser.add_argument('-r','--ref_fasta_file', type=str, required=False, help='Reference mob-cluster fasta file')
-    parser.add_argument('--ref_mash_db', type=str, required=False, help='Reference mob-cluster mash sketch file')
+    parser.add_argument('-c','--ref_cluster_file', type=str, required=False, help='Existing MOB-cluster file to add the new sequences to')
+    parser.add_argument('-r','--ref_fasta_file', type=str, required=False, help='Existing MOB-cluster fasta file of sequences contained in the MOB-cluster file')
+    parser.add_argument('--ref_mash_db', type=str, required=False, help='Existing MOB-cluster mash sketch of sequences contained in the MOB-cluster file')
     parser.add_argument('--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
     parser.add_argument('--primary_cluster_dist', type=int, required=False, help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
-    parser.add_argument('--secondary_cluster_dist', type=int, required=False, help='Mash distance for assigning primary cluster id 0 - 1',
-                        default=0.025)
-    parser.add_argument('--min_rep_evalue', type=str, required=False,
-                        help='Minimum evalue threshold for replicon blastn',
-                        default=0.00001)
-
-    parser.add_argument('--min_mob_evalue', type=str, required=False,
-                        help='Minimum evalue threshold for relaxase tblastn',
-                        default=0.00001)
-
-    parser.add_argument('--min_rep_ident', type=int, required=False, help='Minimum sequence identity for replicons',
-                        default=80)
-
-    parser.add_argument('--min_mob_ident', type=int, required=False, help='Minimum sequence identity for relaxases',
-                        default=80)
-    parser.add_argument('--min_rep_cov', type=int, required=False,
-                        help='Minimum percentage coverage of replicon query by input assembly',
-                        default=80)
-
-    parser.add_argument('--min_mob_cov', type=int, required=False,
-                        help='Minimum percentage coverage of relaxase query by input assembly',
-                        default=80)
-    parser.add_argument('--min_overlap', type=int, required=False,
-                        help='Minimum overlap of fragments',
-                        default=10)
-    parser.add_argument('--plasmid_replicons', type=str, required=False, help='Fasta of plasmid replicons',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/rep.dna.fas'))
-    parser.add_argument('--plasmid_mob', type=str, required=False, help='Fasta of plasmid relaxases',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/mob.proteins.faa'))
-    parser.add_argument('-w','--overwrite',  required=False, help='Overwrite the MOB-suite databases with results', action='store_true')
-    parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
-    parser.add_argument('-d','--database_directory',default=default_database_dir,
-                        required=False,
-                        help='Directory you want to use for your databases. If the databases are not already '
-                             'downloaded, they will be downloaded automatically. Defaults to {}. '
-                             'If you change this from the default, will override --plasmid_mash_db, '
-                             '--plasmid_replicons, --plasmid_mob, --plasmid_mpf, and '
-                             '--plasmid_orit'.format(default_database_dir))
+    parser.add_argument('--secondary_cluster_dist', type=int, required=False, help='Mash distance for assigning primary cluster id 0 - 1',default=0.025)
     return parser.parse_args()
 
 
@@ -202,7 +132,7 @@ def int_to_acs(numerical_id):
 def read_user_new_sequence_info(file):
     if os.path.getsize(file) == 0:
         return dict()
-    data = pd.read_csv(file, sep='\t', header=0,names=MOB_CLUSTER_MINIMAL_INFO,index_col=0)
+    data = pd.read_csv(file, sep='\t', header=0,names=MOB_TYPER_REPORT_HEADER,index_col=0)
     sequences = dict()
     header = list(data.head())
 
@@ -335,6 +265,35 @@ def getMashDistances(mash_results_file,max_thresh=1):
 
         query_mash_distances[query_id][ref_id] = distance
     return query_mash_distances
+
+
+def add_known_plasmids(new_seq_info, new_seq_identifications, ref_seq_info,primary_cluster_distance, secondary_cluster_distance):
+    for seq_id in new_seq_info:
+        data = new_seq_info[seq_id]
+        if float(data['mash_neighbor_distance']) > primary_cluster_distance or \
+                float(data['mash_neighbor_distance']) > secondary_cluster_distance :
+            continue
+        neighbor_id = data['mash_nearest_neighbor']
+        if neighbor_id not in ref_seq_info:
+            continue
+        organism = new_seq_identifications[seq_id]
+        elements = list(ref_seq_info[neighbor_id])
+        record = {}
+        for e in elements:
+            if e in data:
+                record[e] = data[e]
+            else:
+                record[e] = '-'
+        record['primary_cluster_id'] = ref_seq_info[neighbor_id]['primary_cluster_id']
+        record['primary_dist'] = ref_seq_info[neighbor_id]['primary_dist']
+        record['secondary_cluster_id'] = ref_seq_info[neighbor_id]['secondary_cluster_id']
+        record['secondary_dist'] = ref_seq_info[neighbor_id]['secondary_dist']
+        record['organism'] = organism
+
+        ref_seq_info[seq_id] = record
+
+    return ref_seq_info
+
 
 
 def update_existing_db(new_seq_info,existing_seq_info,unique_new_seq,ref_mashdb,tmp_dir,primary_dist,secondary_dist,num_threads=1):
@@ -525,29 +484,15 @@ def main():
 
     check_dependencies(logging)
 
-    database_dir = os.path.abspath(args.database_directory)
-    if database_dir == default_database_dir:
-        mob_ref = args.plasmid_mob
-        replicon_ref = args.plasmid_replicons
-    else:
-        mob_ref = os.path.join(database_dir, 'mob.proteins.faa')
-        replicon_ref = os.path.join(database_dir, 'rep.dna.fas')
-
-    min_rep_ident = float(args.min_rep_ident)
-    min_mob_ident = float(args.min_mob_ident)
-    min_rep_evalue = float(args.min_rep_evalue)
-    min_mob_evalue = float(args.min_mob_evalue)
-    min_rep_cov = float(args.min_rep_cov)
-    min_mob_cov = float(args.min_mob_cov)
 
     input_fasta = args.infile
     if not os.path.isfile(input_fasta):
         logging.error('Error, input fasta specified does not exist: {}'.format(input_fasta ))
         sys.exit()
 
-    user_sequence_metadata_file = args.sequence_meta
-    if not os.path.isfile(input_fasta):
-        logging.error('Error, input metadata file specified does not exist: {}'.format(user_sequence_metadata_file ))
+    mob_typer_report_file = args.mob_typer_file
+    if not os.path.isfile(mob_typer_report_file):
+        logging.error('Error, input metadata file specified does not exist: {}'.format(mob_typer_report_file ))
         sys.exit()
 
     mode = str(args.mode).lower()
@@ -557,13 +502,7 @@ def main():
 
     out_dir = args.outdir
     num_threads = args.num_threads
-    if not os.path.isdir(out_dir):
-        logging.info('Creating directory {}'.format(args.outdir))
-        os.mkdir(out_dir, 0o755)
-    tmp_dir = os.path.join(out_dir, '__tmp')
-    if not os.path.isdir(tmp_dir):
-        logging.info('Creating directory {}'.format(args.outdir))
-        os.mkdir(tmp_dir, 0o755)
+
 
     if not (args.primary_cluster_dist >= 0 and args.primary_cluster_dist <= 1):
         logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.primary_cluster_dist))
@@ -577,76 +516,53 @@ def main():
     else:
         secondary_distance = args.secondary_cluster_dist
 
-    fixed_fasta = os.path.join(tmp_dir,"fixed.fasta")
+    if not os.path.isdir(out_dir):
+        logging.info('Creating directory {}'.format(args.outdir))
+        os.mkdir(out_dir, 0o755)
+    tmp_dir = os.path.join(out_dir, '__tmp')
+    if not os.path.isdir(tmp_dir):
+        logging.info('Creating directory {}'.format(args.outdir))
+        os.mkdir(tmp_dir, 0o755)
 
-    fix_fasta_header(input_fasta, fixed_fasta)
-    fastaSeqStats = calcFastaStatsIndividual(fixed_fasta)
-    new_sequence_metadata = read_user_new_sequence_info(user_sequence_metadata_file)
-    new_seq_info = combine_seqStats_with_userMeta(fastaSeqStats,new_sequence_metadata)
-    for id in new_seq_info:
-        new_seq_info[id]['primary_dist'] = primary_distance
-        new_seq_info[id]['secondary_dist'] = secondary_distance
+
+    new_seq_info = read_file_to_dict(mob_typer_report_file,MOB_TYPER_REPORT_HEADER,separater="\t")
 
 
     if len(new_seq_info) == 0:
-        logging.error('Error something has gone wrong with update sequence or metadata files, check log for info')
+        logging.error('Error no MOB-typer results for sequences. Sequences must be typed with MOB-typer first')
         sys.exit()
 
+    fasta_dict = read_fasta_dict(input_fasta)
 
-    md5_new_seq_lookup = dict_from_alt_key(new_seq_info,'md5')
+    if len(fasta_dict) == 0:
+        logging.error('Error no sequences found in input fasta: {}..cannot continue'.format(input_fasta))
+        sys.exit()
 
-    unique_new_sequence_file = os.path.join(tmp_dir, "unique_seqs.fasta")
-    unique_seq_keys = getUniqSeqKeys(md5_new_seq_lookup, {})
-    filterFastaByIDs(fixed_fasta, unique_new_sequence_file, unique_seq_keys)
+    key_set_1 = set(list(new_seq_info.keys()))
+    key_set_2 = set(list(fasta_dict.keys()))
 
-    write_individual_fasta(unique_new_sequence_file,tmp_dir)
-
-    #Get Replicon and relaxase typing for all new sequences
-    for seq_id in unique_seq_keys:
-        fasta_file = os.path.join(tmp_dir,"{}.fasta".format(seq_id))
-        blast_results = os.path.join(tmp_dir,"{}.blast".format(seq_id))
-        replicon_contigs = (getRepliconContigs(
-            replicon_blast(
-
-                        replicon_ref,
-                fasta_file,
-                           min_rep_ident,
-                           min_rep_cov,
-                           min_rep_evalue,
-                           tmp_dir,
-                            blast_results,
-                           num_threads=num_threads)))
-        found_replicons = dict()
-
-        for contig_id in replicon_contigs:
-            for hit in replicon_contigs[contig_id]:
-                acs, type = hit.split('|')
-                found_replicons[acs] = type
-
-        #Apply result to all identical sequences
-        md5 = new_seq_info[seq_id]['md5']
-        for sid in md5_new_seq_lookup[md5]:
-
-            new_seq_info[sid]['rep_type(s)'] = ",".join(list(found_replicons.values()))
-            new_seq_info[sid]['rep_type_accession(s)'] = ",".join(list(found_replicons.keys()))
-
-        mob_contigs = getRepliconContigs(
-            mob_blast(mob_ref, fasta_file, min_mob_ident, min_mob_cov, min_mob_evalue, tmp_dir, blast_results,
-                      num_threads=num_threads))
-        found_mob = dict()
-        for contig_id in mob_contigs:
-            for hit in mob_contigs[contig_id]:
-                acs, type = hit.split('|')
-                found_mob[acs] = type
-        for sid in md5_new_seq_lookup[md5]:
-            new_seq_info[sid]['relaxase_type(s)'] = ",".join(list(found_mob.values()))
-            new_seq_info[sid]['relaxase_type_accession(s)'] = ",".join(list(found_mob.keys()))
-
+    if len(list(key_set_1 ^ key_set_2)) > 0:
+        logging.error('Error MOB-typer results: {} and input fasta: {} do not have the same set of identifiers, these must match in order to proceed'.format(mob_typer_report_file,input_fasta))
+        logging.error(
+            'Keys present in  MOB-typer results: {} and not in input fasta: {} are: {}'.format(mob_typer_report_file,input_fasta,list(key_set_1 - key_set_2)))
+        logging.error(
+            'Keys present in  MOB-typer results: {} and not in input fasta: {} are: {}'.format(mob_typer_report_file,input_fasta, list(key_set_1 - key_set_2)))
+        sys.exit()
 
 
     tmp_cluster_file = os.path.join(out_dir, 'clusters.txt')
     tmp_ref_fasta_file = os.path.join(tmp_dir, 'references_tmp.fasta')
     update_fasta = os.path.join(out_dir, 'references_updated.fasta')
+
+    #Sketch and calculate distances within update sequences
+    mashObj = mash()
+    mashObj.mashsketch(input_fasta, input_fasta + ".msh", num_threads=num_threads)
+    distance_matrix_file = os.path.join(tmp_dir, 'mash_dist_matrix.txt')
+    mashfile_handle = open(distance_matrix_file, 'w', encoding="utf-8")
+
+    mashObj.run_mash(input_fasta + '.msh', input_fasta + '.msh', mashfile_handle, table=True, num_threads=num_threads)
+    clust_assignments = build_cluster_db(distance_matrix_file, (primary_distance, secondary_distance))
+
 
     if mode == 'update':
         if args.ref_cluster_file is None:
@@ -677,11 +593,6 @@ def main():
             sys.exit()
 
         mob_cluster_seq_info = read_sequence_info(ref_cluster_file)
-        md5_mobcluster_seq_lookup = dict_from_alt_key(mob_cluster_seq_info , 'md5')
-        unique_new_sequence_file = os.path.join(tmp_dir,"unique_seqs.fasta")
-        unique_seq_keys = getUniqSeqKeys(md5_new_seq_lookup,md5_mobcluster_seq_lookup)
-        logging.info('Writting unique sequences to file: {}'.format(unique_new_sequence_file))
-        filterFastaByIDs(fixed_fasta, unique_new_sequence_file, unique_seq_keys)
 
         logging.info('Running mob-cluster in update mode with input file: {}'.format(input_fasta))
         logging.info('Running mob-cluster in update mode with output directory: {}'.format(out_dir))
@@ -703,36 +614,11 @@ def main():
         cluster_assignments = {**mob_cluster_seq_info, **new_seq_info}
         logging.info('Writting cluster assignments to : {}'.format(tmp_cluster_file))
         writeClusterAssignments(tmp_cluster_file, MOB_CLUSTER_INFO_HEADER, cluster_assignments)
-
-        appendFasta(fixed_fasta, tmp_ref_fasta_file)
-
-        shutil.copy(tmp_ref_fasta_file, os.path.join(out_dir,update_fasta))
-        mash_db_file = "{}.msh".format(update_fasta)
-        mObj = mash()
-        mObj.mashsketch(update_fasta, mash_db_file, num_threads=num_threads)
-        blast_runner = BlastRunner(update_fasta, '')
-        blast_runner.makeblastdb(update_fasta, 'nucl')
-
-        if args.overwrite:
-            shutil.copy(update_fasta,ref_fasta)
-            shutil.copy(tmp_cluster_file, ref_cluster_file)
-            shutil.copy(mash_db_file,ref_mash_db)
-            blast_runner = BlastRunner(ref_fasta, '')
-            blast_runner.makeblastdb(ref_fasta, 'nucl')
-
-
+        shutil.copy(tmp_ref_fasta_file, os.path.join(out_dir, update_fasta))
 
 
     else:
-        mashObj = mash()
-        mashObj.mashsketch(input_fasta,input_fasta+".msh",num_threads=num_threads)
-        distance_matrix_file = os.path.join(tmp_dir,'mash_dist_matrix.txt')
-        mashfile_handle = open(distance_matrix_file,'w',encoding="utf-8")
-
-        mashObj.run_mash(input_fasta+'.msh', input_fasta+'.msh', mashfile_handle,table=True,num_threads=num_threads)
-        clust_assignments = build_cluster_db(distance_matrix_file, (primary_distance, secondary_distance))
         cluster_acs = convert_num_to_acs(clust_assignments)
-
         for id in cluster_acs:
             primary_key = cluster_acs[id][0]
             secondary_key = cluster_acs[id][1]
@@ -742,11 +628,16 @@ def main():
             new_seq_info[id]['secondary_dist'] = secondary_distance
 
         writeClusterAssignments(tmp_cluster_file, MOB_CLUSTER_INFO_HEADER, new_seq_info)
-        shutil.copy(fixed_fasta, update_fasta)
+        shutil.copy(input_fasta, update_fasta)
+
+
+    mash_db_file = "{}.msh".format(update_fasta)
+    mObj = mash()
+    mObj.mashsketch(update_fasta, mash_db_file, num_threads=num_threads)
+    blast_runner = BlastRunner(update_fasta, '')
+    blast_runner.makeblastdb(update_fasta, 'nucl')
+
     shutil.rmtree(tmp_dir)
-
-
-
 
 
 
