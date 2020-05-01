@@ -4,24 +4,22 @@ from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 import os, re, time
 from subprocess import Popen, PIPE
-import shutil,sys, logging, hashlib, random
+import shutil, sys, logging, hashlib, random
 import pandas as pd
 from collections import OrderedDict
 from operator import itemgetter
 from ete3 import NCBITaxa
-from mob_suite.constants import  \
+from mob_suite.constants import \
     MOB_TYPER_REPORT_HEADER, \
     ETE3DBTAXAFILE
 
 
-def getAssocValues(query_list_values,look_up_key,value_key,data):
+def getAssocValues(query_list_values, look_up_key, value_key, data):
     values = []
 
     for q in query_list_values:
         values.extend(get_data_associated_with_key(look_up_key, q, value_key, data))
-    return  values
-
-
+    return values
 
 
 def parseMashScreen(mash_results):
@@ -38,7 +36,7 @@ def parseMashScreen(mash_results):
         score = float(row[0])
 
         if ref_id not in hits:
-            hits[ref_id] = { }
+            hits[ref_id] = {}
 
         hits[ref_id] = score
 
@@ -46,7 +44,6 @@ def parseMashScreen(mash_results):
 
 
 def parseMash(mash_results):
-
     mash_results = mash_results.decode('utf-8').split("\n")
 
     hits = {}
@@ -60,12 +57,11 @@ def parseMash(mash_results):
         score = float(row[2])
 
         if query_id not in hits:
-            hits[query_id] = { }
+            hits[query_id] = {}
 
         hits[query_id][ref_id] = score
 
     return hits
-
 
 
 def getHeirarchy(taxid):
@@ -75,10 +71,12 @@ def getHeirarchy(taxid):
 
     ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
-        logging.error("Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(ETE3DBTAXAFILE))
-        return ['-','-']
+        logging.error(
+            "Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(
+                ETE3DBTAXAFILE))
+        return ['-', '-']
 
-    if not isinstance(taxid,int):
+    if not isinstance(taxid, int):
         return {'names': [], 'ranks': []}
 
     lineage = ncbi.get_lineage(taxid)
@@ -90,12 +88,10 @@ def getHeirarchy(taxid):
     return {'names': names, 'ranks': names}
 
 
-
-
 def filter_invalid_taxids(taxids):
     filtered = []
     for i in taxids:
-        if i == 'NaN' or i == 'nan' or i == None or i == '-' :
+        if i == 'NaN' or i == 'nan' or i == None or i == '-':
             continue
 
         try:
@@ -114,10 +110,12 @@ def getHeirarchy(taxid):
 
     ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
-        logging.error("Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(ETE3DBTAXAFILE))
-        return ['-','-']
+        logging.error(
+            "Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(
+                ETE3DBTAXAFILE))
+        return ['-', '-']
 
-    if not isinstance(taxid,int):
+    if not isinstance(taxid, int):
         return {'names': [], 'ranks': []}
 
     lineage = ncbi.get_lineage(taxid)
@@ -136,12 +134,32 @@ def getTaxid(taxon):
 
     ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
-        logging.error("Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(ETE3DBTAXAFILE))
-        return ['-','-']
+        logging.error(
+            "Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(
+                ETE3DBTAXAFILE))
+        return ['-', '-']
 
     taxid = ncbi.get_name_translator(taxon)
 
-    return  taxid
+    return taxid
+
+
+
+def NamesToTaxIDs(names):
+    if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
+        logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
+        initETE3Database(ETE3DBTAXAFILE)
+
+    ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
+
+    if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
+        logging.error(
+            "Tried ete3 init, but still was not able to find taxa.sqlite file for ete3 lib in {}. Aborting".format(
+                ETE3DBTAXAFILE))
+        return {}
+
+    return ncbi.get_name_translator(names)
+
 
 
 def getTaxonConvergence(taxids):
@@ -157,7 +175,7 @@ def getTaxonConvergence(taxids):
                 ETE3DBTAXAFILE))
         return ['-', '-']
 
-    tax_ranks = ['genus','family','order','class','phylum',  'species']
+    tax_ranks = ['genus', 'family', 'order', 'class', 'phylum', 'species']
 
     phylla = []
     lineages = []
@@ -181,17 +199,15 @@ def getTaxonConvergence(taxids):
             lineages.append(lineage)
 
         common_taxids = lineages[0]
-        for i in range(1,len(lineages)):
+        for i in range(1, len(lineages)):
             common_taxids = list(set(common_taxids) - set(set(common_taxids) - set(lineages[i])))
-
-
 
     if len(common_taxids) == 0:
         return ['-', '-']
 
     taxa = {}
 
-    for i in range(0,len(common_taxids)):
+    for i in range(0, len(common_taxids)):
         rank = ncbi.get_rank([common_taxids[i]])[common_taxids[i]]
         name = ncbi.get_taxid_translator([common_taxids[i]])[common_taxids[i]]
 
@@ -202,43 +218,39 @@ def getTaxonConvergence(taxids):
 
     for rank in tax_ranks:
         if rank in taxa:
-            return [rank,taxa[rank]]
+            return [rank, taxa[rank]]
 
     phylla = list(set(phylla))
     sorted(phylla)
     if len(phylla) > 1:
-        return ('multi-phylla',",".join(phylla))
+        return ('multi-phylla', ",".join(phylla))
     elif len(phylla) == 1:
         return ('phylum', ",".join(phylla))
 
-    return(['-','-'])
+    return (['-', '-'])
 
 
-
-
-def hostrange(replion_types, relaxase_types, mob_cluster_id,ncbi,lit):
-
+def hostrange(replion_types, relaxase_types, mob_cluster_id, ncbi, lit):
     host_range_predictions = {
-        'observed_host_range_ncbi_name':'',
-        'observed_host_range_ncbi_rank':'',
-        'reported_host_range_lit_name':'',
-        'reported_host_range_lit_rank':'',
-        'predicted_host_range_overall_name':'',
-        'predicted_host_range_overall_rank':'',
-        'associated_pmid(s)':'-'
+        'observed_host_range_ncbi_name': '',
+        'observed_host_range_ncbi_rank': '',
+        'reported_host_range_lit_name': '',
+        'reported_host_range_lit_rank': '',
+        'predicted_host_range_overall_name': '',
+        'predicted_host_range_overall_rank': '',
+        'associated_pmid(s)': '-'
 
     }
 
-
-    #Determine taxids associated with NCBI records
-    if mob_cluster_id != '-' :
+    # Determine taxids associated with NCBI records
+    if mob_cluster_id != '-':
         ncbi_cluster_taxids = getAssocValues([mob_cluster_id], 'primary_cluster_id', 'taxid', ncbi)
 
     else:
         ncbi_cluster_taxids = []
 
-    if len(replion_types) > 0 :
-        ncbi_replicon_taxids = getAssocValues(replion_types,'rep_type(s)','taxid',ncbi)
+    if len(replion_types) > 0:
+        ncbi_replicon_taxids = getAssocValues(replion_types, 'rep_type(s)', 'taxid', ncbi)
         lit_replicon_taxids = getAssocValues(replion_types, 'rep_type(s)', 'reported_host_range_taxid', lit)
         lit_replicon_taxids = lit_replicon_taxids + getAssocValues(replion_types, 'rep_type(s)', 'host_taxid', lit)
         pmids = list(set(getAssocValues(replion_types, 'rep_type(s)', 'pmid', lit)))
@@ -255,55 +267,57 @@ def hostrange(replion_types, relaxase_types, mob_cluster_id,ncbi,lit):
     else:
         ncbi_relaxase_taxids = []
 
-    if  len(ncbi_cluster_taxids) == 0 and len(ncbi_replicon_taxids) == 0 and len(ncbi_relaxase_taxids) == 0:
+    if len(ncbi_cluster_taxids) == 0 and len(ncbi_replicon_taxids) == 0 and len(ncbi_relaxase_taxids) == 0:
         host_range_predictions['observed_host_range_ncbi_rank'] = '-'
         host_range_predictions['observed_host_range_ncbi_name'] = '-'
         ncbi_unique_taxids = []
     else:
-        ncbi_unique_taxids = filter_invalid_taxids(list(set(ncbi_replicon_taxids + ncbi_cluster_taxids + ncbi_relaxase_taxids)))
-        host_range_predictions['observed_host_range_ncbi_rank'], host_range_predictions['observed_host_range_ncbi_name'] = getTaxonConvergence(ncbi_unique_taxids)
-
+        ncbi_unique_taxids = filter_invalid_taxids(
+            list(set(ncbi_replicon_taxids + ncbi_cluster_taxids + ncbi_relaxase_taxids)))
+        host_range_predictions['observed_host_range_ncbi_rank'], host_range_predictions[
+            'observed_host_range_ncbi_name'] = getTaxonConvergence(ncbi_unique_taxids)
 
     # Determine taxids associated with literature
 
-    lit_unique_taxids = filter_invalid_taxids(list(set(lit_replicon_taxids )))
+    lit_unique_taxids = filter_invalid_taxids(list(set(lit_replicon_taxids)))
 
-    host_range_predictions['reported_host_range_lit_rank'], host_range_predictions['reported_host_range_lit_name'] = getTaxonConvergence(lit_unique_taxids)
+    host_range_predictions['reported_host_range_lit_rank'], host_range_predictions[
+        'reported_host_range_lit_name'] = getTaxonConvergence(lit_unique_taxids)
 
-    #determine overall host range
+    # determine overall host range
     overall_taxids = filter_invalid_taxids(list(set(ncbi_unique_taxids + lit_unique_taxids)))
-    host_range_predictions['predicted_host_range_overall_rank'], host_range_predictions['predicted_host_range_overall_name'] = getTaxonConvergence(overall_taxids)
+    host_range_predictions['predicted_host_range_overall_rank'], host_range_predictions[
+        'predicted_host_range_overall_name'] = getTaxonConvergence(overall_taxids)
 
-    #move host-range prediction up to family when it is at genus or species level
-    if host_range_predictions['predicted_host_range_overall_rank'] == 'genus' or host_range_predictions['predicted_host_range_overall_rank'] == 'species':
+    # move host-range prediction up to family when it is at genus or species level
+    if host_range_predictions['predicted_host_range_overall_rank'] == 'genus' or host_range_predictions[
+        'predicted_host_range_overall_rank'] == 'species':
         taxid = getTaxid(host_range_predictions['predicted_host_range_overall_name'])
         heir = getHeirarchy(taxid)
         names = heir['names']
         ranks = heir['ranks']
 
-        for i in range(0,len(ranks)):
+        for i in range(0, len(ranks)):
             if ranks[i] == 'Family':
                 host_range_predictions['predicted_host_range_overall_rank'] = 'family'
                 host_range_predictions['predicted_host_range_overall_name'] = names[i]
 
-
     return host_range_predictions
 
 
-
-def blastn(input_fasta, blastdb, min_ident, min_cov, evalue, min_length, out_dir, blast_results_file,logging,seq_filterfile=None,num_threads=1,max_length=400000,min_hsp_cov=1):
-
+def blastn(input_fasta, blastdb, min_ident, min_cov, evalue, min_length, out_dir, blast_results_file, logging,
+           seq_filterfile=None, num_threads=1, max_length=400000, min_hsp_cov=1):
     blast_runner = BlastRunner(input_fasta, out_dir)
     blast_runner.run_blast(query_fasta_path=input_fasta, blast_task='megablast', db_path=blastdb,
                            db_type='nucl', min_cov=min_cov, min_ident=min_ident, evalue=evalue,
-                           blast_outfile=blast_results_file,logging=logging, num_threads=num_threads, word_size=11,seq_id_file=seq_filterfile)
+                           blast_outfile=blast_results_file, logging=logging, num_threads=num_threads, word_size=11,
+                           seq_id_file=seq_filterfile)
 
     if os.path.getsize(blast_results_file) == 0:
         os.remove(blast_results_file)
         return False
 
-    blast_df = BlastReader(blast_results_file,logging).df
-
+    blast_df = BlastReader(blast_results_file, logging).df
 
     blast_df = blast_df.loc[blast_df['length'] >= min_length]
     blast_df = blast_df.loc[blast_df['qlen'] <= max_length]
@@ -319,19 +333,20 @@ def blastn(input_fasta, blastdb, min_ident, min_cov, evalue, min_length, out_dir
     return True
 
 
-def tblastn(input_fasta, blastdb, min_ident, min_covs, evalue, out_dir,blast_results_file,logging,num_threads=1,min_covhsp=25,seq_id_file=None):
+def tblastn(input_fasta, blastdb, min_ident, min_covs, evalue, out_dir, blast_results_file, logging, num_threads=1,
+            min_covhsp=25, seq_id_file=None):
     blast_runner = BlastRunner(input_fasta, out_dir)
 
     blast_runner.run_tblastn(query_fasta_path=input_fasta, blast_task='megablast', db_path=blastdb,
                              db_type='protein', min_cov=min_covs, min_ident=min_ident, evalue=evalue,
                              blast_outfile=blast_results_file,
-                              num_threads=num_threads,seq_id_file=seq_id_file,logging=logging)
+                             num_threads=num_threads, seq_id_file=seq_id_file, logging=logging)
 
     if os.path.getsize(blast_results_file) == 0:
         os.remove(blast_results_file)
         return False
 
-    blast_df = BlastReader(blast_results_file,logging).df
+    blast_df = BlastReader(blast_results_file, logging).df
 
     blast_df = blast_df.loc[blast_df['pident'] >= min_ident]
     blast_df = blast_df.loc[blast_df['qcovs'] >= min_covs]
@@ -351,8 +366,8 @@ def isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
     else:
         return True
 
-def initETE3Database(database_directory,ETE3DBTAXAFILE,logging):
 
+def initETE3Database(database_directory, ETE3DBTAXAFILE, logging):
     lockfilepath = os.path.join(database_directory, ".lock")
 
     if os.path.exists(lockfilepath) == False:
@@ -361,16 +376,20 @@ def initETE3Database(database_directory,ETE3DBTAXAFILE,logging):
     else:
         while os.path.exists(lockfilepath):
             elapsed_time = time.time() - os.path.getmtime(lockfilepath)
-            logging.info("Lock file found at {}. Waiting for other processes to finish ete3 database init ...".format(lockfilepath))
-            logging.info("Elapsed time {} min. Will continue processing after 16 min mark.".format(int(elapsed_time/60)))
+            logging.info("Lock file found at {}. Waiting for other processes to finish ete3 database init ...".format(
+                lockfilepath))
+            logging.info(
+                "Elapsed time {} min. Will continue processing after 16 min mark.".format(int(elapsed_time / 60)))
             if elapsed_time >= 1000:
-                logging.info("Elapsed time {} min. Assuming previous process completed all init steps. Continue ...".format(int(elapsed_time/60)))
-                try: #if previous process failed, no processes are running and > 16 min passed since the lock was created
+                logging.info(
+                    "Elapsed time {} min. Assuming previous process completed all init steps. Continue ...".format(
+                        int(elapsed_time / 60)))
+                try:  # if previous process failed, no processes are running and > 16 min passed since the lock was created
                     os.remove(lockfilepath)
-                except: #continue if file was removed by other process
+                except:  # continue if file was removed by other process
                     pass
                 break
-            time.sleep(60) #recheck every 1 min if lock file was removed by other process
+            time.sleep(60)  # recheck every 1 min if lock file was removed by other process
         logging.info("Lock file no longer exists. Assuming init process completed successfully")
 
     ncbi = NCBITaxa()
@@ -392,27 +411,27 @@ def initETE3Database(database_directory,ETE3DBTAXAFILE,logging):
     logging.info("ETE3 database init completed successfully.")
 
 
-
-def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE,logging):
-
+def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE, logging):
     max_time = 300
     elapsed_time = 0
 
-
     while os.path.exists(lockfilepath) == True and elapsed_time < max_time:
-        interval = int(random.randrange(10,60))
-        logging.info("Taxonomy lock file {} exists..waiting {}s for other process to complete".format(lockfilepath,interval))
+        interval = int(random.randrange(10, 60))
+        logging.info(
+            "Taxonomy lock file {} exists..waiting {}s for other process to complete".format(lockfilepath, interval))
         time.sleep(interval)
         elapsed_time += interval
 
     if os.path.exists(lockfilepath) == True:
-        #delete lock file older than 1 hour
+        # delete lock file older than 1 hour
         modTimesinceEpoc = os.path.getmtime(lockfilepath)
         elapsedTime = (time.time() - modTimesinceEpoc) / 60
         if elapsedTime > 60:
             os.remove(lockfilepath)
         else:
-            logging.error("Taxonomy lock file {} still exists after several attempts. Please delete lock file to continue".format(lockfilepath))
+            logging.error(
+                "Taxonomy lock file {} still exists after several attempts. Please delete lock file to continue".format(
+                    lockfilepath))
         return False
 
     else:
@@ -440,8 +459,10 @@ def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE,logging):
 INPUT: Read file into pandas df
 Returns: list of lines in file with a dict of key value pairs from the header
 '''
-def read_file_to_dict(file,header,separater="\t"):
-    data = pd.read_csv(file, sep=separater, header=0, names=header, encoding = "UTF-8")
+
+
+def read_file_to_dict(file, header, separater="\t"):
+    data = pd.read_csv(file, sep=separater, header=0, names=header, encoding="UTF-8")
     records = []
     header_len = len(header)
     for index, row in data.iterrows():
@@ -460,7 +481,9 @@ def read_file_to_dict(file,header,separater="\t"):
     Input: Dictionary with format key :{dict}
     Output: Dictionary indexed by alternate key specified by user
 '''
-def dict_from_alt_key(dictionary,new_key):
+
+
+def dict_from_alt_key(dictionary, new_key):
     new_dict = {}
     for id in dictionary:
         values = dictionary[id]
@@ -471,13 +494,13 @@ def dict_from_alt_key(dictionary,new_key):
     return new_dict
 
 
-
-
 '''
     Input: Dictionary with format key :{dict}
     Output: Dictionary indexed by alternate key specified by user
 '''
-def dict_from_alt_key_list(data,new_key):
+
+
+def dict_from_alt_key_list(data, new_key):
     new_dict = {}
 
     for d in data:
@@ -487,51 +510,53 @@ def dict_from_alt_key_list(data,new_key):
             new_dict[d[new_key]] = d
 
     return new_dict
+
+
 '''
 
 '''
-def get_data_associated_with_key(look_up_key,look_up_value,value_key,dictionary):
+
+
+def get_data_associated_with_key(look_up_key, look_up_value, value_key, dictionary):
     asc_values = []
 
     for id in dictionary:
         values = dictionary[id]
         if look_up_key in values:
             terms = values[look_up_key].split(',')
-            if not look_up_value in terms :
+            if not look_up_value in terms:
                 continue
             if value_key in values and str(values[value_key]) != 'nan':
                 asc_values.append(values[value_key])
 
-
     return asc_values
-
 
 
 '''
     Input: Path to TSV file with MOB_CLUSTER_INFO_HEADER fields as the header lines
     Output: Dictionary of sequence indexed by sequence identifier
 '''
-def read_sequence_info(file,header):
+
+
+def read_sequence_info(file, header):
     if os.path.getsize(file) == 0:
         return dict()
-    data = pd.read_csv(file, sep='\t', header=0,names=header)
+    data = pd.read_csv(file, sep='\t', header=0, names=header)
     sequences = dict()
     for index, row in data.iterrows():
         sample_id = row['sample_id']
         sequences[sample_id] = {}
-        for i in range(0,len(header)):
+        for i in range(0, len(header)):
             if header[i] == 'id':
                 v = index
             else:
-                if str(row[header[i]]) == 'nan' :
+                if str(row[header[i]]) == 'nan':
                     v = '-'
                 else:
                     v = row[header[i]]
             sequences[sample_id][header[i]] = v
 
     return sequences
-
-
 
 
 def check_dependencies(logger):
@@ -541,10 +566,10 @@ def check_dependencies(logger):
         path = shutil.which(program)
         if path is None:
             missing += 1
-            logger.error("ERROR: Missing program: {}".format(program,))
+            logger.error("ERROR: Missing program: {}".format(program, ))
         else:
-            logger.info("SUCCESS: Found program {} at {}".format(program,path))
-    if missing > 0 :
+            logger.info("SUCCESS: Found program {} at {}".format(program, path))
+    if missing > 0:
         logger.error("Error, you are missing needed programs for mob-suite, please install them and retry")
         sys.exit(-1)
 
@@ -553,7 +578,7 @@ def calc_md5(seq):
     seq = str(seq).encode()
     md5 = hashlib.md5()
     md5.update(seq)
-    return  md5.hexdigest()
+    return md5.hexdigest()
 
 
 def fixStart(blast_df):
@@ -572,13 +597,12 @@ def fixStart(blast_df):
             blast_df.at[index, 'qstart'] = qend
             blast_df.at[index, 'qend'] = temp
 
-    blast_df = blast_df.astype({"qstart":'int64',"qend":'int64',
-                                "sstart":'int64',"send":'int64',
-                                "evalue":'float',"bitscore":'int64',
-                                'length':'int64','qlen':'int64',
-                                'slen':'int64','mismatch':'int64',
-                                'pident':'float','qcovs':'float', 'qcovhsp':'float'})
-
+    blast_df = blast_df.astype({"qstart": 'int64', "qend": 'int64',
+                                "sstart": 'int64', "send": 'int64',
+                                "evalue": 'float', "bitscore": 'int64',
+                                'length': 'int64', 'qlen': 'int64',
+                                'slen': 'int64', 'mismatch': 'int64',
+                                'pident': 'float', 'qcovs': 'float', 'qcovhsp': 'float'})
 
     return blast_df
 
@@ -624,18 +648,20 @@ def verify_init(logger, database_dir):
                   stderr=PIPE,
                   shell=False)
 
-        stdout,stderr = p.communicate()
+        stdout, stderr = p.communicate()
         return_code = p.returncode
         logger.info("Return code {}".format(return_code))
 
-        #Verify if no errors were captured during the mob_init script run. Otherwise abort
-        if len(re.findall("error",stderr.decode())) != 0 or return_code != 0:
-            logger.error(   "Something went wrong with database download or unpacking"
-                            "Check MOB-Suite databases directory and your Internet connection.")
+        # Verify if no errors were captured during the mob_init script run. Otherwise abort
+        if len(re.findall("error", stderr.decode())) != 0 or return_code != 0:
+            logger.error("Something went wrong with database download or unpacking"
+                         "Check MOB-Suite databases directory and your Internet connection.")
             sys.exit(-1)
 
-def remove_split_hits(blast_df,query_col,contig_id_col,contig_start_col,contig_end_col,bitscore_col):
-    blast_df = blast_df.sort_values([query_col,contig_id_col,contig_start_col,contig_end_col,bitscore_col], ascending=[True, True, True, True, False])
+
+def remove_split_hits(blast_df, query_col, contig_id_col, contig_start_col, contig_end_col, bitscore_col):
+    blast_df = blast_df.sort_values([query_col, contig_id_col, contig_start_col, contig_end_col, bitscore_col],
+                                    ascending=[True, True, True, True, False])
     hits = {}
     for index, row in blast_df.iterrows():
         query_id = row[query_col]
@@ -650,12 +676,12 @@ def remove_split_hits(blast_df,query_col,contig_id_col,contig_start_col,contig_e
                 hits[query_id] = {}
 
             if contig_id not in hits[query_id]:
-                hits[query_id][contig_id] = {'start':{},'end':{}}
+                hits[query_id][contig_id] = {'start': {}, 'end': {}}
 
             if contig_start == 1:
-                hits[query_id][contig_id]['start'][index] = {'start':contig_start,'end':contig_end,'score':score}
+                hits[query_id][contig_id]['start'][index] = {'start': contig_start, 'end': contig_end, 'score': score}
             else:
-                hits[query_id][contig_id]['end'][index] = {'start':contig_start,'end':contig_end,'score':score}
+                hits[query_id][contig_id]['end'][index] = {'start': contig_start, 'end': contig_end, 'score': score}
 
     filter = []
 
@@ -663,7 +689,7 @@ def remove_split_hits(blast_df,query_col,contig_id_col,contig_start_col,contig_e
         for contig_id in hits[query_id]:
             positions = hits[query_id][contig_id]
 
-            #skip records without both a begining and end hit
+            # skip records without both a begining and end hit
             if len(positions['start']) == 0 or len(positions['end']) == 0:
                 continue
 
@@ -694,12 +720,8 @@ def remove_split_hits(blast_df,query_col,contig_id_col,contig_start_col,contig_e
     return blast_df
 
 
-
-
-
-
-
-def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_start_col,contig_end_col,bitscore_col):
+def filter_overlaping_records(blast_df, overlap_threshold, contig_id_col, contig_start_col, contig_end_col,
+                              bitscore_col):
     prev_contig_id = ''
     prev_index = -1
     prev_contig_start = -1
@@ -709,7 +731,6 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
     exclude_filter = dict()
 
     for index, row in blast_df.iterrows():
-
 
         contig_id = row[contig_id_col]
         contig_start = row[contig_start_col]
@@ -732,7 +753,8 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
             prev_score = score
             continue
 
-        if (contig_start >= prev_contig_start and contig_start <= prev_contig_end) or (contig_end >= prev_contig_start and contig_end <= prev_contig_end):
+        if (contig_start >= prev_contig_start and contig_start <= prev_contig_end) or (
+                contig_end >= prev_contig_start and contig_end <= prev_contig_end):
             overlap = abs(contig_start - prev_contig_end)
 
             if overlap > overlap_threshold:
@@ -740,7 +762,6 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
                     filter_indexes.append(prev_index)
                 else:
                     filter_indexes.append(index)
-
 
         prev_index = index
         prev_contig_id = contig_id
@@ -755,12 +776,16 @@ def filter_overlaping_records(blast_df, overlap_threshold,contig_id_col,contig_s
 
     return blast_df.reset_index(drop=True)
 
-def recursive_filter_overlap_records(blast_df, overlap_threshold,contig_id_col,contig_start_col,contig_end_col,bitscore_col):
+
+def recursive_filter_overlap_records(blast_df, overlap_threshold, contig_id_col, contig_start_col, contig_end_col,
+                                     bitscore_col):
     size = len(blast_df)
     prev_size = 0
 
     while size != prev_size:
-        blast_df = filter_overlaping_records(blast_df, overlap_threshold, contig_id_col, contig_start_col, contig_end_col, bitscore_col).sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
+        blast_df = filter_overlaping_records(blast_df, overlap_threshold, contig_id_col, contig_start_col,
+                                             contig_end_col, bitscore_col).sort_values(
+            ['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
         prev_size = size
         size = len(blast_df)
     return blast_df
@@ -768,7 +793,6 @@ def recursive_filter_overlap_records(blast_df, overlap_threshold,contig_id_col,c
 
 def fix_fasta_header(in_fasta, out_fasta):
     ids = []
-    in_basename = os.path.basename(in_fasta)
     fh = open(out_fasta, 'w')
     with open(in_fasta, "r") as handle:
         for record in SeqIO.parse(handle, "fasta"):
@@ -778,14 +802,15 @@ def fix_fasta_header(in_fasta, out_fasta):
             fh.write(">" + id + "\n" + str(record.seq) + "\n")
     handle.close()
     fh.close()
-    return  ids
+    return ids
 
 
 ''''
     Accepts fasta file and returns size, number of sequence records and gc %
 '''
-def calcFastaStatsIndividual(fasta):
 
+
+def calcFastaStatsIndividual(fasta):
     stats = {}
     for record in SeqIO.parse(fasta, "fasta"):
         id = record.id
@@ -824,18 +849,18 @@ def calcFastaStats(fasta):
         'md5': md5
     }
 
-def filterFastaByIDs(in_fasta,out_fasta,include_list):
-    fh = open(out_fasta,'w')
+
+def filterFastaByIDs(in_fasta, out_fasta, include_list):
+    fh = open(out_fasta, 'w')
 
     for record in SeqIO.parse(in_fasta, "fasta"):
         if record.id in include_list:
-            fh.write(">{}\n{}\n".format(record.id,record.seq))
+            fh.write(">{}\n{}\n".format(record.id, record.seq))
 
     fh.close()
 
 
 def init_console_logger(lvl=2):
-
     LOG_FORMAT = '%(asctime)s %(name)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 
     logging_levels = [logging.ERROR, logging.WARN, logging.INFO, logging.DEBUG]
@@ -845,10 +870,10 @@ def init_console_logger(lvl=2):
     return logging.getLogger(__name__)
 
 
-def writeReport(data_list,header,outfile):
-    with open(outfile,'w') as fh:
+def writeReport(data_list, header, outfile):
+    with open(outfile, 'w') as fh:
         fh.write("{}\n".format("\t".join(header)))
-        for i in range(0,len(data_list)):
+        for i in range(0, len(data_list)):
             data = data_list[i]
             row = []
             for h in header:
@@ -862,18 +887,18 @@ def writeReport(data_list,header,outfile):
             fh.write("{}\n".format("\t".join(row)))
         fh.close()
 
-def sort_biomarkers(biomarker_dict):
 
+def sort_biomarkers(biomarker_dict):
     for id in biomarker_dict:
         acs = biomarker_dict[id]['acs']
         types = biomarker_dict[id]['types']
 
-        if len(acs) == 0 or not isinstance(acs,list):
+        if len(acs) == 0 or not isinstance(acs, list):
             continue
 
         tmp_dict = {}
 
-        for i in range(0,len(acs)):
+        for i in range(0, len(acs)):
             tmp_dict[acs[i]] = types[i]
 
         tmp_dict = OrderedDict(sorted(tmp_dict.items(), key=itemgetter(1), reverse=False))
@@ -881,11 +906,11 @@ def sort_biomarkers(biomarker_dict):
         biomarker_dict[id]['acs'] = list(tmp_dict.keys())
         biomarker_dict[id]['types'] = list(tmp_dict.values())
 
-    return  biomarker_dict
+    return biomarker_dict
+
 
 def determine_mpf_type(hits):
-
-    if len(hits)  == 0 or isinstance(hits,str):
+    if len(hits) == 0 or isinstance(hits, str):
         return hits
     types = dict()
     for hit in hits:
@@ -896,13 +921,13 @@ def determine_mpf_type(hits):
     return max(types, key=lambda i: types[i])
 
 
-
-def build_mobtyper_report(plasmid_contig_info,out_dir,outfile,seq_dict,ncbi,lit):
+def build_mobtyper_report(plasmid_contig_info, out_dir, outfile, seq_dict, ncbi, lit):
     mob_typer_results = {}
     for clust_id in plasmid_contig_info:
 
-        cluster_file = open(os.path.join(out_dir,"plasmid_{}.fasta".format(clust_id)),'w')
-        logging.info("Writting plasmid sequences to {}".format(os.path.join(out_dir,"plasmid_{}.fasta".format(clust_id))))
+        cluster_file = open(os.path.join(out_dir, "plasmid_{}.fasta".format(clust_id)), 'w')
+        logging.info(
+            "Writting plasmid sequences to {}".format(os.path.join(out_dir, "plasmid_{}.fasta".format(clust_id))))
         if clust_id not in mob_typer_results:
             mob_typer_results[clust_id] = {}
         for field in MOB_TYPER_REPORT_HEADER:
@@ -911,77 +936,85 @@ def build_mobtyper_report(plasmid_contig_info,out_dir,outfile,seq_dict,ncbi,lit)
 
         data = plasmid_contig_info[clust_id]
 
-        #Put contig report data into MOB-typer report header
-        #aggregating the data by cluster id
+        # Put contig report data into MOB-typer report header
+        # aggregating the data by cluster id
         cluster_seq = []
         for contig_id in data:
             if contig_id in seq_dict:
-                cluster_file.write(">{}\n{}\n".format(contig_id,seq_dict[contig_id]))
+                cluster_file.write(">{}\n{}\n".format(contig_id, seq_dict[contig_id]))
                 cluster_seq.append(seq_dict[contig_id])
             for field in MOB_TYPER_REPORT_HEADER:
                 if field in data[contig_id]:
-                    if isinstance(data[contig_id][field],list) and len(data[contig_id][field]) == 0:
+                    if isinstance(data[contig_id][field], list) and len(data[contig_id][field]) == 0:
                         continue
                     if data[contig_id][field] == '':
                         continue
                     mob_typer_results[clust_id][field].append(data[contig_id][field])
 
-
-        #overwrite individual seq stat calculations with the overall
+        # overwrite individual seq stat calculations with the overall
         seq = "".join(cluster_seq)
         mob_typer_results[clust_id]['md5'] = [calc_md5(seq)]
         mob_typer_results[clust_id]['gc'] = [GC(seq)]
         mob_typer_results[clust_id]['size'] = [len(seq)]
         mob_typer_results[clust_id]['num_contigs'] = len(cluster_seq)
 
-        #Sort MOB-typer biomarker results
-        replicon = sort_biomarkers({'rep':{'types':mob_typer_results[clust_id]['rep_type(s)'],'acs':mob_typer_results[clust_id]['rep_type_accession(s)']}})
+        # Sort MOB-typer biomarker results
+        replicon = sort_biomarkers({'rep': {'types': mob_typer_results[clust_id]['rep_type(s)'],
+                                            'acs': mob_typer_results[clust_id]['rep_type_accession(s)']}})
         mob_typer_results[clust_id]['rep_type(s)'] = ",".join(replicon['rep']['types'])
         mob_typer_results[clust_id]['rep_type_accession(s)'] = ",".join(replicon['rep']['acs'])
 
-        relaxase = sort_biomarkers({'mob':{'types':mob_typer_results[clust_id]['relaxase_type(s)'],'acs':mob_typer_results[clust_id]['relaxase_type_accession(s)']}})
+        relaxase = sort_biomarkers({'mob': {'types': mob_typer_results[clust_id]['relaxase_type(s)'],
+                                            'acs': mob_typer_results[clust_id]['relaxase_type_accession(s)']}})
         mob_typer_results[clust_id]['relaxase_type(s)'] = ",".join(relaxase['mob']['types'])
         mob_typer_results[clust_id]['relaxase_type_accession(s)'] = ",".join(relaxase['mob']['acs'])
 
         if len(mob_typer_results[clust_id]['mpf_type']) > 0:
-            if isinstance(mob_typer_results[clust_id]['mpf_type'],str):
-                mob_typer_results[clust_id]['mpf_type'] = determine_mpf_type(mob_typer_results[clust_id]['mpf_type'].split(','))
+            if isinstance(mob_typer_results[clust_id]['mpf_type'], str):
+                mob_typer_results[clust_id]['mpf_type'] = determine_mpf_type(
+                    mob_typer_results[clust_id]['mpf_type'].split(','))
             else:
                 tmp = []
-                for i in range(0,len(mob_typer_results[clust_id]['mpf_type'])):
+                for i in range(0, len(mob_typer_results[clust_id]['mpf_type'])):
                     tmp += mob_typer_results[clust_id]['mpf_type'][i].split(',')
                 mob_typer_results[clust_id]['mpf_type'] = determine_mpf_type(tmp)
-                del(tmp)
+                del (tmp)
         else:
             mob_typer_results[clust_id]['mpf_type'] = ''
 
-
-        mob_typer_results[clust_id]['mpf_type_accession(s)'] = ",".join(mob_typer_results[clust_id]['mpf_type_accession(s)'])
+        mob_typer_results[clust_id]['mpf_type_accession(s)'] = ",".join(
+            mob_typer_results[clust_id]['mpf_type_accession(s)'])
 
         mob_typer_results[clust_id]['orit_type(s)'] = ",".join(mob_typer_results[clust_id]['orit_type(s)'])
         mob_typer_results[clust_id]['orit_accession(s)'] = ",".join(mob_typer_results[clust_id]['orit_accession(s)'])
 
-        #Assign mobility
+        # Assign mobility
         mob_typer_results[clust_id]['predicted_mobility'] = 'non-mobilizable'
-        if len(mob_typer_results[clust_id]['relaxase_type(s)']) > 0 and len(mob_typer_results[clust_id]['mpf_type']) > 0:
+        if len(mob_typer_results[clust_id]['relaxase_type(s)']) > 0 and len(
+                mob_typer_results[clust_id]['mpf_type']) > 0:
             mob_typer_results[clust_id]['predicted_mobility'] = 'conjugative'
-        elif(len(mob_typer_results[clust_id]['relaxase_type(s)']) > 0 or len(mob_typer_results[clust_id]['orit_type(s)']) > 0):
+        elif (len(mob_typer_results[clust_id]['relaxase_type(s)']) > 0 or len(
+                mob_typer_results[clust_id]['orit_type(s)']) > 0):
             mob_typer_results[clust_id]['predicted_mobility'] = 'mobilizable'
 
-        if isinstance(mob_typer_results[clust_id]['primary_cluster_id'],list) and len(mob_typer_results[clust_id]['primary_cluster_id']) >0:
+        if isinstance(mob_typer_results[clust_id]['primary_cluster_id'], list) and len(
+                mob_typer_results[clust_id]['primary_cluster_id']) > 0:
             mob_typer_results[clust_id]['primary_cluster_id'] = mob_typer_results[clust_id]['primary_cluster_id'][0]
-            mob_typer_results[clust_id]['mash_nearest_neighbor'] = mob_typer_results[clust_id]['mash_nearest_neighbor'][0]
-            mob_typer_results[clust_id]['mash_neighbor_distance'] = mob_typer_results[clust_id]['mash_neighbor_distance'][0]
-            mob_typer_results[clust_id]['mash_neighbor_identification'] = mob_typer_results[clust_id]['mash_neighbor_identification'][0]
+            mob_typer_results[clust_id]['mash_nearest_neighbor'] = mob_typer_results[clust_id]['mash_nearest_neighbor'][
+                0]
+            mob_typer_results[clust_id]['mash_neighbor_distance'] = \
+            mob_typer_results[clust_id]['mash_neighbor_distance'][0]
+            mob_typer_results[clust_id]['mash_neighbor_identification'] = \
+            mob_typer_results[clust_id]['mash_neighbor_identification'][0]
 
+        if isinstance(mob_typer_results[clust_id]['sample_id'], list) and len(
+                mob_typer_results[clust_id]['sample_id']) > 0:
+            mob_typer_results[clust_id]['sample_id'] = "{}:{}".format(mob_typer_results[clust_id]['sample_id'][0],
+                                                                      mob_typer_results[clust_id]['primary_cluster_id'])
 
-
-        if isinstance(mob_typer_results[clust_id]['sample_id'],list) and len(mob_typer_results[clust_id]['sample_id']) > 0:
-            mob_typer_results[clust_id]['sample_id'] = "{}:{}".format(mob_typer_results[clust_id]['sample_id'][0],mob_typer_results[clust_id]['primary_cluster_id'])
-
-        if isinstance(mob_typer_results[clust_id]['secondary_cluster_id'], list) and len(mob_typer_results[clust_id]['secondary_cluster_id']) > 0:
+        if isinstance(mob_typer_results[clust_id]['secondary_cluster_id'], list) and len(
+                mob_typer_results[clust_id]['secondary_cluster_id']) > 0:
             mob_typer_results[clust_id]['secondary_cluster_id'] = mob_typer_results[clust_id]['secondary_cluster_id'][0]
-
 
         if mob_typer_results[clust_id]['num_contigs'] > 1:
             mob_typer_results[clust_id]['circularity_status'] = 'incomplete'
@@ -996,7 +1029,8 @@ def build_mobtyper_report(plasmid_contig_info,out_dir,outfile,seq_dict,ncbi,lit)
         else:
             relaxase_types = []
 
-        if mob_typer_results[clust_id]['primary_cluster_id'] != '' and not 'novel_' in mob_typer_results[clust_id]['primary_cluster_id']:
+        if mob_typer_results[clust_id]['primary_cluster_id'] != '' and not 'novel_' in mob_typer_results[clust_id][
+            'primary_cluster_id']:
             mob_cluster_id = mob_typer_results[clust_id]['primary_cluster_id']
         else:
             mob_cluster_id = '-'
@@ -1008,37 +1042,39 @@ def build_mobtyper_report(plasmid_contig_info,out_dir,outfile,seq_dict,ncbi,lit)
 
         for element in MOB_TYPER_REPORT_HEADER:
             if element in mob_typer_results[clust_id]:
-                if isinstance(mob_typer_results[clust_id][element],list):
-                    mob_typer_results[clust_id][element] = ', '.join(str(x) for x in mob_typer_results[clust_id][element])
+                if isinstance(mob_typer_results[clust_id][element], list):
+                    mob_typer_results[clust_id][element] = ', '.join(
+                        str(x) for x in mob_typer_results[clust_id][element])
 
     results = []
     for clust_id in mob_typer_results:
-        results.append( mob_typer_results[clust_id])
+        results.append(mob_typer_results[clust_id])
 
-    writeReport(results,MOB_TYPER_REPORT_HEADER,outfile)
+    writeReport(results, MOB_TYPER_REPORT_HEADER, outfile)
     return
 
 
-
-def add_biomarker_results(biomarker_df,df_column_name_biomarker,df_column_name_seqid,contig_info,contig_info_type_key,contig_info_acs_key,type_col_num=1,type_acs_num=0,delimeter='|'):
+def add_biomarker_results(biomarker_df, df_column_name_biomarker, df_column_name_seqid, contig_info,
+                          contig_info_type_key, contig_info_acs_key, type_col_num=1, type_acs_num=0, delimeter='|'):
     results = {}
-    for index,row in biomarker_df.iterrows():
+    for index, row in biomarker_df.iterrows():
 
         biomarker = row[df_column_name_biomarker].split(delimeter)
 
-        if  type_col_num +1  > len(biomarker):
-            logging.error("Specified column for biomarker type: {} does not exist in biomarker id field: {}".format(type_col_num,row[df_column_name_biomarker]))
+        if type_col_num + 1 > len(biomarker):
+            logging.error(
+                "Specified column for biomarker type: {} does not exist in biomarker id field: {}".format(type_col_num,
+                                                                                                          row[
+                                                                                                              df_column_name_biomarker]))
             continue
 
-        if type_acs_num+1 > len(biomarker):
+        if type_acs_num + 1 > len(biomarker):
             logging.error("Specified column for biomarker type: {} does not exist in biomarker id field: {}".format(
                 type_acs_num, row[df_column_name_biomarker]))
             continue
 
-
-
         seqid = row[df_column_name_seqid]
-        if seqid[len(seqid)-1] == '|':
+        if seqid[len(seqid) - 1] == '|':
             tmp = seqid.split('|')
             #
             # tmp[0] in ['gb','emb','ddj','ref'] and
@@ -1046,7 +1082,7 @@ def add_biomarker_results(biomarker_df,df_column_name_biomarker,df_column_name_s
                 seqid = tmp[1]
 
         if not seqid in results:
-            results[seqid] = {'types':[],'acs':[]}
+            results[seqid] = {'types': [], 'acs': []}
 
         results[seqid]['types'].append(biomarker[type_col_num])
         results[seqid]['acs'].append(biomarker[type_acs_num])
@@ -1073,109 +1109,125 @@ def add_biomarker_results(biomarker_df,df_column_name_biomarker,df_column_name_s
 
     return contig_info
 
-def identify_biomarkers(contig_info,fixed_fasta,tmp_dir,min_length,logging,
-                        replicon_ref,min_rep_ident,min_rep_cov,min_rep_evalue,replicon_blast_results,
-                        mob_ref,min_mob_ident,min_mob_cov,min_mob_evalue,mob_blast_results,
-                        mpf_ref,min_mpf_ident,min_mpf_cov,min_mpf_evalue,mpf_blast_results,
-                        repetitive_mask_file,min_rpp_ident,min_rpp_cov,min_rpp_evalue,
-                        plasmid_orit,orit_blast_results,repetitive_blast_results,
+
+def identify_biomarkers(contig_info, fixed_fasta, tmp_dir, min_length, logging,
+                        replicon_ref, min_rep_ident, min_rep_cov, min_rep_evalue, replicon_blast_results,
+                        mob_ref, min_mob_ident, min_mob_cov, min_mob_evalue, mob_blast_results,
+                        mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results,
+                        repetitive_mask_file, min_rpp_ident, min_rpp_cov, min_rpp_evalue,
+                        plasmid_orit, orit_blast_results, repetitive_blast_results,
                         num_threads=1):
-    #blast replicon database
-    logging.info("Blasting replicon sequences {} against {}".format(replicon_ref,fixed_fasta))
-    blastn(input_fasta=replicon_ref,blastdb=fixed_fasta,min_ident=min_rep_ident,min_cov=min_rep_cov,evalue=min_rep_evalue,min_length=80,out_dir=tmp_dir,
-           blast_results_file=replicon_blast_results,num_threads=num_threads,logging=logging,min_hsp_cov=30)
+    # blast replicon database
+    logging.info("Blasting replicon sequences {} against {}".format(replicon_ref, fixed_fasta))
+    blastn(input_fasta=replicon_ref, blastdb=fixed_fasta, min_ident=min_rep_ident, min_cov=min_rep_cov,
+           evalue=min_rep_evalue, min_length=80, out_dir=tmp_dir,
+           blast_results_file=replicon_blast_results, num_threads=num_threads, logging=logging, min_hsp_cov=30)
 
     logging.info("Filtering replicon blast results {} ".format(replicon_blast_results))
     rep_blast_df = BlastReader(replicon_blast_results, logging=logging).df
     if len(rep_blast_df) > 0:
         rep_blast_df = rep_blast_df.drop(0)
         rep_blast_df = fixStart(rep_blast_df)
-        rep_blast_df = remove_split_hits(rep_blast_df,'qseqid','sseqid','sstart','send','bitscore').sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
+        rep_blast_df = remove_split_hits(rep_blast_df, 'qseqid', 'sseqid', 'sstart', 'send', 'bitscore').sort_values(
+            ['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
 
-        rep_blast_df = recursive_filter_overlap_records(rep_blast_df, 5, 'sseqid', 'sstart', 'send','bitscore')
+        rep_blast_df = recursive_filter_overlap_records(rep_blast_df, 5, 'sseqid', 'sstart', 'send', 'bitscore')
 
-        contig_info = add_biomarker_results(biomarker_df=rep_blast_df, df_column_name_biomarker='qseqid', df_column_name_seqid='sseqid', contig_info=contig_info,
-                              contig_info_type_key='rep_type(s)', contig_info_acs_key='rep_type_accession(s)', delimeter='|')
+        contig_info = add_biomarker_results(biomarker_df=rep_blast_df, df_column_name_biomarker='qseqid',
+                                            df_column_name_seqid='sseqid', contig_info=contig_info,
+                                            contig_info_type_key='rep_type(s)',
+                                            contig_info_acs_key='rep_type_accession(s)', delimeter='|')
 
+    del (rep_blast_df)
 
-    del(rep_blast_df)
-
-    #blast relaxase database
+    # blast relaxase database
     logging.info("Blasting relaxase sequences {} against {}".format(mob_ref, fixed_fasta))
-    tblastn(input_fasta=mob_ref, blastdb=fixed_fasta, min_ident=min_mob_ident, min_covs=min_mob_cov, evalue=min_mob_evalue, out_dir=tmp_dir,logging=logging,
+    tblastn(input_fasta=mob_ref, blastdb=fixed_fasta, min_ident=min_mob_ident, min_covs=min_mob_cov,
+            evalue=min_mob_evalue, out_dir=tmp_dir, logging=logging,
             blast_results_file=mob_blast_results, num_threads=num_threads)
 
     logging.info("Filtering relaxase blast results {} ".format(mob_blast_results))
 
-    mob_blast_df = BlastReader(mob_blast_results,logging).df
+    mob_blast_df = BlastReader(mob_blast_results, logging).df
     if len(mob_blast_df) > 0:
-        mob_blast_df = fixStart(mob_blast_df.drop(0).sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False]))
-        mob_blast_df = remove_split_hits(mob_blast_df, 'qseqid', 'sseqid', 'sstart', 'send', 'bitscore').sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
+        mob_blast_df = fixStart(mob_blast_df.drop(0).sort_values(['sseqid', 'sstart', 'send', 'bitscore'],
+                                                                 ascending=[True, True, True, False]))
+        mob_blast_df = remove_split_hits(mob_blast_df, 'qseqid', 'sseqid', 'sstart', 'send', 'bitscore').sort_values(
+            ['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
         mob_blast_df = recursive_filter_overlap_records(mob_blast_df, 5, 'sseqid', 'sstart', 'send',
-                                  'bitscore')
+                                                        'bitscore')
 
-        add_biomarker_results(biomarker_df=mob_blast_df, df_column_name_biomarker='qseqid', df_column_name_seqid='sseqid', contig_info=contig_info,
-                              contig_info_type_key='relaxase_type(s)', contig_info_acs_key='relaxase_type_accession(s)', delimeter='|')
-
+        add_biomarker_results(biomarker_df=mob_blast_df, df_column_name_biomarker='qseqid',
+                              df_column_name_seqid='sseqid', contig_info=contig_info,
+                              contig_info_type_key='relaxase_type(s)', contig_info_acs_key='relaxase_type_accession(s)',
+                              delimeter='|')
 
     del (mob_blast_df)
 
-
-    #blast mpf database
+    # blast mpf database
     logging.info("Blasting MPF sequences {} against {}".format(mpf_ref, fixed_fasta))
-    tblastn(input_fasta=mpf_ref, blastdb=fixed_fasta, min_ident=min_mpf_ident, min_covs=min_mpf_cov, evalue=min_mpf_evalue, out_dir=tmp_dir,
-            blast_results_file=mpf_blast_results, num_threads=num_threads,logging=logging)
+    tblastn(input_fasta=mpf_ref, blastdb=fixed_fasta, min_ident=min_mpf_ident, min_covs=min_mpf_cov,
+            evalue=min_mpf_evalue, out_dir=tmp_dir,
+            blast_results_file=mpf_blast_results, num_threads=num_threads, logging=logging)
 
     mpf_blast_df = BlastReader(mpf_blast_results, logging).df
 
     if len(mpf_blast_df) > 0:
         mpf_blast_df = fixStart(mpf_blast_df.drop(0)).sort_values(['sseqid', 'sstart', 'send', 'bitscore'],
-                                                          ascending=[True, True, True, False])
+                                                                  ascending=[True, True, True, False])
         mpf_blast_df = remove_split_hits(mpf_blast_df, 'qseqid', 'sseqid', 'sstart', 'send', 'bitscore').sort_values(
             ['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
         mpf_blast_df = recursive_filter_overlap_records(mpf_blast_df, 5, 'sseqid', 'sstart', 'send',
-                                  'bitscore')
+                                                        'bitscore')
 
         logging.info("Filtering MPF blast results {} ".format(mpf_blast_results))
 
-        add_biomarker_results(biomarker_df=mpf_blast_df, df_column_name_biomarker='qseqid', df_column_name_seqid='sseqid', contig_info=contig_info,
-                              contig_info_type_key='mpf_type', contig_info_acs_key='mpf_type_accession(s)', delimeter='|')
-    del(mpf_blast_results)
+        add_biomarker_results(biomarker_df=mpf_blast_df, df_column_name_biomarker='qseqid',
+                              df_column_name_seqid='sseqid', contig_info=contig_info,
+                              contig_info_type_key='mpf_type', contig_info_acs_key='mpf_type_accession(s)',
+                              delimeter='|')
+    del (mpf_blast_results)
 
-
-    #blast orit database
+    # blast orit database
     logging.info("Blasting orit sequences {} against {}".format(plasmid_orit, fixed_fasta))
-    blastn(input_fasta=plasmid_orit,blastdb=fixed_fasta,min_ident=min_rep_ident,min_cov=min_rep_cov,evalue=min_rep_evalue,min_length=80,out_dir=tmp_dir,
-           blast_results_file=orit_blast_results,num_threads=num_threads,logging=logging)
+    blastn(input_fasta=plasmid_orit, blastdb=fixed_fasta, min_ident=min_rep_ident, min_cov=min_rep_cov,
+           evalue=min_rep_evalue, min_length=80, out_dir=tmp_dir,
+           blast_results_file=orit_blast_results, num_threads=num_threads, logging=logging)
 
     logging.info("Filtering orit blast results {} ".format(orit_blast_results))
 
-    orit_blast_df = BlastReader(orit_blast_results,logging).df
+    orit_blast_df = BlastReader(orit_blast_results, logging).df
     if len(orit_blast_df) > 0:
-        orit_blast_df = recursive_filter_overlap_records(fixStart(orit_blast_df.drop(0).sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])), 5, 'sseqid', 'sstart', 'send',
-                              'bitscore')
-        add_biomarker_results(biomarker_df=orit_blast_df, df_column_name_biomarker='qseqid', df_column_name_seqid='sseqid', contig_info=contig_info,
-                          contig_info_type_key='orit_type(s)', contig_info_acs_key='orit_accession(s)', delimeter='|')
+        orit_blast_df = recursive_filter_overlap_records(fixStart(
+            orit_blast_df.drop(0).sort_values(['sseqid', 'sstart', 'send', 'bitscore'],
+                                              ascending=[True, True, True, False])), 5, 'sseqid', 'sstart', 'send',
+                                                         'bitscore')
+        add_biomarker_results(biomarker_df=orit_blast_df, df_column_name_biomarker='qseqid',
+                              df_column_name_seqid='sseqid', contig_info=contig_info,
+                              contig_info_type_key='orit_type(s)', contig_info_acs_key='orit_accession(s)',
+                              delimeter='|')
 
-    del(orit_blast_df)
+    del (orit_blast_df)
 
-
-    #blast repetitive database
+    # blast repetitive database
     if repetitive_mask_file is not None:
         logging.info("Blasting contigs against repetitive sequences db: {}".format(repetitive_mask_file))
-        blastn(input_fasta=fixed_fasta,blastdb=repetitive_mask_file,min_ident=min_rpp_ident,min_cov=min_rpp_cov,evalue=min_rpp_evalue,min_length=min_length,out_dir=tmp_dir,
-               blast_results_file=repetitive_blast_results,num_threads=num_threads,logging=logging)
+        blastn(input_fasta=fixed_fasta, blastdb=repetitive_mask_file, min_ident=min_rpp_ident, min_cov=min_rpp_cov,
+               evalue=min_rpp_evalue, min_length=min_length, out_dir=tmp_dir,
+               blast_results_file=repetitive_blast_results, num_threads=num_threads, logging=logging)
         logging.info("Filtering repetitive blast results {} ".format(repetitive_blast_results))
 
-        repetitive_blast_df = BlastReader(repetitive_blast_results,logging).df
+        repetitive_blast_df = BlastReader(repetitive_blast_results, logging).df
         if len(repetitive_blast_df) > 0:
-            repetitive_blast_df = recursive_filter_overlap_records(fixStart(repetitive_blast_df.drop(0).sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])), 5, 'qseqid', 'qstart', 'qend',
-                                      'bitscore')
+            repetitive_blast_df = recursive_filter_overlap_records(fixStart(
+                repetitive_blast_df.drop(0).sort_values(['sseqid', 'sstart', 'send', 'bitscore'],
+                                                        ascending=[True, True, True, False])), 5, 'qseqid', 'qstart',
+                                                                   'qend',
+                                                                   'bitscore')
 
             repetitive_list = repetitive_blast_df['qseqid'].tolist()
 
-
-            #add filtering flag to contigs which are primarially a repetitive element
+            # add filtering flag to contigs which are primarially a repetitive element
             for contig_id in repetitive_list:
                 if contig_id in contig_info:
                     logging.info('Filtering contig: {} due to repetitive sequence'.format(contig_id))
@@ -1183,11 +1235,10 @@ def identify_biomarkers(contig_info,fixed_fasta,tmp_dir,min_length,logging,
                 else:
                     logging.error('Contig: {} not found in contig_df this is likely an error'.format(contig_id))
 
+            add_biomarker_results(biomarker_df=repetitive_blast_df, df_column_name_biomarker='sseqid',
+                                  df_column_name_seqid='qseqid', contig_info=contig_info,
+                                  contig_info_type_key='repetitive_dna_type', contig_info_acs_key='repetitive_dna_id',
+                                  delimeter='|', type_col_num=2, type_acs_num=1)
 
-            add_biomarker_results(biomarker_df=repetitive_blast_df, df_column_name_biomarker='sseqid', df_column_name_seqid='qseqid', contig_info=contig_info,
-                                  contig_info_type_key='repetitive_dna_type', contig_info_acs_key='repetitive_dna_id', delimeter='|',type_col_num=2,type_acs_num=1)
-
-
-        del(repetitive_blast_df)
+        del (repetitive_blast_df)
     return contig_info
-

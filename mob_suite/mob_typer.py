@@ -9,6 +9,7 @@ from collections import OrderedDict
 from operator import itemgetter
 from mob_suite.blast import BlastRunner
 from mob_suite.wrappers import mash
+
 from mob_suite.utils import fix_fasta_header, \
     calcFastaStats, \
     verify_init, \
@@ -27,12 +28,13 @@ from mob_suite.utils import fix_fasta_header, \
     dict_from_alt_key_list, \
     read_file_to_dict
 
-
-from mob_suite.constants import  ETE3DBTAXAFILE, \
+from mob_suite.constants import ETE3DBTAXAFILE, \
     MOB_TYPER_REPORT_HEADER, \
     MOB_CLUSTER_INFO_HEADER, \
     default_database_dir, \
-    ETE3_LOCK_FILE, NCBI_PLASMID_TAXONOMY_FILE, NCBI_PLASMID_TAXONOMY_HEADER, LIT_PLASMID_TAXONOMY_FILE, LIT_PLASMID_TAXONOMY_HEADER
+    ETE3_LOCK_FILE,  \
+    LIT_PLASMID_TAXONOMY_HEADER
+
 
 def init_console_logger(lvl=2):
     root = logging.getLogger()
@@ -45,6 +47,7 @@ def init_console_logger(lvl=2):
 
     logging.basicConfig(format=LOG_FORMAT, level=report_lvl)
     return logging.getLogger(__name__)
+
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
@@ -70,21 +73,15 @@ def parse_args():
                         default=0.00001)
     parser.add_argument('--min_con_evalue', type=str, required=False, help='Minimum evalue threshold for contig blastn',
                         default=0.00001)
-    parser.add_argument('--min_rpp_evalue', type=str, required=False,
-                        help='Minimum evalue threshold for repetitve elements blastn',
-                        default=0.00001)
 
     parser.add_argument('--min_length', type=str, required=False, help='Minimum length of contigs to classify',
                         default=1000)
-
     parser.add_argument('--min_rep_ident', type=int, required=False, help='Minimum sequence identity for replicons',
                         default=80)
     parser.add_argument('--min_mob_ident', type=int, required=False, help='Minimum sequence identity for relaxases',
                         default=80)
     parser.add_argument('--min_con_ident', type=int, required=False, help='Minimum sequence identity for contigs',
                         default=80)
-    parser.add_argument('--min_rpp_ident', type=int, required=False,
-                        help='Minimum sequence identity for repetitive elements', default=80)
 
     parser.add_argument('--min_rep_cov', type=int, required=False,
                         help='Minimum percentage coverage of replicon query by input assembly',
@@ -97,10 +94,6 @@ def parse_args():
     parser.add_argument('--min_con_cov', type=int, required=False,
                         help='Minimum percentage coverage of assembly contig by the plasmid reference database to be considered',
                         default=70)
-
-    parser.add_argument('--min_rpp_cov', type=int, required=False,
-                        help='Minimum percentage coverage of contigs by repetitive elements',
-                        default=80)
 
     parser.add_argument('--min_overlap', type=int, required=False,
                         help='Minimum overlap of fragments',
@@ -115,7 +108,7 @@ def parse_args():
                         help='Companion Mash database of reference database',
                         default=os.path.join(default_database_dir,
                                              'ncbi_plasmid_full_seqs.fas.msh'))
-    parser.add_argument('-m','--plasmid_meta', type=str, required=False,
+    parser.add_argument('-m', '--plasmid_meta', type=str, required=False,
                         help='MOB-cluster plasmid cluster formatted file matched to the reference plasmid db',
                         default=os.path.join(default_database_dir,
                                              'clusters.txt'))
@@ -140,14 +133,17 @@ def parse_args():
                         default=default_database_dir,
                         required=False,
                         help='Directory you want to use for your databases. If the databases are not already '
-                             'downloaded, they will be downloaded automatically. Defaults to {}'.format(default_database_dir))
-    parser.add_argument('--primary_cluster_dist', type=int, required=False, help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
-    parser.add_argument('--secondary_cluster_dist', type=int, required=False, help='Mash distance for assigning primary cluster id 0 - 1',
+                             'downloaded, they will be downloaded automatically. Defaults to {}'.format(
+                            default_database_dir))
+    parser.add_argument('--primary_cluster_dist', type=int, required=False,
+                        help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
+    parser.add_argument('--secondary_cluster_dist', type=int, required=False,
+                        help='Mash distance for assigning primary cluster id 0 - 1',
                         default=0.025)
-    parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__ )
-
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
 
     return parser.parse_args()
+
 
 def initMOBTyperReportTemplate(header):
     data = {}
@@ -156,25 +152,22 @@ def initMOBTyperReportTemplate(header):
     return data
 
 
-
-
 def main():
     args = parse_args()
 
     if args.debug:
-       logger = init_console_logger(3)
+        logger = init_console_logger(3)
     else:
-       logger = init_console_logger(2)
+        logger = init_console_logger(2)
 
     logger.info('Running Mob-typer version {}'.format(__version__))
 
-
     if not os.path.isfile(args.infile):
-        logger.info('Error, fasta file does not exist')
+        logger.info('Error, fasta file does not exist {}'.format(args.infile))
         sys.exit()
 
     if not args.analysis_dir:
-        tmp_dir = tempfile.TemporaryDirectory( dir = tempfile.gettempdir()).name
+        tmp_dir = tempfile.TemporaryDirectory(dir=tempfile.gettempdir()).name
     else:
         tmp_dir = args.analysis_dir
 
@@ -191,8 +184,6 @@ def main():
     else:
         sample_id = args.sample_id
 
-
-
     # Script arguments
     input_fasta = args.infile
     report_file = args.out_file
@@ -203,7 +194,6 @@ def main():
         multi = True
     else:
         multi = False
-
 
     if not (args.primary_cluster_dist >= 0 and args.primary_cluster_dist <= 1):
         logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.primary_cluster_dist))
@@ -217,12 +207,12 @@ def main():
     else:
         secondary_distance = float(args.secondary_cluster_dist)
 
+
     if database_dir == default_database_dir:
         mob_ref = args.plasmid_mob
         mash_db = args.plasmid_mash_db
         replicon_ref = args.plasmid_replicons
         plasmid_meta = args.plasmid_meta
-        repetitive_mask_file = args.repetitive_mask
         mpf_ref = args.plasmid_mpf
         plasmid_orit = args.plasmid_orit
         verify_init(logger, database_dir)
@@ -231,11 +221,11 @@ def main():
         mash_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas.msh')
         replicon_ref = os.path.join(database_dir, 'rep.dna.fas')
         plasmid_meta = os.path.join(database_dir, 'clusters.txt')
-        repetitive_mask_file = os.path.join(database_dir, 'repetitive.dna.fas')
         mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
         plasmid_orit = os.path.join(database_dir, 'orit.fas')
 
-
+    LIT_PLASMID_TAXONOMY_FILE = os.path.join(database_dir, "host_range_literature_plasmidDB.txt")
+    NCBI_PLASMID_TAXONOMY_FILE = plasmid_meta
 
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')
@@ -243,7 +233,6 @@ def main():
     mpf_blast_results = os.path.join(tmp_dir, 'mpf_blast_results.txt')
     orit_blast_results = os.path.join(tmp_dir, 'orit_blast_results.txt')
     repetitive_blast_results = os.path.join(tmp_dir, 'repetitive_blast_results.txt')
-    mash_file = os.path.join(tmp_dir, "mash_{}.txt".format(sample_id))
 
     if os.path.isfile(mob_blast_results):
         os.remove(mob_blast_results)
@@ -254,14 +243,12 @@ def main():
     if os.path.isfile(replicon_blast_results):
         os.remove(replicon_blast_results)
 
-
     # Input numeric params
 
     min_rep_ident = float(args.min_rep_ident)
     min_mob_ident = float(args.min_mob_ident)
     min_ori_ident = float(args.min_rep_ident)
     min_mpf_ident = float(args.min_mob_ident)
-    min_rpp_ident = float(args.min_rpp_ident)
 
     idents = {'min_rep_ident': min_rep_ident, 'min_mob_ident': min_mob_ident, 'min_ori_ident': min_ori_ident}
 
@@ -276,14 +263,10 @@ def main():
             logger.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
             sys.exit(-1)
 
-
     min_rep_cov = float(args.min_rep_cov)
     min_mob_cov = float(args.min_mob_cov)
     min_ori_cov = float(args.min_rep_cov)
     min_mpf_cov = float(args.min_mob_cov)
-    min_rpp_cov = float(args.min_rpp_cov)
-
-
 
     covs = {'min_rep_cov': min_rep_cov, 'min_mob_cov': min_mob_cov, 'min_con_cov': min_ori_cov,
             'min_rpp_cov': min_ori_cov}
@@ -299,13 +282,10 @@ def main():
             logger.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
             sys.exit(-1)
 
-
     min_rep_evalue = float(args.min_rep_evalue)
     min_mob_evalue = float(args.min_mob_evalue)
     min_ori_evalue = float(args.min_rep_evalue)
     min_mpf_evalue = float(args.min_mob_evalue)
-    min_rpp_evalue = float(args.min_mob_evalue)
-
 
     evalues = {'min_rep_evalue': min_rep_evalue, 'min_mob_evalue': min_mob_evalue, 'min_con_evalue': min_ori_evalue}
 
@@ -317,7 +297,6 @@ def main():
             logger.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
             sys.exit(-1)
 
-
     check_dependencies(logger)
 
     needed_dbs = [replicon_ref, mob_ref, mash_db, mpf_ref]
@@ -327,23 +306,19 @@ def main():
             logger.info('Warning! Needed database missing "{}"'.format(db))
             mob_suite.mob_init.main()
 
-
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir, 0o755)
 
-
-    #Test that ETE3 db is ok and lock process check
+    # Test that ETE3 db is ok and lock process check
     dbstatus = ETE3_db_status_check(1, ETE3_LOCK_FILE, ETE3DBTAXAFILE, logging)
     if dbstatus == False:
         logging.error("Exiting due to lock file not removed: {}".format(ETE3_LOCK_FILE))
         sys.exit(-1)
 
-    #Get cluster information
-    reference_sequence_meta = read_sequence_info(plasmid_meta,MOB_CLUSTER_INFO_HEADER)
+    # Get cluster information
+    reference_sequence_meta = read_sequence_info(plasmid_meta, MOB_CLUSTER_INFO_HEADER)
 
-
-
-    #initilize master record tracking
+    # initilize master record tracking
     fix_fasta_header(input_fasta, fixed_fasta)
     contig_seqs = read_fasta_dict(fixed_fasta)
     contig_info = {}
@@ -358,25 +333,22 @@ def main():
         contig_info[id]['contig_id'] = id
         contig_info[id]['sample_id'] = sample_id
 
-
-    #Makeblastdb
+    # Makeblastdb
     blast_runner = BlastRunner(fixed_fasta, tmp_dir)
-    build_success = blast_runner.makeblastdb(fixed_fasta, 'nucl',logging=logging)
+    build_success = blast_runner.makeblastdb(fixed_fasta, 'nucl', logging=logging)
     if build_success == False:
         logging.error("Could not build blast database, check error messages..cannot continue")
         sys.exit()
 
-    #run individual marker blasts
+    # run individual marker blasts
 
     contig_info = identify_biomarkers(contig_info, fixed_fasta, tmp_dir, 25, logging, \
-                        replicon_ref, min_rep_ident, min_rep_cov, min_rep_evalue, replicon_blast_results, \
-                        mob_ref, min_mob_ident, min_mob_cov, min_mob_evalue, mob_blast_results, \
-                        mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results, \
-                        None, None, None, None, \
-                        plasmid_orit, orit_blast_results, repetitive_blast_results, \
-                        num_threads=1)
-
-
+                                      replicon_ref, min_rep_ident, min_rep_cov, min_rep_evalue, replicon_blast_results, \
+                                      mob_ref, min_mob_ident, min_mob_cov, min_mob_evalue, mob_blast_results, \
+                                      mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results, \
+                                      None, None, None, None, \
+                                      plasmid_orit, orit_blast_results, repetitive_blast_results, \
+                                      num_threads=1)
 
     m = mash()
     mobtyper_results = []
@@ -389,9 +361,8 @@ def main():
     lit = dict_from_alt_key_list(
         read_file_to_dict(LIT_PLASMID_TAXONOMY_FILE, LIT_PLASMID_TAXONOMY_HEADER, separater="\t"), "sample_id")
 
-
     if multi:
-        m.mashsketch(input_fasta=fixed_fasta,output_path=mash_input_fasta,sketch_ind=True,num_threads=num_threads)
+        m.mashsketch(input_fasta=fixed_fasta, output_path=mash_input_fasta, sketch_ind=True, num_threads=num_threads)
         mash_results = parseMash(
             m.run_mash(reference_db=mash_db, input_fasta=mash_input_fasta, table=False, num_threads=num_threads))
 
@@ -405,7 +376,6 @@ def main():
             record['sample_id'] = seq_id
             record['num_contigs'] = 1
             distances = OrderedDict(sorted(mash_results[seq_id].items(), key=itemgetter(1), reverse=False))
-
 
             for mash_neighbor_id in distances:
                 dist = distances[mash_neighbor_id]
@@ -422,7 +392,8 @@ def main():
 
     else:
         m.mashsketch(input_fasta=fixed_fasta, output_path=mash_input_fasta, sketch_ind=False, num_threads=num_threads)
-        mash_results = parseMash(m.run_mash(reference_db=mash_db, input_fasta=mash_input_fasta, table=False, num_threads=num_threads))
+        mash_results = parseMash(
+            m.run_mash(reference_db=mash_db, input_fasta=mash_input_fasta, table=False, num_threads=num_threads))
         record = {}
 
         for field in MOB_TYPER_REPORT_HEADER:
@@ -454,8 +425,6 @@ def main():
         record['orit_type(s)'] = []
         record['orit_accession(s)'] = []
 
-
-
         for seq_id in contig_info:
             record['rep_type(s)'].append(contig_info[seq_id]['rep_type(s)'])
             record['rep_type_accession(s)'].append(contig_info[seq_id]['rep_type_accession(s)'])
@@ -468,13 +437,13 @@ def main():
 
         for field in record:
             tmp = []
-            if record[field] == None :
+            if record[field] == None:
                 continue
-            if isinstance(record[field],list):
+            if isinstance(record[field], list):
                 length = len(record[field])
-                for i in range(0,length):
+                for i in range(0, length):
                     tmp += record[field][i].split(',')
-            elif isinstance(record[field],str) and len(record[field]) > 0:
+            elif isinstance(record[field], str) and len(record[field]) > 0:
                 tmp += record[field].split(',')
             if len(tmp) > 0:
                 record[field] = []
@@ -482,16 +451,15 @@ def main():
                     if len(d) > 0:
                         record[field].append(d)
 
-
-
         mobtyper_results.append(record)
 
-    for i in range(0,len(mobtyper_results)):
+    for i in range(0, len(mobtyper_results)):
         record = mobtyper_results[i]
         bio_markers = sort_biomarkers({0: {'types': record['rep_type(s)'], 'acs': record['rep_type_accession(s)']},
-                         1: {'types': record['relaxase_type(s)'], 'acs': record['relaxase_type_accession(s)']},
-                         2: {'types': record['mpf_type'], 'acs': record['mpf_type_accession(s)']},
-                         3: {'types': record['orit_type(s)'], 'acs': record['orit_accession(s)']},})
+                                       1: {'types': record['relaxase_type(s)'],
+                                           'acs': record['relaxase_type_accession(s)']},
+                                       2: {'types': record['mpf_type'], 'acs': record['mpf_type_accession(s)']},
+                                       3: {'types': record['orit_type(s)'], 'acs': record['orit_accession(s)']}, })
 
         record['rep_type(s)'] = bio_markers[0]['types']
         record['rep_type_accession(s)'] = bio_markers[0]['acs']
@@ -502,7 +470,6 @@ def main():
         record['orit_type(s)'] = bio_markers[3]['types']
         record['orit_accession(s)'] = bio_markers[3]['acs']
 
-
         if record['mash_neighbor_distance'] <= primary_distance:
             mob_cluster_id = record['primary_cluster_id']
         else:
@@ -512,28 +479,24 @@ def main():
         for field in host_range:
             record[field] = host_range[field]
 
-
         if isinstance(record['mpf_type'], list):
             record['mpf_type'] = determine_mpf_type(record['mpf_type'])
-        elif isinstance(record['mpf_type'],str):
+        elif isinstance(record['mpf_type'], str):
             record['mpf_type'] = determine_mpf_type(record['mpf_type'].split(','))
 
         for field in record:
-            if isinstance(record[field],list):
+            if isinstance(record[field], list):
                 record[field] = ",".join(record[field])
 
         record['predicted_mobility'] = 'non-mobilizable'
         if len(record['relaxase_type(s)']) > 0 and len(record['mpf_type']):
             record['predicted_mobility'] = 'conjugative'
-        elif len(record['relaxase_type(s)']) > 0 or len(record['orit_type(s)']) > 0 :
+        elif len(record['relaxase_type(s)']) > 0 or len(record['orit_type(s)']) > 0:
             record['predicted_mobility'] = 'mobilizable'
 
         mobtyper_results[i] = record
 
-
     writeReport(mobtyper_results, MOB_TYPER_REPORT_HEADER, report_file)
-
-
 
     if not keep_tmp:
         shutil.rmtree(tmp_dir)
@@ -543,4 +506,3 @@ def main():
 # call main function
 if __name__ == '__main__':
     main()
-
