@@ -356,7 +356,7 @@ def main():
     mash_input_fasta = fixed_fasta + '.msh'
 
     ncbi = dict_from_alt_key_list(
-        read_file_to_dict(NCBI_PLASMID_TAXONOMY_FILE, NCBI_PLASMID_TAXONOMY_HEADER, separater="\t"),
+        read_file_to_dict(NCBI_PLASMID_TAXONOMY_FILE, MOB_CLUSTER_INFO_HEADER, separater="\t"),
         "sample_id")
     lit = dict_from_alt_key_list(
         read_file_to_dict(LIT_PLASMID_TAXONOMY_FILE, LIT_PLASMID_TAXONOMY_HEADER, separater="\t"), "sample_id")
