@@ -412,7 +412,7 @@ def initETE3Database(database_directory, ETE3DBTAXAFILE, logging):
 
 
 def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE, logging):
-    max_time = 300
+    max_time = 600
     elapsed_time = 0
 
     while os.path.exists(lockfilepath) == True and elapsed_time < max_time:
@@ -426,7 +426,7 @@ def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE, logging):
         # delete lock file older than 1 hour
         modTimesinceEpoc = os.path.getmtime(lockfilepath)
         elapsedTime = (time.time() - modTimesinceEpoc) / 60
-        if elapsedTime > 60:
+        if elapsedTime >= 10:
             os.remove(lockfilepath)
         else:
             logging.error(
