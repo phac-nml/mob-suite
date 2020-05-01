@@ -162,6 +162,9 @@ def main():
 
     logger.info('Running Mob-typer version {}'.format(__version__))
 
+    logger.info('Processing fasta file {}'.format(args.infile))
+
+
     if not os.path.isfile(args.infile):
         logger.info('Error, fasta file does not exist {}'.format(args.infile))
         sys.exit()
