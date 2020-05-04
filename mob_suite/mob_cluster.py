@@ -636,14 +636,16 @@ def main():
         writeClusterAssignments(tmp_cluster_file, MOB_CLUSTER_INFO_HEADER, new_seq_info)
         shutil.copy(input_fasta, update_fasta)
 
+    logging.info("Sketching new fasta {}".format(update_fasta))
     mash_db_file = "{}.msh".format(update_fasta)
     mObj = mash()
     mObj.mashsketch(update_fasta, mash_db_file, num_threads=num_threads)
+    logging.info("Building blastdb {}".format(update_fasta))
     blast_runner = BlastRunner(update_fasta, '')
     blast_runner.makeblastdb(update_fasta, 'nucl', logging=logging)
-
+    logging.info("Removing temporary directory")
     shutil.rmtree(tmp_dir)
-
+    logging.info("MOB-cluster completed")
 
 # call main function
 if __name__ == '__main__':
