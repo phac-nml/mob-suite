@@ -110,6 +110,10 @@ def extract(fname, outdir):
 
         with zipfile.ZipFile(fname, 'r') as zip_ref:
             zip_ref.extractall(outdir)
+    elif fname.endswith(".tar.gz"):
+        tar = tarfile.open(fname, "r:gz")
+        tar.extractall()
+        tar.close()
 
     elif fname.endswith(".gz"):
 
@@ -173,7 +177,7 @@ def main():
     if not os.path.exists(database_directory):
         os.makedirs(database_directory)
 
-    zip_file = prepend_db_dir('data.zip')
+    zip_file = prepend_db_dir('data.tar.gz')
     plasmid_database_fasta_file = prepend_db_dir('ncbi_plasmid_full_seqs.fas')
     repetitive_fasta_file = prepend_db_dir('repetitive.dna.fas')
     mash_db_file =  prepend_db_dir('ncbi_plasmid_full_seqs.fas.msh')
@@ -188,12 +192,6 @@ def main():
             logger.error("Download failed with error {}. Removing lock file".format(str(e)))
             os.remove(lockfilepath)
             sys.exit(-1)
-
-        #FigShare checksums are not reliable. More issues than benefits of integrity
-        if check_hash_or_size(zip_file, config['db_hash']):
-            break   #do not try other mirror
-        else:
-            logger.info("Checksum or file size for data.zip did not coincide with the reference hash values {}".format(config['db_hash']))
 
 
     logger.info('Downloading databases successful, now building databases')
