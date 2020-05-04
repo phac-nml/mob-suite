@@ -7,7 +7,7 @@ backgrounds. The MOB-suite is designed to be a modular set of tools for the typi
 reconstruction of plasmid sequences from WGS assemblies.
 
 
-The MOB-suite depends on a series of databases which are too large to be hosted in git-hub. They can be downloaded or updated by running mob_init or if running any of the tools for the first time, the databases will download and initialize automatically. However, they are quite large so the first run will take a long time depending on your connection and speed of your computer.
+The MOB-suite depends on a series of databases which are too large to be hosted in git-hub. They can be downloaded or updated by running mob_init or if running any of the tools for the first time, the databases will download and initialize automatically if you do not specify an alternate database location. However, they are quite large so the first run will take a long time depending on your connection and speed of your computer.
 The databases can be downloaded from figshare here: https://ndownloader.figshare.com/articles/5841882/versions/1 and https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download
 
 ### MOB-init
@@ -18,23 +18,13 @@ On first run of MOB-typer or MOB-recon, MOB-init should run to download the data
 ```
 
 ### MOB-cluster
-This tool creates plasmid similarity groups using fast genomic distance estimation using MASH.  Plasmids are grouped into clusters using single-linkage clustering and the cluster codes provided by the tool provide an approximation of operational taxonomic units OTU’s 
+This tool creates plasmid similarity groups using fast genomic distance estimation using Mash.  Plasmids are grouped into clusters using complete-linkage clustering and the cluster code accessions provided by the tool provide an approximation of operational taxonomic units OTU’s 
 
 ### MOB-recon
-This tool reconstructs individual plasmid sequences from draft genome assemblies using the clustered plasmid reference databases provided by MOB-cluster.
+This tool reconstructs individual plasmid sequences from draft genome assemblies using the clustered plasmid reference databases provided by MOB-cluster. It will also automatically provide the full typing information provided by MOB-typer. It optionally can use a chromosome depletion strategy based on closed genomes or user supplied filter of sequences to ignore.
 
 ### MOB-typer
-Provides in silico predictions of the replicon family, relaxase type, mate-pair formation type and predicted transferability of the plasmid
-
-### MOB-hostrange
-Provides information on plasmid reproductive host range and transfer rate using both sequencing and experimental data from public databases (NCBI) and publications (PubMED). 
-The predicted host range represents a range of putative hosts where a given plasmid can stably replicate and be maintained by the host. 
-The host range module makes no source attribution predictions of a plasmid.
-
-The host range and the transfer rate predictions are based on the experimental evidence reported in the surveyed literature.
-Currently the host range is predicted based on two databases: NCBI Nucleotide plasmid database of 11856 records and literature curated plasmid database containing 313 records. 
-The outputs are text reports and phylogenetic trees rendered in Newick and PNG image formats. This allows for easy visualization and data interpretation.
-
+Provides in silico predictions of the replicon family, relaxase type, mate-pair formation type and predicted transferability of the plasmid. Using a combination of biomarkers and MOB-cluster codes, it will also provide an observed host-range of your plasmid based on its replicon, relaxase and cluster assignment. This is combined with information mined from the literature to provide a prediction of the taxonomic rank at which the plasmid is likely to be stably maintained but it does not provide source attribution predictions.
 
 ## Installation ##
 
@@ -65,7 +55,6 @@ We recommend MOB-Suite installation as a conda package due to large number of de
 ```
 
 
-
 ### Pip
 
 We recommend installing MOB-Suite via bioconda but you can install it via pip using the command below
@@ -92,7 +81,7 @@ The docker image section also has instructions on how to create singularity imag
 % singularity build mobsuite.simg recipe.singularity
 ```
 
-## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and to predict mobility
+## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and to predict mobility and replicative plasmid host-range
 
 ### Setuptools
 Clone this repository and install via setuptools. 
@@ -105,56 +94,57 @@ Clone this repository and install via setuptools.
 
 ## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and predict mobility
 
-You can perform plasmid typing using a fasta formated file containing a single plasmid represented by one or more contigs. Do not include multiple unrelated plasmids in the file as they will be treated as a single plasmid.
+You can perform plasmid typing using a fasta formated file containing a single plasmid represented by one or more contigs or it can treat all of the sequences in the fasta file as independant. The default behaviour is to treat all sequences in a file as from one plasmid, do not include multiple unrelated plasmids in the file without specifying --multi as they will be treated as a single plasmid.
 
 
 ```
-# Basic Mode
-% mob_typer --infile assembly.fasta --outdir my_out_dir
+# Single plasmid
+% mob_typer --infile assembly.fasta --out_file sample_mobtyper_results.txt
 
-# Look for a file called mobtyper_(input_file)_report.txt
-% cat my_out_dir/mobtyper_(input_file)_report.txt
+# Multiple independant plasmids
+% mob_typer --multi --infile assembly.fasta --out_file sample_mobtyper_results.txt
+
 ```
 
 ## Using MOB-recon to reconstruct plasmids from draft assemblies
 This procedure works with draft or complete genomes and is agnostic of assembler choice but if
-unicycler is used, then the circularity information can be parsed directly from the header of the unmodified assembly.
+unicycler is used, then the circularity information can be parsed directly from the header of the unmodified assembly using -u . MOB-typing information is automatically generated for all plasmids reconstructed by MOB-recon.
 
 ```
 ### Basic Mode
 % mob_recon --infile assembly.fasta --outdir my_out_dir
 ```
 
+As of v. 3.0.0, we have added the ability of users to provide their own specific set of sequences to remove from plasmid reconstruction. This should be performed with caution and with the knowlede of your organism.  Sequences which are frequently of plasmid origin but are not in your organism is the primary use case we envision for this feature.
+
 ```
-### Full Mode
-# In this mode, MOB-typer will be run on each identified plasmid grouping and will produce a summary report
-% mob_recon --infile assembly.fasta --outdir my_out_dir --run_typer
+### User sequence mask
+% mob_recon --infile assembly.fasta --outdir my_out_dir --
 ```
 
+As of v. 3.0.0, we have provided the ability to use a collection of closed genomes which will be quickly checked using Mash for genomes which are genetically close and limit blast searches to those chromosomes. This more nuanced and automatic approach is recommended for users where there are sequences which should be filtered in one genomic context but not another. We provide as an optional download as set of closed Enterobacteriacea genomes from NCBI which can be used to provide added accuracy for some organisms such as E. coli and Klebsiella where there are sequences which switch between chromosome and plasmids.
+
+```
+### Autodetected close genome filter
+% mob_recon --infile assembly.fasta --outdir my_out_dir -g 2019-11-NCBI-Enterobacteriacea-Chromosomes.fasta
+```
 ## Using MOB-cluster
-Use this tool only to update the plasmid databases or build a new one and should only be completed with closed high quality plasmids. If you add in poor quality data it will severely impact MOB-recon
+Use this tool only to update the plasmid databases or build a new one and should only be completed with closed high quality plasmids. If you add in poor quality data it can severely impact MOB-recon. As od v. 3.0.0, MOB-cluster has been re-written to utilize the output from MOB-typer to greatly speed up the process of updating and builing plasmid databases by using pre-computed results. Clusters generated from earlier versions of MOB-suite are not compatibile with the new clusters. We have povided a mapping file of previous cluster assignments and their new cluster accessions. Each cluster code is unique and will not be re-used.
 
 ```
 ### Build a new database
-% mob_cluster --mode build --infile plasmid.fasta --outdir output_directory
+% mob_cluster --mode build -f new_plasmids.fasta -p new_plasmids_mobtyper_report.txt -t new_plasmids_host_taxonomy.txt --outdir output_directory
 ```
 
 ```
 ### Add a sequence to an existing database
-% mob_cluster --infile update_sequences.fasta --ref_fasta_file original.fasta --ref_mash_db original.msh --ref_cluster_file original_clusters.txt 
+% mob_cluster --mode update -f new_plasmids.fasta -p new_plasmids_mobtyper_report.txt -t new_plasmids_host_taxonomy.txt --outdir output_directory -c existing_clusters.txt -r existing_sequences.fasta
 ```
-
-```
-### Test new plasmid database with MOB-recon
-% makeblastdb -in path_to_plasmid_testing_db -dbtype nucl
-% mash sketch -i path_to_plasmid_testing_db   <---- produces mash sketch file with format "path_to_plasmid_testing_db.msh"
-% mob_recon --infile assembly.fasta --outdir my_out_dir --run_typer --plasmid_mash_db path_to_mash_testing_db --plasmid_db path_to_plasmid_testing_db
-```
-
 
 ```
 ### Update MOB-suite plasmid databases
-% mv new_mob_formated_db.fasta mob_db_path/ncbi_plasmid_full_seqs.fas
+% cp output_directory/clusters.txt
+% mv output_directory/updated.fasta mob_db_path/ncbi_plasmid_full_seqs.fas
 % makeblastdb -in mob_db_path/ncbi_plasmid_full_seqs.fas -dbtype nucl
 % mash sketch -i mob_db_path/ncbi_plasmid_full_seqs.fas 
 ```
@@ -169,7 +159,6 @@ Use this tool only to update the plasmid databases or build a new one and should
 | repetitive_blast_report | Summary information of contigs found to consist of nothing but a repetitive element |
 | chromosome.fasta | Fasta file of all contigs found to belong to the chromosome |
 | plasmid_(X).fasta | Each plasmid group is written to an individual fasta file which contains the assigned contigs |
-| mobtyper_(input_file)_report.txt | Individual MOB-typer report files for each identified plasmid |
 | mobtyper_aggregate_report.txt | Aggregate MOB-typer report files for all identified plasmid |
 
 # MOB-recon contig report format
@@ -215,29 +204,27 @@ Use this tool only to update the plasmid databases or build a new one and should
 | mash_neighbor_cluster | MOB-cluster type of reference match |
 
 
+# MOB-cluster clusters
+| field name | description|
+| -----------| -----------|
+| file_id | Name of the input file |
+| num_contigs | Number of sequences identified in the file |
+| total_length | Total number of bases in all sequences |
+| gc | GC% of all sequences |
+| rep_type(s) | Replicon types idenfied |
+| rep_type_accession(s) | Accessions of replicons identified |
+| relaxase_type(s) | Relaxase types identified |
+| relaxase_type_accession(s) | Accessions of relaxases identified |
+| mpf_type | Mate-pair formation types identified |
+| mpf_type_accession(s) | Mate-pair formation type accessioons |
+| orit_type(s) | Relaxase type of oriT sequence |
+| orit_accession(s) | Accession for oriT |
+| PredictedMobility | Mobility prediction for the plasmid (Conjugative, Mobilizable, Non-mobilizable) |
+| mash_nearest_neighbor | Accession of closest database match |
+| mash_neighbor_distance | Mash distance from query to match |
+| mash_neighbor_cluster | MOB-cluster type of reference match |
 
-# MOB-hostrange report file format
 
-The table describes output fields found in the `mobtyper_*_report.txt`, `*_literature_report.txt` and `mobtyper_aggregate_report.txt` 
-report files.
-
-| field name    | description                           |
-| --------------| --------------------------------------|
-| NCBI-HR-Rank  | NCBI Nucleotide host range prediction expressed as a taxonomic rank  | 
-| NCBI-HR-Name  | NCBI Nucleotide host range prediction expressed as a taxonomic scintific name                 |
-|LitPredDBHRRank | Literature-based host range rank prediction (LiteratureDB) |
-|LitPredDBHRRankSciName| Literature-based host range  prediction expressed as taxanomic scientific name (LiteratureDB) |
-|LitRepHRRankInPubs | Literature-reported host range  expressed as taxanomic rank |
-|LitRepHRNameInPubs | Literature-reported host range  expressed as taxanomic scientific name |
-|LitMeanTransferRate| Literature-reported plasmid transfer mean rate |
-|LitClosestRefAcc | NCBI Nucleotide literature-reported plasmid accession number closest to the query plasmid |
-|LitClosestRefDonorStrain| The donor stain used in the conjugation experiment with the plasmid reported in `LitClosestRefAcc` field |
-|LitClosestRefRecipientStrain| The recipient stain used in the conjugation experiment |
-|LitClosestRefTransferRate|The literature-reported plasmid transfer rate of the closest literature-reported plasmid |
-|LitClosestConjugTemp |The literature-reported conjugation temperature  during the plasmid transfer of the literature-reported plasmid (reported in `LitClosestRefAcc` field) |
-|LitPMIDs | PubMED articles identifiers linked to the query plasmid | 
-|LitPMIDsNumber | Number of PubMED articles identifiers reporting on the provided query plasmid |
-|LitClosestMashDist | MASH distance between the query plasmid and the closest literature plasmid (the lower the better) | 
 
 
 # blast report file format
