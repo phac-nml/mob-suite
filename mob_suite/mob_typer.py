@@ -477,7 +477,7 @@ def main():
             mob_cluster_id = record['primary_cluster_id']
         else:
             mob_cluster_id = None
-        host_range = hostrange(record['rep_type(s)'], record['relaxase_type_accession(s)'], mob_cluster_id, ncbi, lit)
+        host_range = hostrange(record['rep_type(s)'].split(','), record['relaxase_type_accession(s)'].split(','), mob_cluster_id, ncbi, lit)
 
         for field in host_range:
             record[field] = host_range[field]

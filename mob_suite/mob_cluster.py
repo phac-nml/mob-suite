@@ -199,7 +199,6 @@ def write_clusters(file, cluster_assignments, header):
 
 
 def build_cluster_db(distance_matrix_file, distances):
-    print(distance_matrix_file)
 
     data = pd.read_csv(distance_matrix_file, sep='\t', header=0,
                        index_col=0)
@@ -532,7 +531,6 @@ def main():
         organism = new_seq_info[seq_id]['organism']
         if organism in taxids:
             new_seq_info[seq_id]['taxid'] = taxids[organism][0]
-            print(new_seq_info[seq_id]['taxid'])
         else:
             new_seq_info[seq_id]['taxid'] = 2
 
