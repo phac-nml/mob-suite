@@ -1237,7 +1237,7 @@ def main():
         chr_fh.close()
         if len(contig_memberships['plasmid']) > 0:
             ncbi = dict_from_alt_key_list(
-                read_file_to_dict(NCBI_PLASMID_TAXONOMY_FILE, NCBI_PLASMID_TAXONOMY_HEADER, separater="\t"),
+                read_file_to_dict(NCBI_PLASMID_TAXONOMY_FILE, MOB_CLUSTER_INFO_HEADER, separater="\t"),
                 "sample_id")
             lit = dict_from_alt_key_list(
                 read_file_to_dict(LIT_PLASMID_TAXONOMY_FILE, LIT_PLASMID_TAXONOMY_HEADER, separater="\t"), "sample_id")

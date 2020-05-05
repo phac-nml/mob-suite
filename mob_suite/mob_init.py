@@ -13,6 +13,7 @@ import time #waiting for other processes
 from mob_suite.utils import init_console_logger
 from mob_suite.constants import  default_database_dir
 from ete3 import NCBITaxa
+from pathlib import Path
 
 logger = init_console_logger(3)
 config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.json')
@@ -84,7 +85,6 @@ def download_to_file(url, file):
 
     with open(file, 'wb') as f:
         c = pycurl.Curl()
-        # Redirects to https://www.python.org/.
         c.setopt(c.URL, url)
         # Follow redirect.
         c.setopt(c.FOLLOWLOCATION, True)
@@ -105,25 +105,18 @@ def extract(fname, outdir):
     """
 
     logger.info(f'Decompressing {fname}')
+    shutil.unpack_archive(fname, outdir)
+    dir_name = os.path.join(outdir,os.path.basename(fname))
+    for ext in ['.tar.gz','.zip','.gz']:
+        dir_name = dir_name.replace(ext,'')
 
-    if fname.endswith(".zip"):
-
-        with zipfile.ZipFile(fname, 'r') as zip_ref:
-            zip_ref.extractall(outdir)
-    elif fname.endswith(".tar.gz"):
-        tar = tarfile.open(fname, "r:gz")
-        tar.extractall()
-        tar.close()
-
-    elif fname.endswith(".gz"):
-
-        outfile = os.path.join(outdir, fname.replace('.gz',''))
-
-        with gzip.open(fname, 'rb') as f_in, open(outfile, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
-
+    src_files = os.listdir(dir_name)
+    for file_name in src_files:
+        full_file_name = os.path.join(dir_name, file_name)
+        if os.path.isfile(full_file_name):
+            shutil.copy(full_file_name, outdir)
+    shutil.rmtree(dir_name)
     os.remove(fname)
-
 
 def main():
     args = arguments()
@@ -188,14 +181,14 @@ def main():
         try:
             logger.info('Trying mirror {}'.format(db_mirror))
             download_to_file(db_mirror, zip_file)
+            break
         except Exception as e:
             logger.error("Download failed with error {}. Removing lock file".format(str(e)))
             os.remove(lockfilepath)
             sys.exit(-1)
 
 
-    logger.info('Downloading databases successful, now building databases')
-
+    logger.info("Downloading databases successful, now building databases at {}".format(database_directory))
     extract(zip_file, database_directory)
 
     files = [prepend_db_dir(f)
