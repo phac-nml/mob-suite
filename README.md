@@ -8,17 +8,17 @@ reconstruction of plasmid sequences from WGS assemblies.
 
 
 The MOB-suite depends on a series of databases which are too large to be hosted in git-hub. They can be downloaded or updated by running mob_init or if running any of the tools for the first time, the databases will download and initialize automatically if you do not specify an alternate database location. However, they are quite large so the first run will take a long time depending on your connection and speed of your computer.
-The databases can be downloaded from figshare here: https://ndownloader.figshare.com/articles/5841882/versions/1 and https://share.corefacility.ca/index.php/s/oeufkw5HyKz0X5I/download
+Databases can be manually downloaded from https://share.corefacility.ca/index.php/s/rYaAH7oxrSVtilN/download or https://zenodo.org/record/3786915/files/data.tar.gz?download=1
 
 ### MOB-init
-On first run of MOB-typer or MOB-recon, MOB-init should run to download the databases from figshare, sketch the databases and setup the blast databases. However, it can be run manually if the databases need to be re-initialized.
+On first run of MOB-typer or MOB-recon, MOB-init should run to download the databases from figshare, sketch the databases and setup the blast databases. However, it can be run manually if the databases need to be re-initialized OR if you want to initialize the databases in an alternative directory.
 
 ```
 % mob_init
 ```
 
 ### MOB-cluster
-This tool creates plasmid similarity groups using fast genomic distance estimation using Mash.  Plasmids are grouped into clusters using complete-linkage clustering and the cluster code accessions provided by the tool provide an approximation of operational taxonomic units OTU’s 
+This tool creates plasmid similarity groups using fast genomic distance estimation using Mash.  Plasmids are grouped into clusters using complete-linkage clustering and the cluster code accessions provided by the tool provide an approximation of operational taxonomic units OTU’s. The plasmid nomenclature is designed to group highly similar plasmids together which are unlikely to have multiple representatives within a single cell and have a strong concordance with replicon and relaxase typing but is universally applicable since it uses the complete sequence of the plasmid itself rather than specific biomarkers.
 
 ### MOB-recon
 This tool reconstructs individual plasmid sequences from draft genome assemblies using the clustered plasmid reference databases provided by MOB-cluster. It will also automatically provide the full typing information provided by MOB-typer. It optionally can use a chromosome depletion strategy based on closed genomes or user supplied filter of sequences to ignore.
@@ -123,7 +123,8 @@ As of v. 3.0.0, we have added the ability of users to provide their own specific
 ```
 
 As of v. 3.0.0, we have provided the ability to use a collection of closed genomes which will be quickly checked using Mash for genomes which are genetically close and limit blast searches to those chromosomes. This more nuanced and automatic approach is recommended for users where there are sequences which should be filtered in one genomic context but not another. We provide as an optional download as set of closed Enterobacteriacea genomes from NCBI which can be used to provide added accuracy for some organisms such as E. coli and Klebsiella where there are sequences which switch between chromosome and plasmids.
-
+<br><br>
+If reconstructed plasmids exceed the Mash distance for primary cluster assignment, then they will get assigned a name in the format novel_{md5} where the md5 hash is calculated based on all of the sequences belonging to that reconstructed plasmid. This will provide a unique name for them but any change will result in a changed in the md5 hash. It is inadvised to use these groups for further analyses. Rather they should be highlighted as cases where targeted long read sequencing is required to obtain a closer database representitive of that plasmid.
 ```
 ### Autodetected close genome filter
 % mob_recon --infile assembly.fasta --outdir my_out_dir -g 2019-11-NCBI-Enterobacteriacea-Chromosomes.fasta
@@ -159,71 +160,88 @@ Use this tool only to update the plasmid databases or build a new one and should
 | repetitive_blast_report | Summary information of contigs found to consist of nothing but a repetitive element |
 | chromosome.fasta | Fasta file of all contigs found to belong to the chromosome |
 | plasmid_(X).fasta | Each plasmid group is written to an individual fasta file which contains the assigned contigs |
-| mobtyper_aggregate_report.txt | Aggregate MOB-typer report files for all identified plasmid |
+| mobtyper_results | Aggregate MOB-typer report files for all identified plasmid |
 
 # MOB-recon contig report format
-| field id | description |
-| -------- | ------------|
-| file_id | Name of the input file  |
-| cluster_id | MOB-cluster type of reference match |
-| contig_id | Unique identifier of the contig |
-| contig_length | Length of the contig |
-| circularity_status | Circular if Circlator or Unicycler find it to be circular, and incomplete if not |
-| rep_type | Replicon types idenfied |
-| rep_type_accession | Accessions of replicons identified |
-| relaxase_type | Relaxase types identified |
-| relaxase_type_accession | Accessions of relaxases identified |
-| mash_nearest_neighbor | Mate-pair formation types identified |
-| mash_neighbor_distance | Mate-pair formation type accessioons |
+| field  | Description |
+| --------- |  --------- | 
+| sample_id | Sample ID specified by user or deault to filename |
+| molecule_type | Plasmid or Chromosome |
+| primary_cluster_id | primary MOB-cluster id of neighbor |
+| secondary_cluster_id | secondary MOB-cluster id of neighbor |
+| size | Length in base pairs |
+| gc | GC % |
+| md5 | md5 hash |
+| circularity_status | Molecule is either circular, incomplete or not tested based on parameters used |
+| rep_type(s) | Replion type(s) |
+| rep_type_accession(s) | Replicon sequence accession(s) |
+| relaxase_type(s) | Relaxase type(s) |
+| relaxase_type_accession(s) | Relaxase sequence accession(s) |
+| mpf_type | Mate-Pair formation type |
+| mpf_type_accession(s) | Mate-Pair formation sequence accession(s) |
+| orit_type(s) | Origin of transfer type |
+| orit_accession(s) | Origin of transfer sequence accession(s) |
+| predicted_mobility | Mobility prediction for the plasmid (Conjugative, Mobilizable, Non-mobilizable) |
+| mash_nearest_neighbor | Accession of closest plasmid database match |
+| mash_neighbor_distance | Mash distance from query to match |
+| mash_neighbor_identification | Host taxonomy of the plasmid database match |
 | repetitive_dna_id | Repetitive DNA match id |
-| match_type | Repetitive element class |
-| score | Blast bitscore of match |
-| contig_match_start | Start of match on contig |
-| contig_match_end | End of match on contig |
+| repetitive_dna_type| Repetitive element class |
 
 
 
 # MOB-typer report file format
-| field name | description|
-| -----------| -----------|
-| file_id | Name of the input file |
-| num_contigs | Number of sequences identified in the file |
-| total_length | Total number of bases in all sequences |
-| gc | GC% of all sequences |
-| rep_type(s) | Replicon types idenfied |
-| rep_type_accession(s) | Accessions of replicons identified |
-| relaxase_type(s) | Relaxase types identified |
-| relaxase_type_accession(s) | Accessions of relaxases identified |
-| mpf_type | Mate-pair formation types identified |
-| mpf_type_accession(s) | Mate-pair formation type accessioons |
-| orit_type(s) | Relaxase type of oriT sequence |
-| orit_accession(s) | Accession for oriT |
-| PredictedMobility | Mobility prediction for the plasmid (Conjugative, Mobilizable, Non-mobilizable) |
-| mash_nearest_neighbor | Accession of closest database match |
+| field  | Description |
+| --------- |  --------- | 
+| sample_id | Sample ID specified by user or deault to filename |
+| num_contigs | Number of sequences belonging to plasmid |
+| size | Length in base pairs |
+| gc | GC % |
+| md5 | md5 hash |
+| rep_type(s) | Replion type(s) |
+| rep_type_accession(s) | Replicon sequence accession(s) |
+| relaxase_type(s) | Relaxase type(s) |
+| relaxase_type_accession(s) | Relaxase sequence accession(s) |
+| mpf_type | Mate-Pair formation type |
+| mpf_type_accession(s) | Mate-Pair formation sequence accession(s) |
+| orit_type(s) | Origin of transfer type |
+| orit_accession(s) | Origin of transfer sequence accession(s) |
+| predicted_mobility | Mobility prediction for the plasmid (Conjugative, Mobilizable, Non-mobilizable) |
+| mash_nearest_neighbor | Accession of closest plasmid database match |
 | mash_neighbor_distance | Mash distance from query to match |
-| mash_neighbor_cluster | MOB-cluster type of reference match |
+| mash_neighbor_identification | Host taxonomy of the plasmid database match |
+| primary_cluster_id | primary MOB-cluster id of neighbor |
+| secondary_cluster_id | secondary MOB-cluster id of neighbor |
+| predicted_host_range_overall_rank | Taxon rank of convergence between observed and reported host ranges |
+| predicted_host_range_overall_name | Taxon name of convergence between observed and reported host ranges |
+| observed_host_range_ncbi_rank | Taxon rank of convergence of plasmids in MOB-suite plasmid DB |
+| observed_host_range_ncbi_name | Taxon name of convergence of plasmids in MOB-suite plasmid DB |
+| reported_host_range_lit_rank | Taxon rank of convergence of literature reported host ranges |
+| reported_host_range_lit_name | Taxon name of convergence of literature reported host ranges |
+| associated_pmid(s) | PubMed ID(s) associated with records |
 
-
-# MOB-cluster clusters
-| field name | description|
-| -----------| -----------|
-| file_id | Name of the input file |
-| num_contigs | Number of sequences identified in the file |
-| total_length | Total number of bases in all sequences |
-| gc | GC% of all sequences |
-| rep_type(s) | Replicon types idenfied |
-| rep_type_accession(s) | Accessions of replicons identified |
-| relaxase_type(s) | Relaxase types identified |
-| relaxase_type_accession(s) | Accessions of relaxases identified |
-| mpf_type | Mate-pair formation types identified |
-| mpf_type_accession(s) | Mate-pair formation type accessioons |
-| orit_type(s) | Relaxase type of oriT sequence |
-| orit_accession(s) | Accession for oriT |
-| PredictedMobility | Mobility prediction for the plasmid (Conjugative, Mobilizable, Non-mobilizable) |
-| mash_nearest_neighbor | Accession of closest database match |
-| mash_neighbor_distance | Mash distance from query to match |
-| mash_neighbor_cluster | MOB-cluster type of reference match |
-
+# MOB-cluster sequence cluster information file
+| field  | Description |
+| --------- |  --------- | 
+| sample_id | Sample ID specified by user or deault to filename |
+| size | Length in base pairs |
+| gc | GC % |
+| md5 | md5 hash |
+| organism | Host taxon name |
+| taxid | Host NCBI taxon id |
+| rep_type(s) | Replion type(s) |
+| rep_type_accession(s) | Replicon sequence accession(s) |
+| relaxase_type(s) | Relaxase type(s) |
+| relaxase_type_accession(s) | Relaxase sequence accession(s) |
+| mpf_type | Mate-Pair formation type |
+| mpf_type_accession(s) | Mate-Pair formation sequence accession(s) |
+| orit_type(s) | Origin of transfer type |
+| orit_accession(s) | Origin of transfer sequence accession(s) |
+| predicted_mobility | Mobility prediction for the plasmid (Conjugative, Mobilizable, Non-mobilizable) |
+| primary_cluster_id | primary MOB-cluster id of plasmid |
+| primary_dist | primary MOB-cluster distance cutoff to generate cluster |
+| secondary_cluster_id | secondary MOB-cluster id of plasmid |
+| secondary_dist | secondary MOB-cluster distance cutoff to generate cluster |
 
 
 
