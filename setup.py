@@ -13,9 +13,8 @@ Intended Audience :: Science/Research
 Topic :: Scientific/Engineering
 Topic :: Scientific/Engineering :: Bio-Informatics
 Programming Language :: Python
-Programming Language :: Python :: 3.5
-Programming Language :: Python :: 3.6
 Programming Language :: Python :: 3.7
+Programming Language :: Python :: 3.8
 Programming Language :: Python :: Implementation :: CPython
 Operating System :: POSIX :: Linux
 """.strip().split('\n')
@@ -29,7 +28,7 @@ setup(
     name='mob_suite',
     include_package_data=True,
     version='3.0.0',
-    python_requires='>3.5.2',
+    python_requires='>=3.7.0',
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     packages=find_packages(exclude=['tests', 'databases']),
