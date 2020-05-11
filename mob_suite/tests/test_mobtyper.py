@@ -14,9 +14,9 @@ def test_mean_and_multireplicon_frame():
     logger.info("Testing MOB-typer")
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/pCAV1453-208.fasta",
-        "--outfile", TEST_ROOT + "/run_test/mobtyper_results.txt",
+        "--out_file", TEST_ROOT + "/run_test/mobtyper_results.txt",
     ]
 
     sys.argv[1:] = args
     mob_suite.mob_typer.main()
-    assert os.path.exists("/run_test/mobtyper_results.txt"), "Error MOB-typer did not run successfully"
+    assert os.path.exists(TEST_ROOT + "/run_test/mobtyper_results.txt"), "Error MOB-typer did not run successfully"

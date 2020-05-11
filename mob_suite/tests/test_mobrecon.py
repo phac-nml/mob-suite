@@ -17,10 +17,11 @@ def test_mob_recon_with_mob_typer_report():
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/Pseudomonas/test_contigs.fasta",
         "--outdir", os.path.dirname(__file__)+"/run_test/mob_recon",
-        "--debug"
+        "--debug",
+        "--force"
     ]
     sys.argv[1:] = args
     mob_suite.mob_recon.main()
 
     mobtyper_results_file = os.path.join(TEST_ROOT,"run_test/mob_recon/mobtyper_results.txt")
-    assert sum(1 for line in open(mobtyper_results_file)) == 4 , "Results file is empty, something went wrong"
+    assert sum(1 for line in open(mobtyper_results_file)) == 2 , "Results file is empty, something went wrong"
