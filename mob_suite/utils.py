@@ -952,6 +952,7 @@ def build_mobtyper_report(plasmid_contig_info, out_dir, outfile, seq_dict, ncbi,
                     mob_typer_results[clust_id][field].append(data[contig_id][field])
 
         # overwrite individual seq stat calculations with the overall
+        cluster_seq = sorted(cluster_seq,key=len)
         seq = "".join(cluster_seq)
         mob_typer_results[clust_id]['md5'] = [calc_md5(seq)]
         mob_typer_results[clust_id]['gc'] = [GC(seq)]

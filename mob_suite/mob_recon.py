@@ -627,11 +627,16 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
     cluster_md5 = {}
     for clust_id in cluster_contig_links:
         contigs = cluster_contig_links[clust_id]
+
         seq = []
         for contig_id in contigs:
-            if contig_id in contig_seqs[contig_id]:
+            if contig_id in contig_seqs:
                 seq.append(contig_seqs[contig_id])
+
+        seq.sort(key=len)
         cluster_md5[clust_id] = calc_md5(''.join(seq))
+
+
 
     # get lowest distance cluster
     counter = 0
@@ -686,6 +691,33 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
                 else:
                     contig_info[contig_id]['primary_cluster_id'] = ''
                     contig_info[contig_id]['molecule_type'] = 'chromosome'
+
+    #Fix MD5 assignment for plasmids which had changes
+    cluster_membership = {}
+
+    for contig_id in contig_info:
+        data = contig_info[contig_id]
+        if data['molecule_type'] == 'chromosome' or data['primary_cluster_id'] == '':
+            continue
+        cluster_id = data['primary_cluster_id']
+        if not clust_id in cluster_membership:
+            cluster_membership[cluster_id] = []
+        cluster_membership[cluster_id].append(contig_id)
+
+    for clust_id in cluster_membership:
+        contigs = cluster_membership[clust_id]
+        seq = []
+
+        for contig_id in contigs:
+            if contig_id in contig_seqs:
+                seq.append(contig_seqs[contig_id])
+        if 'novel' in clust_id:
+            clust_id = "novel_{}".format(calc_md5(''.join(sorted(seq,key=len))))
+
+        for contig_id in contigs:
+            contig_info[contig_id]['primary_cluster_id'] = clust_id
+
+
 
     return evaluate_contig_assignments(contig_info, primary_distance, secondary_distance)
 
@@ -1227,14 +1259,7 @@ def main():
     # Write contig report
     logging.info("Writting contig results to {}".format(contig_report))
     if len(results) > 0:
-        writeReport(results, MOB_RECON_INFO_HEADER, contig_report)
 
-        logging.info("Writting chromosome sequences to {}".format(chromosome_file))
-        chr_fh = open(chromosome_file, 'w')
-        for contig_id in contig_memberships['chromosome']:
-            if contig_id in contig_seqs:
-                chr_fh.write(">{}\n{}\n".format(contig_id, contig_seqs[contig_id]))
-        chr_fh.close()
         if len(contig_memberships['plasmid']) > 0:
             ncbi = dict_from_alt_key_list(
                 read_file_to_dict(NCBI_PLASMID_TAXONOMY_FILE, MOB_CLUSTER_INFO_HEADER, separater="\t"),
@@ -1244,6 +1269,15 @@ def main():
 
             build_mobtyper_report(contig_memberships['plasmid'], out_dir, os.path.join(out_dir, "mobtyper_results.txt"),
                                   contig_seqs, ncbi, lit)
+
+        writeReport(results, MOB_RECON_INFO_HEADER, contig_report)
+
+        logging.info("Writting chromosome sequences to {}".format(chromosome_file))
+        chr_fh = open(chromosome_file, 'w')
+        for contig_id in contig_memberships['chromosome']:
+            if contig_id in contig_seqs:
+                chr_fh.write(">{}\n{}\n".format(contig_id, contig_seqs[contig_id]))
+        chr_fh.close()
 
     if not keep_tmp:
         logging.info("Cleaning up temporary files {}".format(tmp_dir))

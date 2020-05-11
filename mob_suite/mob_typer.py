@@ -477,6 +477,13 @@ def main():
             mob_cluster_id = record['primary_cluster_id']
         else:
             mob_cluster_id = None
+
+        #Patches that sometimes results are concatonated into strings if contigs are merged into a single results
+        if isinstance(record['rep_type(s)'],list):
+            record['rep_type(s)'] = ",".join(record['rep_type(s)'])
+        if isinstance(record['relaxase_type_accession(s)'], list):
+            record['relaxase_type_accession(s)'] = ",".join(record['relaxase_type_accession(s)'])
+
         host_range = hostrange(record['rep_type(s)'].split(','), record['relaxase_type_accession(s)'].split(','), mob_cluster_id, ncbi, lit)
 
         for field in host_range:
@@ -503,7 +510,7 @@ def main():
 
     if not keep_tmp:
         shutil.rmtree(tmp_dir)
-    logger.info("Run completed")
+    logger.info("Run completed and results written to {}".format(report_file))
 
 
 # call main function
