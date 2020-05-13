@@ -1282,7 +1282,7 @@ def main():
     if not keep_tmp:
         logging.info("Cleaning up temporary files {}".format(tmp_dir))
         shutil.rmtree(tmp_dir)
-    logger.info("Run completed")
+    logger.info("MOB-recon completed and results written to {}".format(out_dir))
 
 
 # call main function

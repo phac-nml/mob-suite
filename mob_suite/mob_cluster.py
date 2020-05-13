@@ -645,7 +645,7 @@ def main():
     blast_runner.makeblastdb(update_fasta, 'nucl', logging=logging)
     logging.info("Removing temporary directory")
     shutil.rmtree(tmp_dir)
-    logging.info("MOB-cluster completed")
+    logging.info("MOB-cluster completed, analysis results written to {}".format(out_dir))
 
 # call main function
 if __name__ == '__main__':

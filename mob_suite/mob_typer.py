@@ -510,7 +510,7 @@ def main():
 
     if not keep_tmp:
         shutil.rmtree(tmp_dir)
-    logger.info("Run completed and results written to {}".format(report_file))
+    logger.info("MOB-typer completed and results written to {}".format(report_file))
 
 
 # call main function

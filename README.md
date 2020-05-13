@@ -29,14 +29,14 @@ Provides in silico predictions of the replicon family, relaxase type, mate-pair 
 ## Installation ##
 
 ## Requires
-+ Python v. 3.6 +
++ Python v. 3.7 +
 + ete3 >= 3
 + biopython >= 1.70
 + pytables  >= 3.3
 + pycurl >= 7.43
 + pyqt  >= 5
-+ numpy >= 1.11.1
-+ scipy >= 1.1
++ numpy >= 1.18.1
++ scipy >= 1.4.1
 
 ## Dependencies
 
