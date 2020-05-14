@@ -10,8 +10,10 @@ from mob_suite.wrappers import mash
 import shutil
 import datetime
 import time #waiting for other processes
-from mob_suite.utils import default_database_dir, init_console_logger
+from mob_suite.utils import init_console_logger
+from mob_suite.constants import  default_database_dir
 from ete3 import NCBITaxa
+from pathlib import Path
 
 logger = init_console_logger(3)
 config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.json')
@@ -83,7 +85,6 @@ def download_to_file(url, file):
 
     with open(file, 'wb') as f:
         c = pycurl.Curl()
-        # Redirects to https://www.python.org/.
         c.setopt(c.URL, url)
         # Follow redirect.
         c.setopt(c.FOLLOWLOCATION, True)
@@ -104,21 +105,18 @@ def extract(fname, outdir):
     """
 
     logger.info(f'Decompressing {fname}')
+    shutil.unpack_archive(fname, outdir)
+    dir_name = os.path.join(outdir,os.path.basename(fname))
+    for ext in ['.tar.gz','.zip','.gz']:
+        dir_name = dir_name.replace(ext,'')
 
-    if fname.endswith(".zip"):
-
-        with zipfile.ZipFile(fname, 'r') as zip_ref:
-            zip_ref.extractall(outdir)
-
-    elif fname.endswith(".gz"):
-
-        outfile = os.path.join(outdir, fname.replace('.gz',''))
-
-        with gzip.open(fname, 'rb') as f_in, open(outfile, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
-
+    src_files = os.listdir(dir_name)
+    for file_name in src_files:
+        full_file_name = os.path.join(dir_name, file_name)
+        if os.path.isfile(full_file_name):
+            shutil.copy(full_file_name, outdir)
+    shutil.rmtree(dir_name)
     os.remove(fname)
-
 
 def main():
     args = arguments()
@@ -172,7 +170,7 @@ def main():
     if not os.path.exists(database_directory):
         os.makedirs(database_directory)
 
-    zip_file = prepend_db_dir('data.zip')
+    zip_file = prepend_db_dir('data.tar.gz')
     plasmid_database_fasta_file = prepend_db_dir('ncbi_plasmid_full_seqs.fas')
     repetitive_fasta_file = prepend_db_dir('repetitive.dna.fas')
     mash_db_file =  prepend_db_dir('ncbi_plasmid_full_seqs.fas.msh')
@@ -183,20 +181,14 @@ def main():
         try:
             logger.info('Trying mirror {}'.format(db_mirror))
             download_to_file(db_mirror, zip_file)
+            break
         except Exception as e:
             logger.error("Download failed with error {}. Removing lock file".format(str(e)))
             os.remove(lockfilepath)
             sys.exit(-1)
 
-        #FigShare checksums are not reliable. More issues than benefits of integrity
-        if check_hash_or_size(zip_file, config['db_hash']):
-            break   #do not try other mirror
-        else:
-            logger.info("Checksum or file size for data.zip did not coincide with the reference hash values {}".format(config['db_hash']))
 
-
-    logger.info('Downloading databases successful, now building databases')
-
+    logger.info("Downloading databases successful, now building databases at {}".format(database_directory))
     extract(zip_file, database_directory)
 
     files = [prepend_db_dir(f)
@@ -211,11 +203,11 @@ def main():
     try:
         logger.info('Building repetitive mask database')
         blast_runner = BlastRunner(repetitive_fasta_file, database_directory)
-        blast_runner.makeblastdb(repetitive_fasta_file, 'nucl')
+        blast_runner.makeblastdb(repetitive_fasta_file, 'nucl',logger)
 
         logger.info('Building complete plasmid database')
         blast_runner = BlastRunner(plasmid_database_fasta_file, database_directory)
-        blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl')
+        blast_runner.makeblastdb(plasmid_database_fasta_file, 'nucl',logger,True)
 
         logger.info('Sketching complete plasmid database')
         mObj = mash()

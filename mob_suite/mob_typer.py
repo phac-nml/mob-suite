@@ -1,34 +1,39 @@
 #!/usr/bin/env python3
 
 import logging
-import os, re, pandas, collections
-import shutil
-import sys
+import os, re, shutil, sys, tempfile
 from argparse import (ArgumentParser, FileType)
-from collections import OrderedDict
-from operator import itemgetter
 from mob_suite.version import __version__
 import mob_suite.mob_init
+from collections import OrderedDict
+from operator import itemgetter
 from mob_suite.blast import BlastRunner
-from mob_suite.blast import BlastReader
 from mob_suite.wrappers import mash
-from mob_suite.classes.mcl import mcl
-from mob_suite.utils import \
-    fixStart, \
-    read_fasta_dict, \
-    write_fasta_dict, \
-    filter_overlaping_records, \
-    replicon_blast, \
-    mob_blast, \
-    getRepliconContigs, \
-    fix_fasta_header, \
-    getMashBestHit, \
+
+from mob_suite.utils import fix_fasta_header, \
     calcFastaStats, \
     verify_init, \
-    check_dependencies
-from mob_suite.mob_host_range import getTaxonomyTree, getLiteratureBasedHostRange, loadliteratureplasmidDB, \
-    writeOutHostRangeReports,getRefSeqHostRange,loadHostRangeDB,renderTree, collapseLiteratureReport
+    check_dependencies, \
+    read_sequence_info, \
+    writeReport, \
+    sort_biomarkers, \
+    ETE3_db_status_check, \
+    calc_md5, \
+    GC, \
+    read_fasta_dict, \
+    identify_biomarkers, \
+    parseMash, \
+    determine_mpf_type, \
+    hostrange, \
+    dict_from_alt_key_list, \
+    read_file_to_dict
 
+from mob_suite.constants import ETE3DBTAXAFILE, \
+    MOB_TYPER_REPORT_HEADER, \
+    MOB_CLUSTER_INFO_HEADER, \
+    default_database_dir, \
+    ETE3_LOCK_FILE,  \
+    LIT_PLASMID_TAXONOMY_HEADER
 
 
 def init_console_logger(lvl=2):
@@ -46,45 +51,37 @@ def init_console_logger(lvl=2):
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
-    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
+
     parser = ArgumentParser(
-        description="MOB-Typer: Plasmid typing version: {}".format(
+        description="MOB-Typer: Plasmid typing and mobility prediction: {}".format(
             __version__))
-
-    parser.add_argument('-o', '--outdir', type=str, required=True, help='Output Directory to put results')
-
     parser.add_argument('-i', '--infile', type=str, required=True, help='Input assembly fasta file to process')
-
+    parser.add_argument('-o', '--out_file', type=str, required=True, help='Output file to write results')
+    parser.add_argument('-a', '--analysis_dir', type=str, required=False, help='Analysis directory')
     parser.add_argument('-n', '--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
+    parser.add_argument('-s', '--sample_id', type=str, required=False, help='Sample Prefix for reports')
+    parser.add_argument('-f', '--force', required=False, help='Overwrite existing directory',
+                        action='store_true')
+    parser.add_argument('-x', '--multi', required=False, help='Treat each sequence as an independant plasmid',
+                        action='store_true')
 
     parser.add_argument('--min_rep_evalue', type=str, required=False,
                         help='Minimum evalue threshold for replicon blastn',
                         default=0.00001)
-
     parser.add_argument('--min_mob_evalue', type=str, required=False,
                         help='Minimum evalue threshold for relaxase tblastn',
                         default=0.00001)
-
     parser.add_argument('--min_con_evalue', type=str, required=False, help='Minimum evalue threshold for contig blastn',
                         default=0.00001)
 
-    parser.add_argument('--min_ori_evalue', type=str, required=False,
-                        help='Minimum evalue threshold for oriT elements blastn',
-                        default=0.00001)
-    parser.add_argument('--min_mpf_evalue', type=str, required=False,
-                        help='Minimum evalue threshold for mpf elements blastn',
-                        default=0.00001)
-
+    parser.add_argument('--min_length', type=str, required=False, help='Minimum length of contigs to classify',
+                        default=1000)
     parser.add_argument('--min_rep_ident', type=int, required=False, help='Minimum sequence identity for replicons',
                         default=80)
-
     parser.add_argument('--min_mob_ident', type=int, required=False, help='Minimum sequence identity for relaxases',
                         default=80)
-
-    parser.add_argument('--min_ori_ident', type=int, required=False,
-                        help='Minimum sequence identity for oriT elements', default=90)
-    parser.add_argument('--min_mpf_ident', type=int, required=False,
-                        help='Minimum sequence identity for mpf elements', default=80)
+    parser.add_argument('--min_con_ident', type=int, required=False, help='Minimum sequence identity for contigs',
+                        default=80)
 
     parser.add_argument('--min_rep_cov', type=int, required=False,
                         help='Minimum percentage coverage of replicon query by input assembly',
@@ -94,122 +91,152 @@ def parse_args():
                         help='Minimum percentage coverage of relaxase query by input assembly',
                         default=80)
 
-    parser.add_argument('--min_ori_cov', type=int, required=False,
-                        help='Minimum percentage coverage of oriT',
-                        default=90)
-    parser.add_argument('--min_mpf_cov', type=int, required=False,
-                        help='Minimum percentage coverage of mpf',
-                        default=80)
+    parser.add_argument('--min_con_cov', type=int, required=False,
+                        help='Minimum percentage coverage of assembly contig by the plasmid reference database to be considered',
+                        default=70)
 
     parser.add_argument('--min_overlap', type=int, required=False,
                         help='Minimum overlap of fragments',
                         default=10)
 
-    parser.add_argument('--keep_tmp', required=False,help='Do not delete temporary file directory', action='store_true')
+    parser.add_argument('-k', '--keep_tmp', required=False, help='Do not delete temporary file directory',
+                        action='store_true')
+
     parser.add_argument('--debug', required=False, help='Show debug information', action='store_true')
+
     parser.add_argument('--plasmid_mash_db', type=str, required=False,
                         help='Companion Mash database of reference database',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/ncbi_plasmid_full_seqs.fas.msh'))
+                        default=os.path.join(default_database_dir,
+                                             'ncbi_plasmid_full_seqs.fas.msh'))
+    parser.add_argument('-m', '--plasmid_meta', type=str, required=False,
+                        help='MOB-cluster plasmid cluster formatted file matched to the reference plasmid db',
+                        default=os.path.join(default_database_dir,
+                                             'clusters.txt'))
+    parser.add_argument('--plasmid_db_type', type=str, required=False, help='Blast database type of reference database',
+                        default='blastn')
     parser.add_argument('--plasmid_replicons', type=str, required=False, help='Fasta of plasmid replicons',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/rep.dna.fas'))
+                        default=os.path.join(default_database_dir,
+                                             'rep.dna.fas'))
+    parser.add_argument('--repetitive_mask', type=str, required=False, help='Fasta of known repetitive elements',
+                        default=os.path.join(default_database_dir,
+                                             'repetitive.dna.fas'))
     parser.add_argument('--plasmid_mob', type=str, required=False, help='Fasta of plasmid relaxases',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/mob.proteins.faa'))
+                        default=os.path.join(default_database_dir,
+                                             'mob.proteins.faa'))
     parser.add_argument('--plasmid_mpf', type=str, required=False, help='Fasta of known plasmid mate-pair proteins',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/mpf.proteins.faa'))
+                        default=os.path.join(default_database_dir,
+                                             'mpf.proteins.faa'))
     parser.add_argument('--plasmid_orit', type=str, required=False, help='Fasta of known plasmid oriT dna sequences',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/orit.fas'))
-    parser.add_argument('--host_range_detailed', required=False, help='Complete host range report with phylogeny stats', action='store_true',
-                        default=False)
-    parser.add_argument('-d','--database_directory',default=default_database_dir,
+                        default=os.path.join(default_database_dir,
+                                             'orit.fas'))
+    parser.add_argument('-d', '--database_directory',
+                        default=default_database_dir,
                         required=False,
                         help='Directory you want to use for your databases. If the databases are not already '
-                             'downloaded, they will be downloaded automatically. Defaults to {}. '
-                             'If you change this from the default, will override --plasmid_mash_db, '
-                             '--plasmid_replicons, --plasmid_mob, --plasmid_mpf, and '
-                             '--plasmid_orit'.format(default_database_dir))
-
+                             'downloaded, they will be downloaded automatically. Defaults to {}'.format(
+                            default_database_dir))
+    parser.add_argument('--primary_cluster_dist', type=int, required=False,
+                        help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
+    parser.add_argument('--secondary_cluster_dist', type=int, required=False,
+                        help='Mash distance for assigning primary cluster id 0 - 1',
+                        default=0.025)
     parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
+
     return parser.parse_args()
 
 
-def determine_mpf_type(hits):
-    types = dict()
-    for hit in hits:
-        type = hits[hit]
-        if not type in types:
-            types[type] = 0
-        types[type] += 1
-
-    return max(types, key=lambda i: types[i])
+def initMOBTyperReportTemplate(header):
+    data = {}
+    for i in header:
+        data[i] = '-'
+    return data
 
 
 def main():
-    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     args = parse_args()
 
     if args.debug:
-       logger = init_console_logger(3)
+        logger = init_console_logger(3)
     else:
-       logger = init_console_logger(2)
+        logger = init_console_logger(2)
 
     logger.info('Running Mob-typer version {}'.format(__version__))
 
-    if not args.outdir:
-        logger.info('Error, no output directory specified, please specify one')
-        sys.exit()
+    logger.info('Processing fasta file {}'.format(args.infile))
 
-    if not args.infile:
-        logger.info('Error, no fasta specified, please specify one')
-        sys.exit()
 
     if not os.path.isfile(args.infile):
-        logger.info('Error, fasta file does not exist')
+        logger.info('Error, fasta file does not exist {}'.format(args.infile))
         sys.exit()
 
-    if not os.path.isdir(args.outdir):
-        os.mkdir(args.outdir, 0o755)
+    if not args.analysis_dir:
+        tmp_dir = tempfile.TemporaryDirectory(dir=tempfile.gettempdir()).name
+    else:
+        tmp_dir = args.analysis_dir
+
+    if not os.path.isdir(tmp_dir):
+        os.mkdir(tmp_dir, 0o755)
 
     if not isinstance(args.num_threads, int):
         logger.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
 
     database_dir = os.path.abspath(args.database_directory)
 
-    verify_init(logger,database_dir)
+    if args.sample_id is None:
+        sample_id = re.sub(r"\.(fasta|fa|fas){1,1}", "", os.path.basename(args.infile))
+    else:
+        sample_id = args.sample_id
+
     # Script arguments
     input_fasta = args.infile
-    out_dir = args.outdir
+    report_file = args.out_file
     num_threads = int(args.num_threads)
     keep_tmp = args.keep_tmp
+
+    if args.multi:
+        multi = True
+    else:
+        multi = False
+
+    if not (args.primary_cluster_dist >= 0 and args.primary_cluster_dist <= 1):
+        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.primary_cluster_dist))
+        sys.exit()
+    else:
+        primary_distance = float(args.primary_cluster_dist)
+
+    if not (args.secondary_cluster_dist >= 0 and args.secondary_cluster_dist <= 1):
+        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.secondary_cluster_dist))
+        sys.exit()
+    else:
+        secondary_distance = float(args.secondary_cluster_dist)
 
 
     if database_dir == default_database_dir:
         mob_ref = args.plasmid_mob
-        mpf_ref = args.plasmid_mpf
-        orit_ref = args.plasmid_orit
         mash_db = args.plasmid_mash_db
         replicon_ref = args.plasmid_replicons
+        plasmid_meta = args.plasmid_meta
+        mpf_ref = args.plasmid_mpf
+        plasmid_orit = args.plasmid_orit
+        verify_init(logger, database_dir)
     else:
         mob_ref = os.path.join(database_dir, 'mob.proteins.faa')
-        mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
-        orit_ref = os.path.join(database_dir, 'orit.fas')
         mash_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas.msh')
         replicon_ref = os.path.join(database_dir, 'rep.dna.fas')
+        plasmid_meta = os.path.join(database_dir, 'clusters.txt')
+        mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
+        plasmid_orit = os.path.join(database_dir, 'orit.fas')
 
-
-    tmp_dir = os.path.join(out_dir, '__tmp')
-    file_id = os.path.basename(input_fasta)
-    #output_file_prefix = re.sub(r"\..*", "", file_id)  # remove file extension by matching everything  before dot
+    LIT_PLASMID_TAXONOMY_FILE = os.path.join(database_dir, "host_range_literature_plasmidDB.txt")
+    NCBI_PLASMID_TAXONOMY_FILE = plasmid_meta
 
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')
     mob_blast_results = os.path.join(tmp_dir, 'mobtyper_blast_results.txt')
     mpf_blast_results = os.path.join(tmp_dir, 'mpf_blast_results.txt')
     orit_blast_results = os.path.join(tmp_dir, 'orit_blast_results.txt')
+    repetitive_blast_results = os.path.join(tmp_dir, 'repetitive_blast_results.txt')
+
     if os.path.isfile(mob_blast_results):
         os.remove(mob_blast_results)
     if os.path.isfile(mpf_blast_results):
@@ -218,16 +245,13 @@ def main():
         os.remove(orit_blast_results)
     if os.path.isfile(replicon_blast_results):
         os.remove(replicon_blast_results)
-    report_file = os.path.join(out_dir, 'mobtyper_' + file_id + '_report.txt')
-    mash_file = os.path.join(tmp_dir, 'mash_' + file_id + '.txt')
-
 
     # Input numeric params
 
     min_rep_ident = float(args.min_rep_ident)
     min_mob_ident = float(args.min_mob_ident)
-    min_ori_ident = float(args.min_ori_ident)
-    min_mpf_ident = float(args.min_mpf_ident)
+    min_ori_ident = float(args.min_rep_ident)
+    min_mpf_ident = float(args.min_mob_ident)
 
     idents = {'min_rep_ident': min_rep_ident, 'min_mob_ident': min_mob_ident, 'min_ori_ident': min_ori_ident}
 
@@ -242,13 +266,10 @@ def main():
             logger.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
             sys.exit(-1)
 
-
     min_rep_cov = float(args.min_rep_cov)
     min_mob_cov = float(args.min_mob_cov)
-    min_ori_cov = float(args.min_ori_cov)
-    min_mpf_cov = float(args.min_mpf_cov)
-
-
+    min_ori_cov = float(args.min_rep_cov)
+    min_mpf_cov = float(args.min_mob_cov)
 
     covs = {'min_rep_cov': min_rep_cov, 'min_mob_cov': min_mob_cov, 'min_con_cov': min_ori_cov,
             'min_rpp_cov': min_ori_cov}
@@ -264,12 +285,10 @@ def main():
             logger.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
             sys.exit(-1)
 
-
     min_rep_evalue = float(args.min_rep_evalue)
     min_mob_evalue = float(args.min_mob_evalue)
-    min_ori_evalue = float(args.min_ori_evalue)
-    min_mpf_evalue = float(args.min_mpf_evalue)
-
+    min_ori_evalue = float(args.min_rep_evalue)
+    min_mpf_evalue = float(args.min_mob_evalue)
 
     evalues = {'min_rep_evalue': min_rep_evalue, 'min_mob_evalue': min_mob_evalue, 'min_con_evalue': min_ori_evalue}
 
@@ -281,7 +300,6 @@ def main():
             logger.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
             sys.exit(-1)
 
-
     check_dependencies(logger)
 
     needed_dbs = [replicon_ref, mob_ref, mash_db, mpf_ref]
@@ -291,242 +309,210 @@ def main():
             logger.info('Warning! Needed database missing "{}"'.format(db))
             mob_suite.mob_init.main()
 
-
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir, 0o755)
 
+    # Test that ETE3 db is ok and lock process check
+    dbstatus = ETE3_db_status_check(1, ETE3_LOCK_FILE, ETE3DBTAXAFILE, logging)
+    if dbstatus == False:
+        logging.error("Exiting due to lock file not removed: {}".format(ETE3_LOCK_FILE))
+        sys.exit(-1)
+
+    # Get cluster information
+    reference_sequence_meta = read_sequence_info(plasmid_meta, MOB_CLUSTER_INFO_HEADER)
+
+    # initilize master record tracking
     fix_fasta_header(input_fasta, fixed_fasta)
+    contig_seqs = read_fasta_dict(fixed_fasta)
+    contig_info = {}
+    for id in contig_seqs:
+        seq = contig_seqs[id]
+        contig_info[id] = {}
+        for feature in MOB_TYPER_REPORT_HEADER:
+            contig_info[id][feature] = ''
+        contig_info[id]['md5'] = calc_md5(seq)
+        contig_info[id]['gc'] = GC(seq)
+        contig_info[id]['size'] = len(seq)
+        contig_info[id]['contig_id'] = id
+        contig_info[id]['sample_id'] = sample_id
+
+    # Makeblastdb
+    blast_runner = BlastRunner(fixed_fasta, tmp_dir)
+    build_success = blast_runner.makeblastdb(fixed_fasta, 'nucl', logging=logging)
+    if build_success == False:
+        logging.error("Could not build blast database, check error messages..cannot continue")
+        sys.exit()
 
     # run individual marker blasts
-    logger.info('Running replicon blast on {}'.format(replicon_ref))
-    replicon_contigs = getRepliconContigs(
-        replicon_blast(replicon_ref, fixed_fasta, min_rep_ident, min_rep_cov, min_rep_evalue, tmp_dir, replicon_blast_results,
-                       num_threads=num_threads))
-    found_replicons = dict()
 
-    for contig_id in replicon_contigs:
-        for hit in replicon_contigs[contig_id]:
-            acs, type = hit.split('|')
-            found_replicons[acs] = type
+    contig_info = identify_biomarkers(contig_info, fixed_fasta, tmp_dir, 25, logging, \
+                                      replicon_ref, min_rep_ident, min_rep_cov, min_rep_evalue, replicon_blast_results, \
+                                      mob_ref, min_mob_ident, min_mob_cov, min_mob_evalue, mob_blast_results, \
+                                      mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results, \
+                                      None, None, None, None, \
+                                      plasmid_orit, orit_blast_results, repetitive_blast_results, \
+                                      num_threads=1)
 
-    #print("These replicons are found")
-    #print(list(found_replicons.values()))
-
-    logger.info('Running relaxase blast on {}'.format(mob_ref))
-
-    mob_contigs = getRepliconContigs(
-        mob_blast(mob_ref, fixed_fasta, min_mob_ident, min_mob_cov, min_mob_evalue, tmp_dir, mob_blast_results, num_threads=num_threads))
-    found_mob = dict()
-    for contig_id in mob_contigs:
-        for hit in mob_contigs[contig_id]:
-            acs, type = hit.split('|')
-            found_mob[acs] = type
-    #print ("These are relaxeses found")
-    #print (list(found_mob.values()))
-
-
-    logger.info('Running mpf blast on {}'.format(mob_ref))
-    mpf_contigs = getRepliconContigs(
-        mob_blast(mpf_ref, fixed_fasta, min_mpf_ident, min_mpf_cov, min_mpf_evalue, tmp_dir, mpf_blast_results, num_threads=num_threads))
-    found_mpf = dict()
-    for contig_id in mpf_contigs:
-        for hit in mpf_contigs[contig_id]:
-            acs, type = hit.split('|')
-            found_mpf[acs] = type
-
-    # print(found_mpf)
-
-    logger.info('Running orit blast on {}'.format(replicon_ref))
-    orit_contigs = getRepliconContigs(
-        replicon_blast(orit_ref, fixed_fasta, min_ori_ident, min_ori_cov, min_ori_evalue, tmp_dir, orit_blast_results,
-                       num_threads=num_threads))
-    found_orit = dict()
-    for contig_id in orit_contigs:
-        for hit in orit_contigs[contig_id]:
-            acs, type = hit.split('|')
-            found_orit[acs] = type
-
-
-    # Get closest neighbor by mash distance in the entire plasmid database
     m = mash()
-    #mash_distances = dict()
-    mashfile_handle = open(mash_file, 'w')
-    m.run_mash(mash_db, fixed_fasta, mashfile_handle)
-    mash_results = m.read_mash(mash_file)
-    mash_top_hit = getMashBestHit(mash_results)
+    mobtyper_results = []
 
+    mash_input_fasta = fixed_fasta + '.msh'
 
-    # GET HOST RANGE
-    host_range_literature_report_df = pandas.DataFrame()
-    if args.host_range_detailed and found_replicons:
-        (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
-            replicon_name_list=list(found_replicons.values()),
-            mob_cluster_id_list=[mash_top_hit['clustid']],
-            relaxase_name_acc_list=None,
-            relaxase_name_list=None,
-            matchtype="loose_match",hr_obs_data = loadHostRangeDB())
+    ncbi = dict_from_alt_key_list(
+        read_file_to_dict(NCBI_PLASMID_TAXONOMY_FILE, MOB_CLUSTER_INFO_HEADER, separater="\t"),
+        "sample_id")
+    lit = dict_from_alt_key_list(
+        read_file_to_dict(LIT_PLASMID_TAXONOMY_FILE, LIT_PLASMID_TAXONOMY_HEADER, separater="\t"), "sample_id")
 
-        if '-' in taxids:
-            host_range_refseq_rank = None;
-            host_range_refseq_name = None
+    if multi:
+        m.mashsketch(input_fasta=fixed_fasta, output_path=mash_input_fasta, sketch_ind=True, num_threads=num_threads)
+        mash_results = parseMash(
+            m.run_mash(reference_db=mash_db, input_fasta=mash_input_fasta, table=False, num_threads=num_threads))
 
+        for seq_id in mash_results:
+            record = {}
+            for field in MOB_TYPER_REPORT_HEADER:
+                if field in contig_info[seq_id]:
+                    record[field] = contig_info[seq_id][field]
+                else:
+                    record[field] = ''
+            record['sample_id'] = seq_id
+            record['num_contigs'] = 1
+            distances = OrderedDict(sorted(mash_results[seq_id].items(), key=itemgetter(1), reverse=False))
+
+            for mash_neighbor_id in distances:
+                dist = distances[mash_neighbor_id]
+                if mash_neighbor_id not in reference_sequence_meta:
+                    continue
+                else:
+                    record['mash_nearest_neighbor'] = mash_neighbor_id
+                    record['mash_neighbor_distance'] = dist
+                    record['primary_cluster_id'] = reference_sequence_meta[mash_neighbor_id]['primary_cluster_id']
+                    record['secondary_cluster_id'] = reference_sequence_meta[mash_neighbor_id]['secondary_cluster_id']
+                    record['mash_neighbor_identification'] = reference_sequence_meta[mash_neighbor_id]['organism']
+                    break
+            mobtyper_results.append(record)
+
+    else:
+        m.mashsketch(input_fasta=fixed_fasta, output_path=mash_input_fasta, sketch_ind=False, num_threads=num_threads)
+        mash_results = parseMash(
+            m.run_mash(reference_db=mash_db, input_fasta=mash_input_fasta, table=False, num_threads=num_threads))
+        record = {}
+
+        for field in MOB_TYPER_REPORT_HEADER:
+            record[field] = ''
+
+        record['sample_id'] = sample_id
+        fastaSeqStats = calcFastaStats(fixed_fasta)
+        record['md5'] = fastaSeqStats['md5']
+        record['total_length'] = fastaSeqStats['size']
+        record['num_contigs'] = fastaSeqStats['num_seq']
+        record['gc'] = fastaSeqStats['gc_content']
+
+        for seq_id in mash_results:
+            distances = OrderedDict(sorted(mash_results[seq_id].items(), key=itemgetter(1), reverse=False))
+            mash_neighbor_id = next(iter(distances))
+            dist = distances[mash_neighbor_id]
+            record['mash_nearest_neighbor'] = mash_neighbor_id
+            record['mash_neighbor_distance'] = dist
+            record['primary_cluster_id'] = reference_sequence_meta[mash_neighbor_id]['primary_cluster_id']
+            record['secondary_cluster_id'] = reference_sequence_meta[mash_neighbor_id]['secondary_cluster_id']
+            record['mash_neighbor_identification'] = reference_sequence_meta[mash_neighbor_id]['organism']
+
+        record['rep_type(s)'] = []
+        record['rep_type_accession(s)'] = []
+        record['relaxase_type(s)'] = []
+        record['relaxase_type_accession(s)'] = []
+        record['mpf_type'] = []
+        record['mpf_type_accession(s)'] = []
+        record['orit_type(s)'] = []
+        record['orit_accession(s)'] = []
+
+        for seq_id in contig_info:
+            record['rep_type(s)'].append(contig_info[seq_id]['rep_type(s)'])
+            record['rep_type_accession(s)'].append(contig_info[seq_id]['rep_type_accession(s)'])
+            record['relaxase_type(s)'].append(contig_info[seq_id]['relaxase_type(s)'])
+            record['relaxase_type_accession(s)'].append(contig_info[seq_id]['relaxase_type_accession(s)'])
+            record['mpf_type'].append(contig_info[seq_id]['mpf_type'])
+            record['mpf_type_accession(s)'].append(contig_info[seq_id]['mpf_type_accession(s)'])
+            record['orit_type(s)'].append(contig_info[seq_id]['orit_type(s)'])
+            record['orit_accession(s)'].append(contig_info[seq_id]['orit_accession(s)'])
+
+        for field in record:
+            tmp = []
+            if record[field] == None:
+                continue
+            if isinstance(record[field], list):
+                length = len(record[field])
+                for i in range(0, length):
+                    tmp += record[field][i].split(',')
+            elif isinstance(record[field], str) and len(record[field]) > 0:
+                tmp += record[field].split(',')
+            if len(tmp) > 0:
+                record[field] = []
+                for d in tmp:
+                    if len(d) > 0:
+                        record[field].append(d)
+
+        mobtyper_results.append(record)
+
+    for i in range(0, len(mobtyper_results)):
+        record = mobtyper_results[i]
+        bio_markers = sort_biomarkers({0: {'types': record['rep_type(s)'], 'acs': record['rep_type_accession(s)']},
+                                       1: {'types': record['relaxase_type(s)'],
+                                           'acs': record['relaxase_type_accession(s)']},
+                                       2: {'types': record['mpf_type'], 'acs': record['mpf_type_accession(s)']},
+                                       3: {'types': record['orit_type(s)'], 'acs': record['orit_accession(s)']}, })
+
+        record['rep_type(s)'] = bio_markers[0]['types']
+        record['rep_type_accession(s)'] = bio_markers[0]['acs']
+        record['relaxase_type(s)'] = bio_markers[1]['types']
+        record['relaxase_type_accession(s)'] = bio_markers[1]['acs']
+        record['mpf_type'] = bio_markers[2]['types']
+        record['mpf_type_accession(s)'] = bio_markers[2]['acs']
+        record['orit_type(s)'] = bio_markers[3]['types']
+        record['orit_accession(s)'] = bio_markers[3]['acs']
+
+        if record['mash_neighbor_distance'] <= primary_distance:
+            mob_cluster_id = record['primary_cluster_id']
         else:
-            refseqtree = getTaxonomyTree(taxids) #refseq tree
-            renderTree(
-                       tree=refseqtree,
-                       filename_prefix=args.outdir+"/"+file_id+"_refseqhostrange_")
+            mob_cluster_id = None
 
-            #get literature report summary dataframe (might be more than 1 row if multiple replicons are present)
-            host_range_literature_report_df, littaxids = getLiteratureBasedHostRange(replicon_names = list(found_replicons.values()),
-                                                                                      plasmid_lit_db = loadliteratureplasmidDB(),
-                                                                                      input_seq = args.infile )
+        #Patches that sometimes results are concatonated into strings if contigs are merged into a single results
+        if isinstance(record['rep_type(s)'],list):
+            record['rep_type(s)'] = ",".join(record['rep_type(s)'])
+        if isinstance(record['relaxase_type_accession(s)'], list):
+            record['relaxase_type_accession(s)'] = ",".join(record['relaxase_type_accession(s)'])
 
+        host_range = hostrange(record['rep_type(s)'].split(','), record['relaxase_type_accession(s)'].split(','), mob_cluster_id, ncbi, lit)
 
+        for field in host_range:
+            record[field] = host_range[field]
 
+        if isinstance(record['mpf_type'], list):
+            record['mpf_type'] = determine_mpf_type(record['mpf_type'])
+        elif isinstance(record['mpf_type'], str):
+            record['mpf_type'] = determine_mpf_type(record['mpf_type'].split(','))
 
-            if littaxids:
-                littree = getTaxonomyTree(littaxids) #get literature tree
-                renderTree(
-                           tree=littree,
-                           filename_prefix=args.outdir+"/"+file_id+ "_literaturehostrange_")
+        for field in record:
+            if isinstance(record[field], list):
+                record[field] = ",".join(record[field])
 
+        record['predicted_mobility'] = 'non-mobilizable'
+        if len(record['relaxase_type(s)']) > 0 and len(record['mpf_type']):
+            record['predicted_mobility'] = 'conjugative'
+        elif len(record['relaxase_type(s)']) > 0 or len(record['orit_type(s)']) > 0:
+            record['predicted_mobility'] = 'mobilizable'
 
-            #write hostrange reports
-            writeOutHostRangeReports(filename_prefix = args.outdir+"/"+file_id,
-                                     samplename=file_id,
-                                     replicon_name_list = list(found_replicons.values()),
-                                     mob_cluster_id_list = [mash_top_hit['clustid']],
-                                     relaxase_name_acc_list = None,
-                                     relaxase_name_list = None,
-                                     convergance_rank=host_range_refseq_rank,
-                                     convergance_taxonomy=host_range_refseq_name,
-                                     stats_host_range_dict=stats_host_range,
-                                     literature_hr_report=host_range_literature_report_df)
-    elif args.host_range_detailed and found_mob: #by MOB_accession numbers
-        (host_range_refseq_rank, host_range_refseq_name, taxids, taxids_df, stats_host_range) = getRefSeqHostRange(
-                                                                                                                    replicon_name_list=None,
-                                                                                                                    mob_cluster_id_list=[mash_top_hit['clustid']],
-                                                                                                                    relaxase_name_acc_list=found_mob.keys(),
-                                                                                                                    relaxase_name_list=None,
-                                                                                                                    matchtype="loose_match", hr_obs_data=loadHostRangeDB())
+        mobtyper_results[i] = record
 
-        refseqtree = getTaxonomyTree(taxids)  # refseq tree
-        renderTree(
-                    tree=refseqtree,
-                    filename_prefix=args.outdir + "/" + file_id + "_refseqhostrange_")
+    writeReport(mobtyper_results, MOB_TYPER_REPORT_HEADER, report_file)
 
-        writeOutHostRangeReports(filename_prefix=args.outdir + "/" + file_id,
-                                 samplename=file_id,
-                                 replicon_name_list=None,
-                                 mob_cluster_id_list=[mash_top_hit['clustid']],
-                                 relaxase_name_acc_list=None,
-                                 relaxase_name_list=None,
-                                 convergance_rank=host_range_refseq_rank,
-                                 convergance_taxonomy=host_range_refseq_name,
-                                 stats_host_range_dict=stats_host_range
-                                 )
-
-        #print(host_range_refseq_rank, host_range_refseq_name, taxids_df["Organism"])
-
-    else:
-        host_range_refseq_rank=None; host_range_refseq_name=None
-
-    #END HOST RANGE MODULE
-
-    if len(found_replicons) > 0:
-        found_replicons = OrderedDict(sorted(found_replicons.items(), key=itemgetter(1), reverse=False))
-        rep_types = ",".join(list(found_replicons.values()))
-        rep_acs = ",".join(list(found_replicons.keys()))
-    else:
-        rep_types = "-"
-        rep_acs = "-"
-
-    if len(found_mob) > 0:
-        found_mob = OrderedDict(sorted(found_mob.items(), key=itemgetter(1), reverse=False))
-        mob_types = ",".join(list(found_mob.values()))
-        mob_acs = ",".join(list(found_mob.keys()))
-    else:
-        mob_types = "-"
-        mob_acs = "-"
-
-    if len(found_mpf) > 0:
-        found_mpf = OrderedDict(sorted(found_mpf.items(), key=itemgetter(1), reverse=False))
-        mpf_type = determine_mpf_type(found_mpf)
-        mpf_acs = ",".join(list(found_mpf.keys()))
-    else:
-        mpf_type = "-"
-        mpf_acs = "-"
-
-    if len(found_orit) > 0:
-        found_orit = OrderedDict(sorted(found_orit.items(), key=itemgetter(1), reverse=False))
-        orit_types = ",".join(list(found_orit.values()))
-        orit_acs = ",".join(list(found_orit.keys()))
-    else:
-        orit_types = "-"
-        orit_acs = "-"
-    stats = calcFastaStats(fixed_fasta)
-    predicted_mobility = 'Non-mobilizable'
-
-    if mob_acs != '-' or orit_acs != '-':
-        predicted_mobility = 'Mobilizable'
-
-    if mob_acs != '-' and mpf_acs != '-':
-        predicted_mobility = 'Conjugative'
-
-
-    main_report_data_dict=collections.OrderedDict({"file_id":re.sub(r"\.(fasta|fa|fas){1,1}","",file_id), "num_contigs":stats['num_seq'], "total_length": stats['size'], "gc":stats['gc_content'],
-                           "rep_type(s)": rep_types, "rep_type_accession(s)": rep_acs, "relaxase_type(s)":mob_types,
-                           "relaxase_type_accession(s)": mob_acs, "mpf_type": mpf_type, "mpf_type_accession(s)": mpf_acs,
-                           "orit_type(s)": orit_types, "orit_accession(s)": orit_acs, "PredictedMobility": predicted_mobility,
-                           "mash_nearest_neighbor": mash_top_hit['top_hit'],"mash_neighbor_distance": mash_top_hit['mash_hit_score'],
-                           "mash_neighbor_cluster": mash_top_hit['clustid'], "NCBI-HR-rank":"-","NCBI-HR-Name":"-",
-                           "LitRepHRPlasmClass":"-","LitPredDBHRRank":"-","LitPredDBHRRankSciName":"-",
-                           "LitRepHRRankInPubs":"-", "LitRepHRNameInPubs":"-","LitMeanTransferRate":"-",
-                           "LitClosestRefAcc":"-", "LitClosestRefDonorStrain":"-",
-                           "LitClosestRefRecipientStrain":"-","LitClosestRefTransferRate":"-", "LitClosestConjugTemp":"-",
-                           "LitPMIDs":"-","LitPMIDsNumber":"-"})
-    main_report_mobtyper_df = pandas.DataFrame(columns=main_report_data_dict.keys())
-
-
-    #print(host_range_literature_report_collapsed_df)
-    if host_range_refseq_rank and host_range_refseq_name:
-        main_report_data_dict.update({"NCBI-HR-rank":host_range_refseq_rank,"NCBI-HR-Name":host_range_refseq_name})
-
-
-    if host_range_literature_report_df.empty == False:
-        if host_range_literature_report_df.shape[0] >= 2: #collapse host range repor more than 2 rows
-            host_range_literature_report_df = collapseLiteratureReport(host_range_literature_report_df)
-        main_report_data_dict.update({"LitRepHRPlasmClass":host_range_literature_report_df["LiteratureReportedHostRangePlasmidClass"].values[0],
-                                      "LitPredDBHRRank":host_range_literature_report_df["LiteraturePredictedHostRangeTreeRank"].values[0],
-                                      "LitPredDBHRRankSciName": host_range_literature_report_df["LiteraturePredictedHostRangeTreeRankSciName"].values[0],
-                                      "LitRepHRRankInPubs":host_range_literature_report_df["LiteratureReportedHostRangeRankInPubs"].values[0],
-                                      "LitRepHRNameInPubs": host_range_literature_report_df["LiteratureReportedHostRangeNameInPubs"].values[0],
-                                      "LitMeanTransferRate":host_range_literature_report_df["LiteratureMeanTransferRateRange"].values[0],
-                                      "LitClosestRefAcc":host_range_literature_report_df["LiteratureClosestRefrencePlasmidAcc"].values[0],
-                                      "LitClosestMashDist": host_range_literature_report_df["LiteratureClosestReferenceMashDistance"].values[0],
-                                      "LitClosestRefDonorStrain": host_range_literature_report_df["LiteratureClosestReferenceDonorStrain"].values[0],
-                                      "LitClosestRefRecipientStrain": host_range_literature_report_df["LiteratureClosestReferenceRecipientStrain"].values[0],
-                                      "LitClosestRefTransferRate": host_range_literature_report_df["LiteratureClosestReferenceTransferRate"].values[0],
-                                      "LitClosestConjugTemp": host_range_literature_report_df["LiteratureClosestReferenceConjugationTemperature"].values[0],
-                                      "LitPMIDs": host_range_literature_report_df["LiteraturePMIDs"].values[0],
-                                      "LitPMIDsNumber":host_range_literature_report_df["LiteraturePublicationsNumber"].values[0]
-                                      })
-
-
-    main_report_mobtyper_df = main_report_mobtyper_df.append(pandas.DataFrame([main_report_data_dict]),sort=False)
-
-
-    main_report_mobtyper_df.to_csv(report_file, sep="\t", mode="w",encoding="UTF-8",index=False)
     if not keep_tmp:
         shutil.rmtree(tmp_dir)
-    logger.info("Run completed")
-
-    #print("{}".format(string))
+    logger.info("MOB-typer completed and results written to {}".format(report_file))
 
 
 # call main function
 if __name__ == '__main__':
     main()
-
-#TODO
-#Merge with the master branch features. Resolve discrepencies test all mob_init functions and keys, specifically databases dirs

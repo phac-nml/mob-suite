@@ -3,7 +3,7 @@ import os
 from distutils.core import setup
 from setuptools import find_packages
 
-author='James Robertson, Kyrylo Bessonov'
+author = 'James Robertson, Kyrylo Bessonov'
 
 classifiers = """
 Development Status :: 3 - Alpha
@@ -13,38 +13,37 @@ Intended Audience :: Science/Research
 Topic :: Scientific/Engineering
 Topic :: Scientific/Engineering :: Bio-Informatics
 Programming Language :: Python
-Programming Language :: Python :: 3.5
-Programming Language :: Python :: 3.6
 Programming Language :: Python :: 3.7
+Programming Language :: Python :: 3.8
 Programming Language :: Python :: Implementation :: CPython
 Operating System :: POSIX :: Linux
 """.strip().split('\n')
 
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
 
 exec(open('mob_suite/version.py').read())
 
 setup(
     name='mob_suite',
     include_package_data=True,
-    version='2.1.0',
-    python_requires='>3.5.2',
+    version='3.0.0',
+    python_requires='>=3.7.0',
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     packages=find_packages(exclude=['tests', 'databases']),
     url='https://github.com/phac-nml/mob-suite',
     license='GPLv3',
-    author='James Robertson, Kyrylo Bessonov',
+    author='James Robertson',
     author_email='james.robertson@canada.ca',
-    description=('mob_suite is a set of tools for finding, typing and reconstruction of plasmids from draft and complete genome assemblies.'),
+    description=(
+        'MOB-suite is a set of tools for finding, typing and reconstruction of plasmids from draft and complete genome assemblies.'),
     keywords='Plasmids finding typing reconstruction',
     classifiers=classifiers,
-    package_dir={'mob_suite':'mob_suite'},
-
-
+    package_dir={'mob_suite': 'mob_suite'},
     package_data={'mob_suite': ['config.json']},
-
 
     install_requires=[
         'numpy>=1.11.1',
@@ -64,9 +63,6 @@ setup(
             'mob_recon=mob_suite.mob_recon:main',
             'mob_cluster=mob_suite.mob_cluster:main',
             'mob_typer=mob_suite.mob_typer:main',
-            'best_blast_hits=mob_suite.blast_best_hits:main',
-            'mob_hostrange=mob_suite.mob_host_range:main'
         ],
     },
 )
-

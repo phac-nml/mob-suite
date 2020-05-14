@@ -1,0 +1,322 @@
+sample_id	rep_type(s)	length	host_species	host_taxid	reported_host_range_taxid	pmid	pmcid	doi	year	author	notes
+KC170280	IncN	56683	uncultured bacterium	77133	28211	24096417	PMC3837812	10.1128/AEM.02252-13	2013	Celeste J. Brown	plasmid conjugative
+KC170280	IncN	56683	uncultured bacterium	77133	28211	24096417	PMC3837812	10.1128/AEM.02252-13	2013	Celeste J. Brown	plasmid conjugative
+KC170281	IncU	33736	uncultured bacterium	77133	28211	24096417	PMC3837812	10.1128/AEM.02252-13	2013	Celeste J. Brown	plasmid conjugative
+KC170284	IncU	34006	uncultured bacterium	77133	28211	24096417	PMC3837812	10.1128/AEM.02252-13	2013	Celeste J. Brown	plasmid conjugative
+KC170280	rep_cluster_2358	56683	uncultured bacterium	77133	28211	24096417	PMC3837812	10.1128/AEM.02252-13	2013	Celeste J. Brown	plasmid conjugative
+AY950444	rep_cluster_620	62689	Pseudomonas putida 	303	2	21468020		10.1038/ncomms1267	2011	Norberg,P.	
+NC_025029	rep_cluster_1431	56803	Pseudomonas putida 	303	28216	20018208	PMC2819548	10.1016/j.plasmid.2009.11.005	2010	Sen,D.	pAKD4 (Delta clade; GenBank accession no. NC_025029) (PMID: 27895009).plasmid conjugative
+NC_012885	IncA	143963	Aeromonas hydrophila	644	91347	19482926	PMC2715731		2009	Fricke WF	
+KF551948	IncC	120572	Vibrio cholerae	666	91347	24567731	PMC3915882		2014	Carraro N	Enterobacteriaceae,Vibrio cholerae
+FN428572	rep_cluster_2335	2699	Salmonella enterica	90371	91347	20008783	PMC2812132 	10.1128/AAC.01160-09	2010	Pallecchi,L.	Plasmid identical to pECY6-7 was identified in a Salmonella enterica serovar Typhimurium strain of human origin isolated in The Netherlands (GenBank accession no. FN428572) (14), suggesting that the dissemination of this plasmid could be even more widespread
+FJ705807	IncA	143963	Aeromonas hydrophila	644	543	19482926	PMC2715731		2009	Fricke WF	
+CP000603	IncC	182913	Yersinia pestis	373665	543	20138094			2010	Lindsey RL	
+CP000602	IncC	158038	Yersinia ruckeri	29486	543	19482926	PMC2715731		2009	Fricke WF	
+NC_010558	IncFIA	168113	Escherichia coli	562	543	20851899	PMC2976429	10.1128/JB.00277-10	2010	Suzuki H	
+NC_002483	IncFIA	99159	Escherichia coli	83333	543	28842132		10.1016/j.plasmid.2017.08.003 	2017	Gama JA	From Fig S3
+NC_008460	IncFIA	120730	Escherichia coli	562	543	20851899	PMC2976431	10.1128/JB.00277-10	2010	Suzuki H	
+NC_011812	IncFIA	72946	Escherichia coli	562	543	20851899	PMC2976430	10.1128/JB.00277-10	2010	Suzuki H	
+NC_005327	IncFIA	92353	Escherichia coli	562	543	20851899	PMC2976428	10.1128/JB.00277-10	2010	Suzuki H	
+NC_010558	IncFIA	168113	Escherichia coli	562	543	20851899	PMC2976429	10.1128/JB.00277-10	2010	Suzuki H	
+NC_008460	IncFIA	120730	Escherichia coli	562	543	20851899	PMC2976431	10.1128/JB.00277-10	2010	Suzuki H	
+NC_002483	IncFIA	99159	Escherichia coli	83333	543	28842132		10.1016/j.plasmid.2017.08.003 	2017	Gama JA	From Fig S3
+NC_011812	IncFIA	72946	Escherichia coli	562	543	20851899	PMC2976430	10.1128/JB.00277-10	2010	Suzuki H	
+NC_005327	IncFIA	92353	Escherichia coli	562	543	20851899	PMC2976428	10.1128/JB.00277-10	2010	Suzuki H	
+NC_002134	IncFIA	94281	Shigella flexneri	1288825	543	20851899	PMC2976433		2010	Suzuki H	
+NC_002134	IncFIA	94281	Shigella flexneri	1288825	543	20851899	PMC2976433		2010	Suzuki H	
+NC_004998	IncFIB	125491	Escherichia coli	562	543	20851899	PMC2976427	10.1128/JB.00277-10	2010	Suzuki H	
+NC_010488	IncFIB	130440	Escherichia coli	439855	543	20851899	PMC2976432	10.1128/JB.00277-10	2010	Suzuki H	
+NC_004998	IncFIB	125491	Escherichia coli	562	543	20851899	PMC2976427	10.1128/JB.00277-10	2010	Suzuki H	
+NC_010488	IncFIB	130440	Escherichia coli	439855	543	20851899	PMC2976432	10.1128/JB.00277-10	2010	Suzuki H	
+NC_010558	IncFIB	168113	Escherichia coli	562	543	20851899	PMC2976429	10.1128/JB.00277-10	2010	Suzuki H	
+NC_002483	IncFIC	99159	Escherichia coli	83333	543	28842132		10.1016/j.plasmid.2017.08.003 	2017	Gama JA	From Fig S3
+NC_010558	IncFIC	168113	Escherichia coli	562	543	20851899	PMC2976429	10.1128/JB.00277-10	2010	Suzuki H	
+NC_010558	IncFII	168113	Escherichia coli	562	543	20851899	PMC2976429	10.1128/JB.00277-10	2010	Suzuki H	
+KM406488	IncL/M	78899	Salmonella enterica subsp. enterica serovar Paratyphi B	57045	543	25933288	PMC4416936 		2015	Carattoli A	
+KM406489	IncL/M	86748	Serratia marcescens	615	543	25933288	PMC4416936 		2015	Carattoli A	
+KX711706	IncX4	33309	Escherichia coli 	562	543	28336940		10.1038/s41598-017-00095-x	2017	Sun J	
+NC_004998	rep_cluster_2244	125491	Escherichia coli	562	543	20851899	PMC2976427	10.1128/JB.00277-10	2010	Suzuki H	
+NC_003384	IncFIA	218160	Salmonella enterica	220341	91347	20851899	PMC2976436		2010	Suzuki H	
+NC_002305	IncFIA	180461	Salmonella enterica	90370	91347	20851899	PMC2976439		2010	Suzuki H	
+NC_003384	IncFIA	218160	Salmonella enterica	220341	91347	20851899	PMC2976436		2010	Suzuki H	
+NC_007365	IncFIB	165548	Escherichia coli	562	91347	20851899	PMC2976443		2010	Suzuki H	
+NC_007365	IncFIB	165548	Escherichia coli	562	91347	20851899	PMC2976443		2010	Suzuki H	
+NC_009981	IncHI1A	208409	Salmonella enterica	119912	91347	20851899	PMC2976438		2010	Suzuki H	
+NC_009981	IncHI1A	208409	Salmonella enterica	119912	91347	20851899	PMC2976438		2010	Suzuki H	
+NC_012555	IncHI2A	318782	Enterobacter cloacae	550	91347	20851899	PMC2976435		2010	Suzuki H	
+NC_012555	IncHI2A	318782	Enterobacter cloacae	550	91347	20851899	PMC2976435		2010	Suzuki H	
+NC_009838	IncHI2A	241387	Escherichia coli	405955	91347	20851899	PMC2976434		2010	Suzuki H	
+NC_009838	IncHI2A	241387	Escherichia coli	405955	91347	20851899	PMC2976434		2010	Suzuki H	
+NC_010870	IncHI2A	269674	Klebsiella pneumoniae	573	91347	20851899	PMC2976437		2010	Suzuki H	
+NC_010870	IncHI2A	269674	Klebsiella pneumoniae	573	91347	20851899	PMC2976437		2010	Suzuki H	
+NC_005211	IncHI2A	274762	Serratia marcescens	615	91347	20851899	PMC2976440		2010	Suzuki H	
+NC_005211	IncHI2A	274762	Serratia marcescens	615	91347	20851899	PMC2976440		2010	Suzuki H	
+NC_012487	IncI-gamma/K1	168100	Escherichia coli	562	91347	20851899	PMC2976444		2010	Suzuki H	
+NC_011419	IncI-gamma/K1	100021	Escherichia coli	409438	91347	20851899	PMC2976445		2010	Suzuki H	
+NC_012487	IncI-gamma/K1	168100	Escherichia coli	562	91347	20851899	PMC2976444		2010	Suzuki H	
+NC_011081	IncI-gamma/K1	91374	Salmonella enterica	454169	91347	20851899	PMC2976446		2010	Suzuki H	
+NC_011077	IncI-gamma/K1	101461	Salmonella enterica	439842	91347	20851899	PMC2976442		2010	Suzuki H	
+NC_005014	IncI1/B/O	120826	Salmonella enterica	90371	91347	20851899	PMC2976447		2010	Suzuki H	
+NC_002122	IncI1/B/O	93399	Shigella sonnei	624	91347	20851899	PMC2976441		2010	Suzuki H	
+NC_007682	IncN	56634	Escherichia coli	562	91347	20851899	PMC2976453		2010	Suzuki H	
+NC_009132	IncN	63946	Escherichia coli	562	91347	20851899	PMC2976451		2010	Suzuki H	
+NC_007682	IncN	56634	Escherichia coli	562	91347	20851899	PMC2976453		2010	Suzuki H	
+NC_011385	IncN	75617	Klebsiella pneumoniae	573	91347	20851899	PMC2976448		2010	Suzuki H	
+NC_011617	IncN	67850	Klebsiella pneumoniae	573	91347	20851899	PMC2976450		2010	Suzuki H	
+NC_011383	IncN	70655	Klebsiella pneumoniae	573	91347	20851899	PMC2976449		2010	Suzuki H	
+NC_009980	IncN	61571	Salmonella enterica	98360	91347	20851899	PMC2976452		2010	Suzuki H	
+NC_003292	IncN	50969	Salmonella enterica	90371	91347	20851899	PMC2976454		2010	Suzuki H	
+DQ401103	IncU	45909	Aeromonas hydrophila	644	1236	18502921	PMC2446526 	10.1128/AEM.00229-08	2008	Kulinska A	Functional analysis demonstrated that RA3 possesses a broad host range and can efficiently self-transfer, replicate, and be maintained stably in alpha-, beta-, and gammaproteobacteria
+NC_012690	IncC	148105	Escherichia coli	562	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_012692	IncC	166530	Escherichia coli	562	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_008612	IncC	150157	Photobacterium damselae	38294	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_008613	IncC	131520	Photobacterium damselae	38294	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_009140	IncC	176473	Salmonella enterica	423368	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_009141	IncC	182913	Yersinia pestis	373665	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_009139	IncC	158038	Yersinia ruckeri	29486	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_004464	IncL/M	89468	Citrobacter freundii	546	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_004464	IncL/M	89468	Citrobacter freundii	546	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_005246	IncL/M	60145	Erwinia amylovora	552	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_011641	IncL/M	68018	Klebsiella pneumoniae	573	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_006830	IncP	98192	Achromobacter xylosoxidans	762376	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_008766	IncP	63609	Acidovorax sp. JS42	232721	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_008459	IncP	41268	Bordetella pertussis	520	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_008385	IncP	43581	Burkholderia ambifaria	339670	1224	20851899	PMC2976455		2010	Suzuki H	
+DQ065837	IncP	99448	Burkholderia cepacia	292	1224	20851899	PMC2976455		2010	Suzuki H	
+DQ065837	IncP	99448	Burkholderia cepacia	292	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_010935	IncP	91181	Comamonas testosteroni	543891	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_005912	IncP	87688	Cupriavidus pinatubonensis	264198	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_005088	IncP	67066	Delftia acidovorans	80866	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_006388	IncP	56167	Escherichia coli	562	1224	20851899	PMC2976455		2010	Suzuki H	pB3 revealed the typical structure of an IncP-1 beta plasmid backbone (PMID: 15528648)
+NC_001735	IncP	53423	Klebsiella aerogenes	548	1224	20851899	PMC2976455		2010	Suzuki H	IncP1-beta1 The beta1  subclade
+NC_001621	IncP	60099	Pseudomonas aeruginosa	287	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_008357	IncP	89147	Pseudomonas aeruginosa	287	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_003350	IncP	116580	Pseudomonas putida	303	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_004956	IncP	108845	Pseudomonas sp. ADP	47660	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_007353	IncP	46557	Sphingomonas sp. A1	90322	1224	20851899	PMC2976455		2010	Suzuki H	IncP1-beta2 The beta2  subclade
+NC_003430	IncP	79370	uncultured bacterium	77133	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_007502	IncP	57198	uncultured bacterium	77133	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_007680	IncP	54344	uncultured bacterium	77133	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_004840	IncP	64508	uncultured bacterium	77133	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_006352	IncP	68869	uncultured bacterium	77133	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_008272	IncP	54383	uncultured bacterium	77133	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_005312	IncQ1	8124	Actinobacillus pleuropneumoniae	715	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_012006	IncQ1	7560	Enterobacter cloacae	550	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_001740	IncQ1	8684	Escherichia coli	562	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_011378	IncQ1	10226	Pasteurella multocida	747	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_004973	IncQ1	10687	uncultured bacterium	77133	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_002524	IncQ1	10687	uncultured eubacterium pIE1115	136143	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_010919	IncU	45909	Aeromonas hydrophila	644	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_010643	IncW	39792	Providencia rettgeri	587	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_009982	IncW	39924	Salmonella enterica	98360	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_010716	IncW	38150	Salmonella enterica	98360	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_005793	rep_cluster_1431	76958	Achromobacter denitrificans	32002	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_012674	rep_cluster_1907	83042	Pseudomonas fluorescens	294	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_007926	rep_cluster_1907	82232	Pseudomonas putida	303	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_004999	rep_cluster_1907	83042	Pseudomonas putida	303	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_010509	rep_cluster_2042	47003	Methylobacterium radiotolerans	426355	1224	20851899	PMC2976508		2010	Suzuki H	
+NC_010332	rep_cluster_236	40457	Collimonas fungivorans	1005048	1224	20851899	PMC2976510		2010	Suzuki H	
+NC_003213	rep_cluster_236	45319	uncultured bacterium	77133	1224	20851899	PMC2976507		2010	Suzuki H	
+NC_002377	rep_cluster_352	194140	Agrobacterium tumefaciens	358	1224	20851899	PMC2976513		2010	Suzuki H	
+NC_003065	rep_cluster_490	214233	Agrobacterium fabrum	176299	1224	20851899	PMC2976514		2010	Suzuki H	
+NC_010929	rep_cluster_490	244978	Agrobacterium tumefaciens	358	1224	20851899	PMC2976516		2010	Suzuki H	
+NC_002147	rep_cluster_490	206479	Agrobacterium tumefaciens	358	1224	20851899	PMC2976515		2010	Suzuki H	
+NC_010929	rep_cluster_490	244978	Agrobacterium tumefaciens	358	1224	20851899	PMC2976516		2010	Suzuki H	
+NC_011982	rep_cluster_592	258824	Agrobacterium vitis	311402	1224	20851899	PMC2976517		2010	Suzuki H	
+NC_009349	rep_cluster_71	166749	Aeromonas salmonicida	382245	1224	20851899	PMC2976455		2010	Suzuki H	
+NC_008055	rep_cluster_717	69966	uncultured bacterium	77133	1224	20851899	PMC2976455		2010	Suzuki H	One plasmid, pQKH54, which appeared to be IncP-1 by some tests but not others was characterized by determining its complete genome sequence and proved to belong to a new subgroup of this ubiquitous plasmid family, which we have designated IncP-1 gamma (DOI: 10.1099/mic.0.28941-0). pQKH54 (Gammma clade; GenBank accession no. AM157767),
+AY543072	Col(IMGS31)	2520	Klebsiella pneumoniae	573		24777092	PMC4068535	10.1128/AAC.02412-14	2014	Alessandra Carattoli	
+AY543071	Col(IRGK)	2348	Klebsiella pneumoniae	573		24777092	PMC4068535	10.1128/AAC.02412-14	2014	Alessandra Carattoli	
+CP003228	Col(KPHS6)	1308	Klebsiella pneumoniae	573		26169555		https://doi.org/10.1093/jac/dkv204	2015	Bi D	
+KR905387	Col(MG828)	79782	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KR905385	Col(MG828)	86455	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	Reference plasmid
+KR905387	Col(MG828)	79782	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KR905385	Col(MG828)	86455	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	Reference plasmid
+JF937655	Col(YF27601)	5574	Yersinia frederiksenii	29484		22343298	PMC3318472 	10.1128/JB.05885-11	2015	Bosak,J.	
+JX843238	Col156	28080	Escherichia coli	562		25389419	PMC4211555	10.3389/fmicb.2014.00558	2014	Rahube TO	
+CP003226	Col156	3751	Escherichia coli	562		25389419	PMC4211555	10.3389/fmicb.2014.00558	2014	Rahube TO	
+DQ995354	Col156	7462	Escherichia coli	562		25389419	PMC4211555	10.3389/fmicb.2014.00558	2014	Rahube TO	
+EU090225	Col156	5146	Escherichia coli	562		25389419	PMC4211555	10.3389/fmicb.2014.00558	2014	Rahube TO	
+DQ298019	ColRNAI_rep_cluster_1857	9294	Klebsiella pneumoniae	573		24777092	PMC4068535	10.1128/AAC.02412-14	2014	Alessandra Carattoli	
+JX442973	ColRNAI_rep_cluster_1857	14709	Klebsiella pneumoniae	573		23800906		10.1093/jac/dkt235	2013	Villa,L.	
+HQ023864	IncC	166530	Escherichia coli	562		19949054			2010	Call,D.R.	
+FJ621586	IncC	148105	Escherichia coli	562		19949054			2010	Call,D.R.	
+JX442976	IncC	171925	Klebsiella pneumoniae	573		23800906		10.1093/jac/dkt235	2013	Villa,L.	
+JN687470	IncC	178277	Providencia stuartii	588		22290972			2012	Mc Gann,P.	
+KX156773	IncC	173094	Providencia stuartii	588		28842132			2017	Gama JA	From Fig S3
+JN687470	IncC	178277	Providencia stuartii	588		22290972			2012	Mc Gann,P.	
+KX156773	IncC	173094	Providencia stuartii	588		28842132			2017	Gama JA	From Fig S3
+KX709966	IncC	167554	Pseudomonas aeruginosa	287					2011	Gregory DOUARD	Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+KX709966	IncC	167554	Pseudomonas aeruginosa	287					2011	Gregory DOUARD	Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+NC_012693	IncC	158213	Salmonella enterica Newport	108619					2011	Gregory DOUARD	Thesis http://www.applis.univ-tours.fr/theses/2011/gregory.douard_3568.pdf
+FJ621587	IncC	158213	Salmonella enterica Newport	28901		19949054			2010	Call,D.R.	
+FN543503	IncFIA	54449	Citrobacter rodentium	637910		19897651		10.1128/JB.01144-09.	2010	Petty,N.K.	pCROD1, is nonconjugative; encodes two toxin/antitoxin (TA) addiction systems, PemIK and CcdAB; and has a replication locus similar to those of plasmids belonging to the incompatibility group IncFII, such as the E. coli plasmid R100
+FN543503	IncFIA	54449	Citrobacter rodentium	637910		19897651		10.1128/JB.01144-09.	2010	Petty,N.K.	pCROD1, is nonconjugative; encodes two toxin/antitoxin (TA) addiction systems, PemIK and CcdAB; and has a replication locus similar to those of plasmids belonging to the incompatibility group IncFII, such as the E. coli plasmid R100
+HG003695	IncFIA	87619	Escherichia coli	562		24247128			2014	J. Fiett et.al.	
+JQ364967	IncFIA	87021	Escherichia coli	562		22511964			2012	Bonnin,R.A.	
+JX486126	IncFIA	87419	Escherichia coli	562		25389419	PMC4211555	10.3389/fmicb.2014.00558	2014	Rahube TO	
+HG003695	IncFIA	87619	Escherichia coli	562		24247128			2014	J. Fiett et.al.	
+JQ364967	IncFIA	87021	Escherichia coli	562		22511964			2012	Bonnin,R.A.	
+JX486126	IncFIA	87419	Escherichia coli	562		25389419	PMC4211555	10.3389/fmicb.2014.00558	2014	Rahube TO	
+DQ449578	IncFIA	98264	Klebsiella pneumoniae	573		16940067	PMC1635178		2006	Chen,Y.T.	
+DQ449578	IncFIA	98264	Klebsiella pneumoniae	573		16940067	PMC1635178		2006	Chen,Y.T.	
+AF250878	IncFIA	180461	Salmonella typhi	90370		10773089			2000	Sherburne,C.K	
+NC_002638	IncFIB	49503	Salmonella enterica enterica	119912		11254626		10.1128/IAI.69.4.2612-2620.2001	2001	Haneda T	pKDSC50, are known to be nonconjugative; plasmid non-conjugative
+NZ_CM001063	IncFIB	49558	Salmonella enterica enterica	904139		16257053		10.1016/j.plasmid.2005.09.001	2006	Yu H	
+NC_006856	IncFIB	138742	Salmonella enterica enterica	321314		15781495		10.1093/nar/gki297	2005	Chiu CH	The pSC138 is non-conjugative, but contains oriT sequence and a defective transfer system; therefore, it is probably mobilizable
+NC_002638	IncFIB	49503	Salmonella enterica enterica	119912		11254626		10.1128/IAI.69.4.2612-2620.2001	2001	Haneda T	pKDSC50, are known to be nonconjugative; plasmid non-conjugative
+NZ_CM001063	IncFIB	49558	Salmonella enterica enterica	904139		16257053		10.1016/j.plasmid.2005.09.001	2006	Yu H	
+CP001122	IncFIB	146811	Salmonella enterica Kentucky 	439842		19482926	PMC2715731	10.1128/JB.00189-09	2009	Fricke WF	
+CP001122	IncFIB	146811	Salmonella enterica Kentucky 	439842		19482926	PMC2715731	10.1128/JB.00189-09	2009	Fricke WF	
+KC788405	IncFIC	145401	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KC788405	IncFIC	145401	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+FJ628167	IncFII	151188	Klebsiella pneumoniae	573		20547789			2010	Jiang,Y.	
+FJ628167	IncFII	151188	Klebsiella pneumoniae	573		20547789			2010	Jiang,Y.	
+KP899803	IncHI1B	311280	Salmonella enterica	28901		18606786		https://doi.org/10.1093/jac/dkn286	2008	H. Hradecka	IncHI1 is found in microbial populations in water and soil environments (Maher and Taylor 1993). IncHI1 plasmids were also found in human adapted bacterial pathogens, for example, in S. enterica serovar Typhi
+KP899804	IncHI1B	210266	Salmonella enterica	28901		18606786		https://doi.org/10.1093/jac/dkn286	2008	H. Hradecka	pF8475, was quite unstable in Salmonella Typhimurium F98 after conjugational transfer in the absence of selective pressure
+KP899805	IncHI1B	207203	Salmonella enterica	28901		18606786		https://doi.org/10.1093/jac/dkn286	2008	H. Hradecka	p109/9, was quite unstable in Salmonella Typhimurium F98 after conjugational transfer in the absence of selective pressure
+KP899806	IncHI1B	190730	Salmonella enterica	28901		18606786		https://doi.org/10.1093/jac/dkn286	2008	H. Hradecka	pB71, was quite unstable in Salmonella Typhimurium F98 after conjugational transfer in the absence of selective pressure
+KP899803	IncHI1B	311280	Salmonella enterica	28901		18606786		https://doi.org/10.1093/jac/dkn286	2008	H. Hradecka	IncHI1 is found in microbial populations in water and soil environments (Maher and Taylor 1993). IncHI1 plasmids were also found in human adapted bacterial pathogens, for example, in S. enterica serovar Typhi
+KP899804	IncHI1B	210266	Salmonella enterica	28901		18606786		https://doi.org/10.1093/jac/dkn286	2008	H. Hradecka	pF8475, was quite unstable in Salmonella Typhimurium F98 after conjugational transfer in the absence of selective pressure
+KP899805	IncHI1B	207203	Salmonella enterica	28901		18606786		https://doi.org/10.1093/jac/dkn286	2008	H. Hradecka	p109/9, was quite unstable in Salmonella Typhimurium F98 after conjugational transfer in the absence of selective pressure
+CP013193	IncI-gamma/K1	66990	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+HQ114281	IncI-gamma/K1	107138	Escherichia coli	562		23333216		https://doi.org/10.1016/j.plasmid.2013.01.001	2013	Anne Bleicher	
+LC019731	IncI-gamma/K1	102199	Escherichia coli	562		25987637	PMC4505199	10.1128/AAC.00492-15	2015	Lin,Y.T.	
+MF152729	IncI-gamma/K1	110255	Escherichia coli	562		29899511	PMC6155088	10.1038/s41396-018-0200-3	2018	Sam Abraham	
+KJ484629	IncI-gamma/K1	112671	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KF787110	IncI-gamma/K1	104399	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+CP015996	IncI-gamma/K1	93029	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KF434766	IncI-gamma/K1	90449	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KU932030	IncI-gamma/K1	87767	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+LM651376	IncI-gamma/K1	101631	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+CP003290	IncI-gamma/K1	88544	Escherichia coli	1133852		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KM409652	IncI-gamma/K1	102294	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+GU371927	IncI-gamma/K1	92970	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KJ484639	IncI-gamma/K1	89513	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+HQ114284	IncI-gamma/K1	103297	Escherichia coli	562		23333216		https://doi.org/10.1016/j.plasmid.2013.01.001	2013	Anne Bleicher	
+LN735561	IncI-gamma/K1	125315	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+CP010831	IncI-gamma/K1	83905	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+MF344575	IncI-gamma/K1	131779	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+MF344576	IncI-gamma/K1	104270	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+FN868832	IncI-gamma/K1	93629	Escherichia coli	562		21470454	PMC3377399 		2011	Cottell JL	
+FJ386569	IncI-gamma/K1	168100	Escherichia coli 	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+MG764547	IncI-gamma/K1	112544	Escherichia coli 	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+FJ386569	IncI-gamma/K1	168100	Escherichia coli 	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+CP002968	IncI-gamma/K1	102535	Escherichia coli W	566546		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+MF344577	IncI-gamma/K1	82822	Klebsiella pneumoniae	573		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+AP011954	IncI-gamma/K1	93185	Salmonella enteric	90371		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	Reference plasmid
+NC_019137	IncI-gamma/K1	107637	Salmonella enterica	28144		23333216		https://doi.org/10.1016/j.plasmid.2013.01.001	2013	Anne Bleicher	
+JX566770	IncI-gamma/K1	107637	Salmonella enterica	28144		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+CP001118	IncI-gamma/K1	91374	Salmonella enterica	454169		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+CP001121	IncI-gamma/K1	101461	Salmonella enterica	439842		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+NC_019137	IncI-gamma/K1	107637	Salmonella enterica	28144		23333216		https://doi.org/10.1016/j.plasmid.2013.01.001	2013	Anne Bleicher	
+JX566770	IncI-gamma/K1	107637	Salmonella enterica	28144		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+JN983049	IncI-gamma/K1	106833	Salmonella enterica 	611		23333216		https://doi.org/10.1016/j.plasmid.2013.01.001	2013	Anne Bleicher	
+KT754166	IncI-gamma/K1	121262	Shigella dysenteriae 1	984897		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KT754167	IncI-gamma/K1	119227	Shigella dysenteriae 1	984897		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+CP018975	IncI1/B/O	95926	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KX246268	IncI1/B/O	86207	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+GU256641	IncI1/B/O	110416	Escherichia coli	562		20956594			2011	Papagiannitsis,C.C.	
+CP012627	IncI1/B/O	92766	Escherichia coli 	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+EU935740	IncI1/B/O	93732	Escherichia coli 	562		23333216		https://doi.org/10.1016/j.plasmid.2013.01.001	2013	Anne Bleicher	
+EU418926	IncI1/B/O	87925	Escherichia coli 	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KU932021	IncI1/B/O	91885	Escherichia coli 	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+HE603110	IncI1/B/O	91942	Escherichia coli 	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KP987217	IncI1/B/O	85338	Klebsiella pneumoniae	573		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+HF572032	IncI1/B/O	94089	Shigella sonnei	624		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KU761326	IncI2	64964	Escherichia coli	562		26842776		10.1128/AAC.00550-16	2016	Li,A.	
+FR851304	IncI2	56676	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KP091735	IncI2	62194	Escherichia coli	562		25861872		10.1016/j.diagmicrobio.2015.02.010	2015	Ho,P.L.	
+AP002527	IncI2	75582	Escherichia coli	562		30761100	PMC6361801 	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	Reference IncI2
+KP198615	IncI2		Escherichia coli	562		25861872		10.1016/j.diagmicrobio.2015.02.010	2015	Ho,P.L.	
+KY693674	IncI2	63722	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KP347127	IncI2	64015	Escherichia coli	562		26842776		10.1128/AAC.00550-16	2016	Li,A.	
+JN797501	IncI2	62196	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KC845573	IncI2	77801	Klebsiella pneumoniae	573		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+JN983044	IncI2	65030	Salmonella enterica	611		26842776		10.1128/AAC.00550-16	2016	Li,A.	
+KJ460501	IncI2	62194	Shigella sonnei	624		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+CP013024	IncK2/Z	120611	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KC340959	IncK2/Z	115452	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KC340960	IncK2/Z	124908	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	Reference plasmid
+KJ484640	IncK2/Z	87042	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KJ484627	IncK2/Z	107386	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KU312044	IncK2/Z	79298	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KR905384	IncK2/Z	85963	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KR905388	IncK2/Z	79176	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KR905390	IncK2/Z	79277	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KR905386	IncK2/Z	79297	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KR905389	IncK2/Z	85422	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+CP013024	IncK2/Z	120611	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KC340959	IncK2/Z	115452	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+KC340960	IncK2/Z	124908	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	Reference plasmid
+AF550415	IncL/M	89468	Citrobacter freundii	546		17698626			2007	Golebiewski,M.	
+AF550415	IncL/M	89468	Citrobacter freundii	546		17698626			2007	Golebiewski,M.	
+HQ451074	IncL/M	88803	Escherichia coli	562		22083465			2012	Poirel,L.	
+HQ451074	IncL/M	88803	Escherichia coli	562		22083465			2012	Poirel,L.	
+JN626286	IncL/M	61881	Klebsiella pneumoniae	573		22083465			2012	Poirel,L.	
+KM406490	IncL/M	79502	Salmonella enterica subsp. enterica serovar Typhimurium	90371		25933288			2015	Carattoli,A.	
+NC_015599	IncN	54205	Escherichia coli	562		28842132			2017	Gama JA	From Fig S3
+KC788405	IncN	145401	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+JX193301	IncN	83712	Klebsiella pneumoniae	573		23114770			2013	Chen,L.	
+BN000925	IncP	60096	Birmingham IncP-alpha plasmid	35419		28842132			2017	Gama JA	From Fig S3
+JX486125	IncP	61919	Escherichia coli	562		25389419	PMC4211555	10.3389/fmicb.2014.00558	2014	Rahube TO	
+KX377410	IncP	57278	Klebsiella pneumoniae	573		27895009	PMC5278755 	10.1128/AAC.02229-16	2017	Zhao F	pMCR_1511 has the typical IncP-1 plasmid backbone (PMID: 27895009)
+AM261282	IncP	54383	Kluyvera sp.	579		54383		10.1111/j.1574-6968.2006.00536.x	2007	Bahl,M.I.	pKJK5 (Epsilon clade; GenBank accession no. AM261282) (PMID: 27895009)
+U20374	IncP	7426	Neisseria gonorrhoeae	485		23980652			2013	Jain A	
+AJ877225	IncP	57121	Pseudomonas aeruginosa	287		30619542	PMC6312765 	doi:10.1016/j.plasmid.2005.11.003	2006	Haines, A. S.	plasmid pRms149 (Haines et al., 2005), originally isolated from Pseudomonas aeruginosa (Sagai et al., 1975), where it is the only known member of the IncP-6 incompatibility group
+JQ480155	IncQ1	27072	Escherichia coli	562		25389419	PMC4211555	10.3389/fmicb.2014.00558	2014	Rahube TO	
+M28829	IncQ1	8684	Escherichia coli	562		2653965			1989	Scholz,P.	
+JQ480155	IncQ1	27072	Escherichia coli	562		25389419	PMC4211555	10.3389/fmicb.2014.00558	2014	Rahube TO	
+FJ696404	IncQ2	9042	Escherichia coli	562		20525990			2010	Poirel,L.	plasmid non-conjugative
+JX424614	IncR	49770	Klebsiella pneumoniae	573		23711894		10.1093/jac/dkt196	2013	Papagiannitsis CC	plasmid non-conjugative
+NC_020123	IncT	83698	Citrobacter freundii	546		23357767	PMC3623325 	10.1128/AAC.01297-12	2013	Villa,L.	Mobilizable but non-self-conjugative IncT-type plasmid. Probably requires other plasmid to move. A large deletion that had occurred inside the transfer system genes
+AP004237	IncT	217182	Proteus vulgaris	585		12029035			2002	Murata T	
+NC_006143	IncU	84749	Aeromonas caviae	648		30619542	PMC6312765 	doi:10.1016/j.plasmid.2005.11.003	2006	Haines, A. S.	This plasmid was originally isolated from a hospital effluent (Kendal, Cumbria, United Kingdom) strain of Aeromonas caviae HG5B in September 1997 and was subsequently transferred to Escherichia coli J53-1 by conjugation
+JX843237	IncU	20914	Escherichia coli	562		25389419	PMC4211555	10.3389/fmicb.2014.00558	2014	Rahube TO	plasmid non-conjugative
+FJ628167	IncU	151188	Klebsiella pneumoniae	573		20547789			2010	Jiang,Y.	
+BR000038	IncW	33913	Escherichia coli	562		28842132			2017	Gama JA	From Fig S3
+JQ269336	IncX1	38611	Escherichia coli	562		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+JF776874	IncX1	38611	Escherichia coli	562		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+FJ666132	IncX1	42644	Escherichia coli	562		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+EU370913	IncX1	51602	Escherichia coli	562		21625636	PMC3097218	10.1371/journal.pone.0019912	2011	Lars H. Hansen	
+HM114226	IncX1	30199	Escherichia coli	562		21625636	PMC3097218	10.1371/journal.pone.0019912	2011	Lars H. Hansen	
+JN935898	IncX1	47506	Escherichia coli	562		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+JN935897	IncX1	31684	Escherichia coli	562		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+CU928149	IncX1	33809	Escherichia coli	585056		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+JQ269336	IncX1	38611	Escherichia coli	562		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+JF776874	IncX1	38611	Escherichia coli	562		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+FJ666132	IncX1	42644	Escherichia coli	562		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+EU219533	IncX1	32950	Salmonella enterica	149539		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+DQ115387	IncX1	34595	Salmonella enterica	98360		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+HE578058	IncX1	32533	Shigella sp. LN126	1072659		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+JQ269335	IncX2	34294	Escherichia coli	562		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+LT827129	IncX2	39872	Escherichia coli strain K12 J53	562		9218765			1997	Nunez B	
+JN935899	IncX3	34945	Escherichia coli	562		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+JN247852	IncX3	43380	Klebsiella pneumoniae	573		22470007		10.1016/j.plasmid.2012.03.001	2012	TJ Johnson	
+KU761328	IncX3	46161	Klebsiella pneumoniae	573		26842776		10.1128/AAC.00550-16	2016	Li,A.	
+FN543504	IncX4	39265	Citrobacter rodentium	637910		21911569		10.1128/JB.01144-09.	2011	Partridge,S.R.	
+KX711707	IncX4	34997	Escherichia coli	562		28336940		10.1038/s41598-017-00095-x	2017	Sun J	
+KX711708	IncX4	34924	Escherichia coli	562		28336940		10.1038/s41598-017-00095-x	2017	Sun J	
+JN194214	IncX4	34345	Escherichia coli	562		21911569			2011	Partridge,S.R.	
+KU761327	IncX4	33287	Klebsiella pneumoniae	573		26842776		10.1128/AAC.00550-16	2016	Li,A.	
+JX258655	IncX4	32447	Salmonella enterica	611		26842776		10.1128/AAC.00550-16	2016	Li,A.	
+CP001059	IncX4	33103	Shigella boydii	344609		21911569			2011	Partridge,S.R.	
+JX193302	IncX5	47387	Klebsiella pneumoniae strain BK31567	573		23114770			2013	Chen,L.	
+KX880944	IncY	97386	Escherichia coli	562		28031198	PMC5328573 		2017	Zhang C	
+AY301063	rep_cluster_1010	5424	Aeromonas salmonicida	382245		22862417		10.1111/j.1472-765X.2012.03293.x	2012	J.E. Han	
+JN315885	rep_cluster_1068	6903	Aeromonas hydrophila	644		22862417		10.1111/j.1472-765X.2012.03293.x	2012	J.E. Han	
+JN315884	rep_cluster_1068	6900	Aeromonas sobria	646		22862417		10.1111/j.1472-765X.2012.03293.x	2012	J.E. Han	
+AY301065	rep_cluster_1069	5616	Aeromonas salmonicida	382245		22862417		10.1111/j.1472-765X.2012.03293.x	2012	J.E. Han	
+FJ628167	rep_cluster_1254	151188	Klebsiella pneumoniae	573		20547789			2010	Jiang,Y.	
+DQ449578	rep_cluster_1418	98264	Klebsiella pneumoniae	573		16940067	PMC1635178		2006	Chen,Y.T.	
+LT985287	rep_cluster_1760	49251	Escherichia coli	562							
+CP003036	rep_cluster_2131	5163	Escherichia coli	562		25389419	PMC4211555	10.3389/fmicb.2014.00558	2014	Rahube TO	
+FJ628167	rep_cluster_2183	151188	Klebsiella pneumoniae	573		20547789			2010	Jiang,Y.	
+KC788405	rep_cluster_2244	145401	Escherichia coli	562		30761100	PMC6361801	https://doi.org/10.3389/fmicb.2019.00048	2019	Zhang D	
+GQ374157	rep_cluster_2335	3071	Escherichia coli	562		20008783	PMC2812132 	10.1128/AAC.01160-09	2010	Pallecchi,L.	
+GQ374156	rep_cluster_2335	2699	Escherichia coli	562		20008783	PMC2812132 	10.1128/AAC.01160-09	2010	Pallecchi,L.	
+J01749	rep_cluster_2350	4361	E. coli K-12 	562		6263753			1981	Covarrubias,L.	It has been demonstrated that the nonconjugative plasmid ColE1 can be mobilized by the self-transmissible plasmids F or R64drdl 1 
+CP014198	rep_cluster_2350	7057	Escherichia coli	562		26802429	PMC4825418 	10.1093/gbe/evw008	2016	Kurylo CM	A third of the 6.6 kb genome of ColE1 is devoted to mobilization (mob) genes necessary to promote its specific transfer in the presence of conjugative plasmids (PMID:2671664)
+AY929248	rep_cluster_2350	8318	Escherichia coli	562		17122402	PMC1800769 	10.1128/AEM.01780-06	2007	Rijavec M	
+KJ850907	rep_cluster_236	41518	Escherichia coli	562		25628616			2015	Li,X.	
+CP003227	rep_cluster_2373	3353	Klebsiella pneumoniae	573		26169555		https://doi.org/10.1093/jac/dkv204	2015	Bi D	

@@ -1,45 +1,65 @@
 #!/usr/bin/env python3
 from mob_suite.version import __version__
 from collections import OrderedDict
-import logging, os, shutil, sys, operator,re
-from subprocess import Popen, PIPE
-from argparse import (ArgumentParser, FileType)
+import logging, os, shutil, sys, re
 import pandas as pd
+from argparse import (ArgumentParser)
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 from mob_suite.wrappers import mash
 from mob_suite.wrappers import detectCircularity
 
-import string
+import glob
+
+from mob_suite.constants import \
+    MOB_CLUSTER_INFO_HEADER, \
+    MOB_RECON_INFO_HEADER, \
+    ETE3_LOCK_FILE, \
+    ETE3DBTAXAFILE, \
+    NCBI_PLASMID_TAXONOMY_HEADER, \
+    default_database_dir, \
+    LOG_FORMAT, \
+    LIT_PLASMID_TAXONOMY_HEADER
 
 from mob_suite.utils import \
     read_fasta_dict, \
     write_fasta_dict, \
     filter_overlaping_records, \
-    replicon_blast, \
-    mob_blast, \
-    repetitive_blast, \
-    getRepliconContigs, \
     fix_fasta_header, \
-    getMashBestHit, \
     verify_init, \
-    check_dependencies
-
-
-LOG_FORMAT = '%(asctime)s %(name)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-
-
+    check_dependencies, \
+    read_sequence_info, \
+    fixStart, \
+    calc_md5, \
+    GC, \
+    ETE3_db_status_check, \
+    writeReport, \
+    dict_from_alt_key_list, \
+    read_file_to_dict, \
+    blastn, \
+    identify_biomarkers, \
+    build_mobtyper_report, \
+    parseMash
 
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
-    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
+
     parser = ArgumentParser(
         description="MOB-Recon: Typing and reconstruction of plasmids from draft and complete assemblies version: {}".format(
             __version__))
     parser.add_argument('-o', '--outdir', type=str, required=True, help='Output Directory to put results')
     parser.add_argument('-i', '--infile', type=str, required=True, help='Input assembly fasta file to process')
     parser.add_argument('-n', '--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
+    parser.add_argument('-s', '--sample_id', type=str, required=False, help='Sample Prefix for reports')
+    parser.add_argument('-f', '--force', required=False, help='Overwrite existing directory',
+                        action='store_true')
+    parser.add_argument('-b', '--filter_db', type=str, required=False, help='Path to fasta file to mask sequences')
+    parser.add_argument('-g', '--genome_filter_db_prefix', type=str, required=False,
+                        help='Prefix of mash sketch and blastdb of closed chromosomes to use for auto selection of close genomes for filtering')
+    parser.add_argument('--mash_genome_neighbor_threshold', type=int, required=False,
+                        help='Mash distance selecting valid closed genomes to filter', default=0.002)
+
     parser.add_argument('--max_contig_size', type=int, required=False,
                         help='Maximum size of a contig to be considered a plasmid',
                         default=310000)
@@ -80,7 +100,7 @@ def parse_args():
 
     parser.add_argument('--min_con_cov', type=int, required=False,
                         help='Minimum percentage coverage of assembly contig by the plasmid reference database to be considered',
-                        default=70)
+                        default=60)
 
     parser.add_argument('--min_rpp_cov', type=int, required=False,
                         help='Minimum percentage coverage of contigs by repetitive elements',
@@ -106,32 +126,159 @@ def parse_args():
     parser.add_argument('--debug', required=False, help='Show debug information', action='store_true')
 
     parser.add_argument('--plasmid_db', type=str, required=False, help='Reference Database of complete plasmids',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/ncbi_plasmid_full_seqs.fas'))
+                        default=os.path.join(default_database_dir,
+                                             'ncbi_plasmid_full_seqs.fas'))
     parser.add_argument('--plasmid_mash_db', type=str, required=False,
                         help='Companion Mash database of reference database',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/ncbi_plasmid_full_seqs.fas.msh'))
+                        default=os.path.join(default_database_dir,
+                                             'ncbi_plasmid_full_seqs.fas.msh'))
+    parser.add_argument('-m', '--plasmid_meta', type=str, required=False,
+                        help='MOB-cluster plasmid cluster formatted file matched to the reference plasmid db',
+                        default=os.path.join(default_database_dir,
+                                             'clusters.txt'))
     parser.add_argument('--plasmid_db_type', type=str, required=False, help='Blast database type of reference database',
                         default='blastn')
     parser.add_argument('--plasmid_replicons', type=str, required=False, help='Fasta of plasmid replicons',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/rep.dna.fas'))
+                        default=os.path.join(default_database_dir,
+                                             'rep.dna.fas'))
     parser.add_argument('--repetitive_mask', type=str, required=False, help='Fasta of known repetitive elements',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/repetitive.dna.fas'))
+                        default=os.path.join(default_database_dir,
+                                             'repetitive.dna.fas'))
     parser.add_argument('--plasmid_mob', type=str, required=False, help='Fasta of plasmid relaxases',
-                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                             'databases/mob.proteins.faa'))
+                        default=os.path.join(default_database_dir,
+                                             'mob.proteins.faa'))
+    parser.add_argument('--plasmid_mpf', type=str, required=False, help='Fasta of known plasmid mate-pair proteins',
+                        default=os.path.join(default_database_dir,
+                                             'mpf.proteins.faa'))
+    parser.add_argument('--plasmid_orit', type=str, required=False, help='Fasta of known plasmid oriT dna sequences',
+                        default=os.path.join(default_database_dir,
+                                             'orit.fas'))
     parser.add_argument('-d', '--database_directory',
                         default=default_database_dir,
                         required=False,
                         help='Directory you want to use for your databases. If the databases are not already '
-                             'downloaded, they will be downloaded automatically. Defaults to {}'.format(default_database_dir))
-    parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__ )
-
+                             'downloaded, they will be downloaded automatically. Defaults to {}'.format(
+                            default_database_dir))
+    parser.add_argument('--primary_cluster_dist', type=int, required=False,
+                        help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
+    parser.add_argument('--secondary_cluster_dist', type=int, required=False,
+                        help='Mash distance for assigning primary cluster id 0 - 1',
+                        default=0.025)
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
 
     return parser.parse_args()
+
+
+def validate_args(args, logger):
+    if not args.outdir:
+        logger.error('Error, no output directory specified, please specify one')
+        sys.exit(-1)
+
+    if not args.infile:
+        logger.error('Error, no fasta specified, please specify one')
+        sys.exit(-1)
+
+    if not os.path.isfile(args.infile):
+        logger.error('Error, input fasta file does not exist: "{}"'.format(args.infile))
+        sys.exit(-1)
+
+        # Input numeric params
+        min_rep_ident = float(args.min_rep_ident)
+        min_mob_ident = float(args.min_mob_ident)
+        min_con_ident = float(args.min_con_ident)
+        min_rpp_ident = float(args.min_rpp_ident)
+
+        idents = {'min_rep_ident': min_rep_ident, 'min_mob_ident': min_mob_ident, 'min_con_ident': min_con_ident,
+                  'min_rpp_ident': min_rpp_ident}
+
+        for param in idents:
+            value = float(idents[param])
+            if value < 60:
+                logger.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
+                sys.exit(-1)
+            if value > 100:
+                logger.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
+                sys.exit(-1)
+
+        min_rep_cov = float(args.min_rep_cov)
+        min_mob_cov = float(args.min_mob_cov)
+        min_con_cov = float(args.min_con_cov)
+        min_rpp_cov = float(args.min_rpp_cov)
+
+        covs = {'min_rep_cov': min_rep_cov, 'min_mob_cov': min_mob_cov, 'min_con_cov': min_con_cov,
+                'min_rpp_cov': min_rpp_cov}
+
+        for param in covs:
+            value = float(covs[param])
+            if value < 50:
+                logger.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
+                sys.exit(-1)
+            if value > 100:
+                logger.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
+                sys.exit(-1)
+
+        min_rep_evalue = float(args.min_rep_evalue)
+        min_mob_evalue = float(args.min_mob_evalue)
+        min_con_evalue = float(args.min_con_evalue)
+        min_rpp_evalue = float(args.min_rpp_evalue)
+
+        evalues = {'min_rep_evalue': min_rep_evalue, 'min_mob_evalue': min_mob_evalue, 'min_con_evalue': min_con_evalue,
+                   'min_rpp_evalue': min_rpp_evalue}
+
+        for param in evalues:
+            value = float(evalues[param])
+            if value > 1:
+                logger.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
+                sys.exit(-1)
+
+        # Input numeric params
+        min_rep_ident = float(args.min_rep_ident)
+        min_mob_ident = float(args.min_mob_ident)
+        min_con_ident = float(args.min_con_ident)
+        min_rpp_ident = float(args.min_rpp_ident)
+
+        idents = {'min_rep_ident': min_rep_ident, 'min_mob_ident': min_mob_ident, 'min_con_ident': min_con_ident,
+                  'min_rpp_ident': min_rpp_ident}
+
+        for param in idents:
+            value = idents[param]
+            if value < 70:
+                logger.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
+                sys.exit(-1)
+            if value > 100:
+                logger.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
+                sys.exit(-1)
+
+        min_rep_cov = float(args.min_rep_cov)
+        min_mob_cov = float(args.min_mob_cov)
+        min_con_cov = float(args.min_con_cov)
+        min_rpp_cov = float(args.min_rpp_cov)
+
+        covs = {'min_rep_cov': min_rep_cov, 'min_mob_cov': min_mob_cov, 'min_con_cov': min_con_cov,
+                'min_rpp_cov': min_rpp_cov}
+
+        for param in covs:
+            value = covs[param]
+            if value < 50:
+                logger.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
+                sys.exit(-1)
+            if value > 100:
+                logger.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
+                sys.exit(-1)
+
+        min_rep_evalue = float(args.min_rep_evalue)
+        min_mob_evalue = float(args.min_mob_evalue)
+        min_con_evalue = float(args.min_con_evalue)
+        min_rpp_evalue = float(args.min_rpp_evalue)
+
+        evalues = {'min_rep_evalue': min_rep_evalue, 'min_mob_evalue': min_mob_evalue, 'min_con_evalue': min_con_evalue,
+                   'min_rpp_evalue': min_rpp_evalue}
+
+        for param in evalues:
+            value = evalues[param]
+            if value > 1:
+                logger.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
+                sys.exit(-1)
 
 
 def init_console_logger(lvl=2):
@@ -147,141 +294,60 @@ def init_console_logger(lvl=2):
     return logging.getLogger(__name__)
 
 
-
-def run_mob_typer(plasmid_file_abs_path, outdir, num_threads=1,database_dir=None):
-    mob_typer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_typer.py')
-
-    logger = logging.getLogger(__name__)
-    logger.info("Launching mob_typer to type recently reconstructed plasmid {}".format(plasmid_file_abs_path))
-    if database_dir is None:
-        p = Popen([sys.executable, mob_typer_path,
-                   '--infile', plasmid_file_abs_path,
-                   '--outdir', outdir,
-                   '--keep_tmp',
-                   '--host_range_detailed',
-                   '--num_threads', str(num_threads)],
-                  stdout=PIPE,
-                  stderr=PIPE, universal_newlines=True
-                  )
-    else:
-        p = Popen([sys.executable, mob_typer_path,
-                   '--infile', plasmid_file_abs_path,
-                   '--outdir', outdir,
-                   '--keep_tmp',
-                   '--database_directory', database_dir,
-                   '--host_range_detailed',
-                   '--num_threads', str(num_threads)],
-                  stdout=PIPE,
-                  stderr=PIPE, universal_newlines=True
-                  )
-
-    p.stdout.close()
-    p.stderr.close()
-
-    return_code = p.wait()
-    if return_code == 1:
-        logger.error("Mob_typer return code {}".format(return_code))
-        raise Exception("MOB_typer could not type {}".format(plasmid_file_abs_path))
-
-    mob_typer_report_file = outdir + "/mobtyper_" + os.path.basename(plasmid_file_abs_path) + "_report.txt"
-    if os.path.exists(mob_typer_report_file):
-        logger.info("Typing plasmid {}".format(os.path.basename(plasmid_file_abs_path)))
-        if os.path.getsize(mob_typer_report_file) == 0:
-            logger.error(
-                "File {} is empty. Perhaps there is an issue with mob_typer or some dependencies are missing (e.g. ete3)".format(
-                    mob_typer_report_file))
-            return ''
-
-        df = pd.read_csv(mob_typer_report_file,header=0,sep="\t", encoding='utf8')
-        row = df.iloc[0].to_list()
-        for i in range(0,len(row)):
-            r = row[i]
-            if isinstance(r, str):
-
-                row[i] = r.encode('utf-8', errors="ignore").decode("utf-8", errors="ignore")
-                printable = set(string.printable)
-                row[i] = ''.join(filter(lambda x: x in printable, row[i]))
-            else:
-                row[i] = str(r)
-
-        mob_typer_results = "\t".join(str(v) for v in row)
-        return mob_typer_results
-    else:
-        logger.error("File {} does not exist. Perhaps there is an issue with the mob_typer or some dependencies are missing (e.g. ete3)".format(mob_typer_report_file))
+def circularize(input_fasta, outdir, logging):
+    c = detectCircularity()
+    return c.run(input_fasta, outdir, logging)
 
 
-
-def contig_blast(input_fasta, plasmid_db, min_ident, min_cov, evalue, min_length, tmp_dir, blast_results_file,
-                 num_threads=1):
-    blast_runner = None
-    filtered_blast = os.path.join(tmp_dir, 'filtered_blast.txt')
-    blast_runner = BlastRunner(input_fasta, tmp_dir)
-    blast_runner.run_blast(query_fasta_path=input_fasta, blast_task='megablast', db_path=plasmid_db,
-                           db_type='nucl', min_cov=min_cov, min_ident=min_ident, evalue=evalue,
-                           blast_outfile=blast_results_file, num_threads=num_threads, word_size=11)
-    if os.path.getsize(blast_results_file) == 0:
-        fh = open(filtered_blast, 'w', encoding="utf-8")
-        fh.write('')
-        fh.close()
-        return dict()
-    blast_df = BlastReader(blast_results_file).df
-    blast_df = blast_df.loc[blast_df['length'] >= min_length]
-    blast_df = blast_df.loc[blast_df['qlen'] <= 400000]
-    blast_df = blast_df.loc[blast_df['qlen'] >= min_length]
-    blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
+def filter_blastdf_by_seqs(blast_df, include_seqs, column_name):
+    blast_df = blast_df[blast_df[column_name].isin(include_seqs)]
     blast_df = blast_df.reset_index(drop=True)
-    blast_df.to_csv(filtered_blast, sep='\t', header=False, line_terminator='\n', index=False)
+    return blast_df
 
 
-def membership_voting(reference_sequence_hits,contig_hit_scores):
-    filtered_reference_hits = {}
-    filtered_cluster_ids = {}
-    for ref_id in reference_sequence_hits:
-        if float(reference_sequence_hits[ref_id]['covered_bases'])/reference_sequence_hits[ref_id]['length'] < 0.8:
-            continue
-        filtered_reference_hits[ref_id] = reference_sequence_hits[ref_id]
-        filtered_cluster_ids[reference_sequence_hits[ref_id]['clust_id']] = reference_sequence_hits[ref_id]['score']
+def filter_sequences(input_fasta, blastdb, min_ident, min_cov, evalue, min_length, out_dir, blast_results_file,
+                     seq_filterfile=None, num_threads=1, max_length=400000):
+    blastn(input_fasta, blastdb, min_ident, min_cov, evalue, min_length, out_dir, blast_results_file,
+           seq_filterfile, num_threads, max_length)
 
-    print(filtered_cluster_ids)
-    print(contig_hit_scores)
-    memberships = {}
-
-    for contig_id in contig_hit_scores:
-        top_hit_score = 0
-        top_hit_cluster_ids = []
-        top_hit_ids = []
-
-        for hit_id in contig_hit_scores[contig_id]:
-            score = contig_hit_scores[contig_id][hit_id]['score']
-            if score >= top_hit_score:
-                top_hit_ids.append(hit_id)
-                top_hit_cluster_ids.append(reference_sequence_hits[hit_id]['clust_id'])
-                top_hit_score = score
-
-
-        for hit_id in top_hit_ids:
-            if hit_id in filtered_reference_hits:
-                memberships[contig_id] = {'ref_id': hit_id, 'clust_id': reference_sequence_hits[hit_id]['clust_id'],'score':reference_sequence_hits[hit_id]['score']}
-                break
-
-        if contig_id not in memberships:
-            for i in range(0,len(top_hit_cluster_ids)):
-                clust_id = top_hit_cluster_ids[i]
-                hit_id = top_hit_ids[i]
-                if clust_id in filtered_cluster_ids:
-                    memberships[contig_id] = {'ref_id': hit_id, 'clust_id': reference_sequence_hits[hit_id]['clust_id'],'score':reference_sequence_hits[hit_id]['score']}
-                    break
-    print(memberships)
-    return memberships
-
-
-def contig_blast_group(blast_results_file, overlap_threshold):
     if os.path.getsize(blast_results_file) == 0:
-        return ({},{},{})
-    blast_df = BlastReader(blast_results_file).df
-    blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
+        os.remove(blast_results_file)
+        return pd.DataFrame()
 
-    blast_df = filter_overlaping_records(blast_df, overlap_threshold, 'sseqid', 'sstart', 'send', 'bitscore')
+    blast_df = BlastReader(blast_results_file).df
+
+    if seq_filterfile:
+        blast_df = filter_blastdf_by_seqs(blast_df, seq_filterfile)
+        blast_df = blast_df.reset_index(drop=True)
+
+    return blast_df
+
+
+def find_mash_genomes(reference_mash_sketch, fasta_query, outfile, cutoff_distance, num_threads=1):
+    cutoff_distance = float(cutoff_distance)
+
+    if (not os.path.isfile(fasta_query)):
+        sys.exit(-1)
+
+    if (not os.path.isfile(reference_mash_sketch)):
+        sys.exit(-1)
+    m = mash()
+    distances = parseMash(m.run_mash(reference_mash_sketch, fasta_query, num_threads=num_threads))
+
+    genomes = []
+
+    for query in distances:
+        for ref in distances[query]:
+            score = distances[query][ref]
+            if score < cutoff_distance:
+                genomes.append(ref)
+
+    return genomes
+
+
+def calc_hit_coverage(blast_df, overlap_threshold, reference_sequence_meta):
+    blast_df = blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'], ascending=[True, True, True, False])
+    hit_scores = {}
     size = str(len(blast_df))
     prev_size = 0
     while size != prev_size:
@@ -289,77 +355,534 @@ def contig_blast_group(blast_results_file, overlap_threshold):
         prev_size = size
         size = str(len(blast_df))
 
-    cluster_scores = dict()
-    groups = dict()
-    hits = dict()
-    contigs = dict()
-    query_hit_scores = dict()
+    blast_df['qseqid'].apply(str)
+    blast_df['sseqid'].apply(str)
+
     for index, row in blast_df.iterrows():
-        query = row['qseqid']
-        pID, clust_id = row['sseqid'].split('|')
-        score = row['bitscore']
-        pLen = row['slen']
-        contig_id = row['qseqid']
-        mlength = row['length']
+        query = str(row['qseqid'])
+        pID = str(row['sseqid'])
+        score = float(row['bitscore'])
+        aln_length = int(row['length'])
+        total_len = int(row['slen'])
+        if pID not in reference_sequence_meta:
+            logging.warning("Seqid {} in blast results but not cluster file".format(pID))
+            continue
+        else:
+            clust_id = reference_sequence_meta[pID]['primary_cluster_id']
 
-        if not query in query_hit_scores:
-            query_hit_scores[query] = {}
+        if pID not in hit_scores:
+            hit_scores[pID] = {'score': 0, 'length': total_len, 'covered_bases': 0, 'clust_id': clust_id, 'contigs': []}
 
-        if not pID in query_hit_scores[query]:
-            query_hit_scores[query][pID] = {'score': 0, 'length': pLen, 'covered_bases': 0, 'clust_id': clust_id}
+        hit_scores[pID]['covered_bases'] += aln_length
+        hit_scores[pID]['score'] += score
+        hit_scores[pID]['contigs'].append(query)
+        hit_scores[pID]['contigs'] = list(set(hit_scores[pID]['contigs']))
 
-        query_hit_scores[query][pID]['score']+= score
-        query_hit_scores[query][pID]['covered_bases'] += mlength
+    return hit_scores
 
-        if not pID in hits:
-            hits[pID] = {'score': 0, 'length': pLen, 'covered_bases': 0, 'clust_id': clust_id}
 
+def calc_contig_reference_cov(blast_df, overlap_threshold, reference_sequence_meta):
+    blast_df = blast_df.sort_values(['qseqid', 'sseqid', 'qstart', 'qend', 'bitscore'],
+                                    ascending=[True, True, True, True, False])
+    contig_scores = {}
+    size = str(len(blast_df))
+    prev_size = 0
+
+    for index, row in blast_df.iterrows():
+        query = str(row['qseqid'])
+        pID = str(row['sseqid'])
+        score = float(row['bitscore'])
+
+        if pID not in reference_sequence_meta:
+            logging.warning("Seqid {} in blast results but not cluster file".format(pID))
+            continue
+        else:
+            clust_id = reference_sequence_meta[pID]['primary_cluster_id']
+
+        if query not in contig_scores:
+            contig_scores[query] = {}
+
+        if not pID in contig_scores[query]:
+            contig_scores[query][pID] = 0
+
+        contig_scores[query][pID] += score
+
+    for contig_id in contig_scores:
+        contig_scores[contig_id] = OrderedDict(
+            sorted(iter(list(contig_scores[contig_id].items())), key=lambda x: x[1], reverse=True))
+
+    return contig_scores
+
+
+def calc_cluster_scores(reference_hit_coverage):
+    cluster_scores = {}
+    for ref_id in reference_hit_coverage:
+        clust_id = reference_hit_coverage[ref_id]['clust_id']
         if not clust_id in cluster_scores:
-            cluster_scores[clust_id] = score
-        elif score > cluster_scores[clust_id]:
-            cluster_scores[clust_id] = score
+            cluster_scores[clust_id] = 0
+        score = reference_hit_coverage[ref_id]['score']
+        cluster_scores[clust_id] += score
 
-        if not clust_id in groups:
-            groups[clust_id] = dict()
+    return OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
 
-        if not query in groups[clust_id]:
-            groups[clust_id][query] = dict()
 
-        if not contig_id in contigs:
-            contigs[contig_id] = dict()
+def get_contig_link_counts(reference_hit_coverage, cluster_contig_links):
+    cluster_scores = calc_cluster_scores(reference_hit_coverage)
 
-        if not clust_id in contigs[contig_id]:
-            contigs[contig_id][clust_id] = 0
-
-        if contigs[contig_id][clust_id] < score:
-            contigs[contig_id][clust_id] = score
-
-        groups[clust_id][query][contig_id] = score
-
-        hits[pID]['score'] += score
-        hits[pID]['covered_bases'] += mlength
-
-    sorted_d = OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
-
-    for clust_id in sorted_d:
-        score = sorted_d[clust_id]
+    contig_link_counts = {}
+    contig_clust_assoc = {}
+    for clust_id in cluster_contig_links:
+        contigs = cluster_contig_links[clust_id]
         for contig_id in contigs:
-            if clust_id in contigs[contig_id]:
-                contigs[contig_id] = {clust_id: contigs[contig_id][clust_id]}
+            if not contig_id in contig_link_counts:
+                contig_link_counts[contig_id] = 0
+                contig_clust_assoc[contig_id] = {}
+            contig_link_counts[contig_id] += 1
+            contig_clust_assoc[contig_id][clust_id] = cluster_scores[clust_id]
 
-    return (contigs,hits,query_hit_scores)
+    for contig_id in contig_clust_assoc:
+        contig_clust_assoc[contig_id] = OrderedDict(
+            sorted(iter(contig_clust_assoc[contig_id].items()), key=lambda x: x[1], reverse=True))
+
+    return OrderedDict(sorted(iter(contig_link_counts.items()), key=lambda x: x[1], reverse=False))
 
 
-def circularize(input_fasta, outdir):
-    c = detectCircularity()
-    return c.run(input_fasta, outdir)
+def get_contigs_by_key_value(contig_info, column_key, reasons):
+    filtered = []
+    for contig_id in contig_info:
+        if contig_info[contig_id][column_key] in reasons:
+            filtered.append(contig_id)
+    return list(set(filtered))
 
+
+def get_contigs_with_value_set(contig_info, column_key):
+    filtered = []
+    for contig_id in contig_info:
+        if contig_info[contig_id][column_key] is not None and contig_info[contig_id][column_key] != '':
+            filtered.append(contig_id)
+    return list(set(filtered))
+
+
+def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info, out_dir, contig_seqs, mash_db,
+                               primary_distance, secondary_distance, num_threads=1):
+    # Individual reference sequence coverage and overall score along with contig associations
+    reference_hit_coverage = calc_hit_coverage(contig_blast_df, 1000, reference_sequence_meta)
+    contig_reference_coverage = calc_contig_reference_cov(contig_blast_df, 1000, reference_sequence_meta)
+    filtered_contigs = get_contigs_by_key_value(contig_info, 'filtering_reason', ['user', 'chromosome'])
+    repetitive_contigs = get_contigs_by_key_value(contig_info, 'filtering_reason', ['repetitve element'])
+    circular_contigs = get_contigs_by_key_value(contig_info, 'circularity_status', ['circular'])
+    replicon_contigs = get_contigs_with_value_set(contig_info, 'rep_type(s)')
+    relaxase_contigs = get_contigs_with_value_set(contig_info, 'relaxase_type(s)')
+
+    contig_list = list(contig_reference_coverage.keys())
+
+    unassigned_contigs = {}
+    for contig_id in contig_list:
+        if contig_id in filtered_contigs:
+            continue
+        if contig_id not in unassigned_contigs:
+            unassigned_contigs[contig_id] = {}
+
+    cluster_contig_links = get_seq_links(contig_reference_coverage, reference_sequence_meta)
+    contig_link_counts = get_contig_link_counts(reference_hit_coverage, cluster_contig_links)
+    cluster_scores = calc_cluster_scores(reference_hit_coverage)
+
+    contig_cluster_scores = {}
+
+    for clust_id in cluster_contig_links:
+        for contig_id in cluster_contig_links[clust_id]:
+            score = cluster_scores[clust_id]
+            if not contig_id in contig_cluster_scores:
+                contig_cluster_scores[contig_id] = {}
+            contig_cluster_scores[contig_id][clust_id] = float(score)
+
+    for contig_id in contig_cluster_scores:
+        contig_cluster_scores[contig_id] = OrderedDict(
+            sorted(iter(contig_cluster_scores[contig_id].items()), key=lambda x: x[1], reverse=True))
+
+    black_list_clusters = {}
+    group_membership = {}
+    # assign circular contigs with replicon or relaxase first
+    for contig_id in circular_contigs:
+        if contig_id in repetitive_contigs:
+            continue
+        if contig_id in replicon_contigs or contig_id in relaxase_contigs:
+            if contig_id not in contig_cluster_scores:
+                continue
+            for clust_id in contig_cluster_scores[contig_id]:
+
+                if contig_id not in group_membership:
+                    black_list_clusters[clust_id] = contig_id
+                    group_membership[contig_id] = clust_id
+                    # update cluster scores to remove contigs already assigned
+                    if contig_id in contig_reference_coverage:
+                        for ref_hit_id in contig_reference_coverage[contig_id]:
+                            if ref_hit_id in reference_hit_coverage:
+                                reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][
+                                    ref_hit_id]
+                        del (contig_reference_coverage[contig_id])
+                        break
+
+    cluster_scores = calc_cluster_scores(reference_hit_coverage)
+
+    # find plasmids well covered by contigs
+    high_confidence_references = {}
+    for ref_id in reference_hit_coverage:
+        data = reference_hit_coverage[ref_id]
+        score = data['score']
+        coverage = data['covered_bases'] / data['length']
+
+        if coverage > 0.8:
+            high_confidence_references[ref_id] = score
+
+    # Assign contigs according to highly coverged plasmids
+    high_confidence_references = OrderedDict(
+        sorted(iter(high_confidence_references.items()), key=lambda x: x[1], reverse=True))
+
+    for ref_id in high_confidence_references:
+        if not ref_id in reference_sequence_meta:
+            continue
+        clust_id = reference_sequence_meta[ref_id]['primary_cluster_id']
+        if clust_id in black_list_clusters:
+            continue
+        data = reference_hit_coverage[ref_id]
+        contigs = data['contigs']
+        for contig_id in contigs:
+            if contig_id not in group_membership:
+                group_membership[contig_id] = clust_id
+                # update cluster scores to remove contigs already assigned
+                if contig_id in contig_reference_coverage:
+                    for ref_hit_id in contig_reference_coverage[contig_id]:
+                        if ref_hit_id in reference_hit_coverage:
+                            reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][
+                                ref_hit_id]
+                    del (contig_reference_coverage[contig_id])
+    cluster_scores = calc_cluster_scores(reference_hit_coverage)
+
+    # Assign low linkage contigs first
+    for c_id in contig_link_counts:
+        count = contig_link_counts[c_id]
+        if count > 5:
+            break
+        scores = contig_cluster_scores[c_id]
+        for clust_id in scores:
+            score = scores[clust_id]
+            if clust_id in black_list_clusters:
+                continue
+
+            for contig_id in cluster_contig_links[clust_id]:
+                if contig_id not in group_membership:
+                    group_membership[contig_id] = clust_id
+                    # update cluster scores to remove contigs already assigned
+                    if contig_id in contig_reference_coverage:
+                        for ref_hit_id in contig_reference_coverage[contig_id]:
+                            if ref_hit_id in reference_hit_coverage:
+                                reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][
+                                    ref_hit_id]
+                        del (contig_reference_coverage[contig_id])
+            break
+
+    clusters_with_biomarkers = {}
+    for clust_id in cluster_contig_links:
+        contigs = cluster_contig_links[clust_id]
+        for contig_id in contigs:
+            if contig_id in relaxase_contigs or contig_id in replicon_contigs:
+                if clust_id not in clusters_with_biomarkers:
+                    clusters_with_biomarkers[clust_id] = []
+                clusters_with_biomarkers[clust_id].append(contig_id)
+
+    max = len(cluster_scores)
+    iteration = 0
+    while iteration < max:
+        iteration += 1
+
+        clust_id = next(iter(cluster_scores))
+        if clust_id not in cluster_contig_links:
+            del (cluster_scores[clust_id])
+            continue
+
+        contigs = cluster_contig_links[clust_id]
+
+        # assign contigs to clusters
+        for contig_id in contigs:
+            if contig_id not in group_membership:
+                group_membership[contig_id] = clust_id
+                # update cluster scores to remove contigs already assigned
+                if contig_id in contig_reference_coverage:
+                    for ref_hit_id in contig_reference_coverage[contig_id]:
+                        if ref_hit_id in reference_hit_coverage:
+                            reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][
+                                ref_hit_id]
+                    del (contig_reference_coverage[contig_id])
+        cluster_scores = calc_cluster_scores(reference_hit_coverage)
+    cluster_links = {}
+    for contig_id in group_membership:
+        clust_id = group_membership[contig_id]
+        if clust_id not in cluster_links:
+            cluster_links[clust_id] = []
+        cluster_links[clust_id].append(contig_id)
+
+    recon_cluster_dists = get_reconstructed_cluster_dists(mash_db, 0.1, cluster_links, out_dir, contig_seqs,
+                                                          num_threads)
+    cluster_md5 = {}
+    for clust_id in cluster_contig_links:
+        contigs = cluster_contig_links[clust_id]
+
+        seq = []
+        for contig_id in contigs:
+            if contig_id in contig_seqs:
+                seq.append(contig_seqs[contig_id])
+
+        seq.sort(key=len)
+        cluster_md5[clust_id] = calc_md5(''.join(seq))
+
+
+
+    # get lowest distance cluster
+    counter = 0
+    increment = False
+    for clust_id in recon_cluster_dists:
+        fail = False
+        for top_ref_id in recon_cluster_dists[clust_id]:
+            lowest_dist = recon_cluster_dists[clust_id][top_ref_id]
+            if top_ref_id not in reference_sequence_meta:
+                fail = True
+                continue
+            else:
+                fail = False
+                break
+
+        if fail:
+            continue
+
+        if increment:
+            counter += 1
+            increment = False
+
+        contained_repettive = list(set(repetitive_contigs) & set(cluster_links[clust_id]))
+
+        for contig_id in cluster_links[clust_id]:
+
+            # skip clusters which are just repetitive elemenets
+            if len(contained_repettive) == len(cluster_links[clust_id]):
+                contig_info[contig_id]['primary_cluster_id'] = ''
+                contig_info[contig_id]['molecule_type'] = 'chromosome'
+                continue
+
+            if lowest_dist <= primary_distance:
+                contig_info[contig_id]['primary_cluster_id'] = clust_id
+                contig_info[contig_id]['molecule_type'] = 'plasmid'
+                contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
+                contig_info[contig_id]['mash_neighbor_distance'] = lowest_dist
+                contig_info[contig_id]['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
+
+                if lowest_dist <= secondary_distance:
+                    contig_info[contig_id]['secondary_cluster_id'] = reference_sequence_meta[top_ref_id][
+                        'secondary_cluster_id']
+            else:
+                if len(contained_repettive) != len(cluster_links[clust_id]) and clust_id in clusters_with_biomarkers:
+                    contig_info[contig_id]['primary_cluster_id'] = "novel_{}".format(cluster_md5[clust_id])
+                    increment = True
+                    contig_info[contig_id]['molecule_type'] = 'plasmid'
+                    contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
+                    contig_info[contig_id]['mash_neighbor_distance'] = lowest_dist
+                    contig_info[contig_id]['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id][
+                        'organism']
+                else:
+                    contig_info[contig_id]['primary_cluster_id'] = ''
+                    contig_info[contig_id]['molecule_type'] = 'chromosome'
+
+    #Fix MD5 assignment for plasmids which had changes
+    cluster_membership = {}
+
+    for contig_id in contig_info:
+        data = contig_info[contig_id]
+        if data['molecule_type'] == 'chromosome' or data['primary_cluster_id'] == '':
+            continue
+        cluster_id = data['primary_cluster_id']
+        if not clust_id in cluster_membership:
+            cluster_membership[cluster_id] = []
+        cluster_membership[cluster_id].append(contig_id)
+
+    for clust_id in cluster_membership:
+        contigs = cluster_membership[clust_id]
+        seq = []
+
+        for contig_id in contigs:
+            if contig_id in contig_seqs:
+                seq.append(contig_seqs[contig_id])
+        if 'novel' in clust_id:
+            clust_id = "novel_{}".format(calc_md5(''.join(sorted(seq,key=len))))
+
+        for contig_id in contigs:
+            contig_info[contig_id]['primary_cluster_id'] = clust_id
+
+
+
+    return evaluate_contig_assignments(contig_info, primary_distance, secondary_distance)
+
+
+def evaluate_contig_assignments(contig_info, primary_distance, secondary_distance):
+    cluster_membership = {}
+    biomarker_clusters = {}
+    circular_contigs = []
+    for contig_id in contig_info:
+        data = contig_info[contig_id]
+        cluster_id = data['primary_cluster_id']
+
+        if cluster_id == '':
+            continue
+
+        if data['circularity_status'] == 'circular':
+            circular_contigs.append(contig_id)
+
+        if data['rep_type(s)'] != '' or data['relaxase_type(s)']:
+            biomarker_clusters[cluster_id] = ''
+
+        if not cluster_id in cluster_membership:
+            cluster_membership[cluster_id] = []
+
+        cluster_membership[cluster_id].append(contig_id)
+
+    for contig_id in contig_info:
+        data = contig_info[contig_id]
+        cluster_id = data['primary_cluster_id']
+
+        if cluster_id == '':
+            continue
+
+        if cluster_id not in biomarker_clusters:
+            if contig_id in circular_contigs:
+                continue
+            if data['mash_neighbor_distance'] > primary_distance:
+                contig_info[contig_id]['primary_cluster_id'] = ''
+                contig_info[contig_id]['secondary_cluster_id'] = ''
+                contig_info[contig_id]['molecule_type'] = 'chromosome'
+                contig_info[contig_id]['mash_nearest_neighbor'] = ''
+                contig_info[contig_id]['mash_neighbor_distance'] = ''
+                contig_info[contig_id]['mash_neighbor_identification'] = ''
+
+    return contig_info
+
+
+def get_reconstructed_cluster_dists(mash_db, mash_distance, cluster_contig_links, out_dir, contig_seqs, num_threads=1):
+    m = mash()
+    cluster_dists = {}
+    for clust_id in cluster_contig_links:
+        contigs = cluster_contig_links[clust_id]
+        seq_dict = {}
+        tmp_fasta = os.path.join(out_dir, "clust_{}.fasta".format(clust_id))
+
+        for contig_id in contigs:
+            if contig_id in contig_seqs:
+                seq_dict[contig_id] = contig_seqs[contig_id]
+        write_fasta_dict(seq_dict, tmp_fasta)
+
+        distances = parseMash(
+            m.run_mash(reference_db=mash_db, input_fasta=tmp_fasta, table=False, num_threads=num_threads))
+        os.remove(tmp_fasta)
+
+        for query in distances:
+            for ref in distances[query]:
+                score = float(distances[query][ref])
+                if score <= mash_distance:
+                    if clust_id not in cluster_dists:
+                        cluster_dists[clust_id] = {}
+                    cluster_dists[clust_id][ref] = score
+
+        for clust_id in cluster_dists:
+            cluster_dists[clust_id] = OrderedDict(
+                sorted(iter(list(cluster_dists[clust_id].items())), key=lambda x: x[1], reverse=False))
+
+    return cluster_dists
+
+
+def get_seq_links(contig_reference_coverage, reference_sequence_meta):
+    reference_clust_members = {}
+    for contig_id in contig_reference_coverage:
+
+        for ref_id in contig_reference_coverage[contig_id]:
+            if ref_id in reference_sequence_meta:
+                clust_id = reference_sequence_meta[ref_id]['primary_cluster_id']
+                if not clust_id in reference_clust_members:
+                    reference_clust_members[clust_id] = {}
+                if not contig_id in reference_clust_members[clust_id]:
+                    reference_clust_members[clust_id][contig_id] = 0
+                reference_clust_members[clust_id][contig_id] += 1
+
+    return reference_clust_members
+
+
+def update_group_members(target_contigs, group_membership, contig_reference_coverage, reference_sequence_meta,
+                         group_membership_key, reference_seq_key):
+    for contig_id in target_contigs:
+        types = target_contigs[contig_id]
+
+        if not contig_id in group_membership:
+            group_membership[contig_id] = {
+                'clust_id': None,
+                'score': 0,
+                'is_circular': False,
+                'contains_replicon': False,
+                'contains_relaxase': False,
+                'rep_type': '',
+                'mob_type': ''
+            }
+
+        group_membership[contig_id][group_membership_key] = target_contigs[contig_id]
+
+        contig_hit_scores = contig_reference_coverage[contig_id]
+
+        if group_membership[contig_id]['clust_id'] is not None:
+            continue
+
+        for hsp in contig_hit_scores:
+            hsp_score = contig_hit_scores[hsp]
+
+            if hsp not in reference_sequence_meta:
+                continue
+
+            clust_id = reference_sequence_meta[hsp]['primary_cluster_id']
+
+            if reference_sequence_meta[hsp][reference_seq_key] == '-':
+                hsp_rep_types = []
+            else:
+                hsp_rep_types = reference_sequence_meta[hsp][reference_seq_key].split(",")
+
+            for r in types:
+                if r in hsp_rep_types:
+                    group_membership[contig_id]['clust_id'] = clust_id
+                    break
+
+    return group_membership
+
+
+def filter_contig_df_by_index(indicies, contig_blast_df, reference_hit_coverage):
+    for index in indicies:
+
+        row = contig_blast_df.iloc[index]
+        query = str(row['qseqid'])
+        pID = str(row['sseqid'])
+        score = float(row['bitscore'])
+        aln_length = int(row['length'])
+        total_len = int(row['slen'])
+
+        if pID not in reference_hit_coverage:
+            logging.warning("Seqid {} in blast results but not cluster file".format(pID))
+            continue
+
+        if pID in reference_hit_coverage:
+
+            reference_hit_coverage[pID]['score'] -= score
+            reference_hit_coverage[pID]['covered_bases'] -= aln_length
+        else:
+            logging.warning("{} not found".format(pID))
+
+    return reference_hit_coverage
 
 
 def main():
-
     args = parse_args()
-
 
     if args.debug:
         logger = init_console_logger(3)
@@ -369,603 +892,399 @@ def main():
     logger.info("MOB-recon version {} ".format(__version__))
     logger.debug("Debug log reporting set on successfully")
 
+    check_dependencies(logger)
+    validate_args(args, logger)
 
-    if not args.outdir:
-        logger.error('Error, no output directory specified, please specify one')
-        sys.exit(-1)
-
-    if not args.infile:
-        logger.error('Error, no fasta specified, please specify one')
-        sys.exit(-1)
-
-    if not os.path.isfile(args.infile):
-        logger.error('Error, input fasta file does not exist: "{}"'.format(args.infile))
-        sys.exit(-1)
-
-    logger.info('Processing fasta file {}'.format(args.infile))
-    logger.info('Analysis directory {}'.format(args.outdir))
-
-    if not os.path.isdir(args.outdir):
-        os.mkdir(args.outdir, 0o755)
-
-    max_contig_size = args.max_contig_size
-    max_plasmid_size = args.max_plasmid_size
-
-    # Check that the needed databases have been initialized
-    database_dir = os.path.abspath(args.database_directory)
-    verify_init(logger, database_dir)
-
-
-
-    plasmid_files = []
+    keep_tmp = args.keep_tmp
     input_fasta = args.infile
     out_dir = args.outdir
     num_threads = args.num_threads
     tmp_dir = os.path.join(out_dir, '__tmp')
-    file_id = os.path.basename(input_fasta)
     fixed_fasta = os.path.join(tmp_dir, 'fixed.input.fasta')
     chromosome_file = os.path.join(out_dir, 'chromosome.fasta')
     replicon_blast_results = os.path.join(tmp_dir, 'replicon_blast_results.txt')
-    mob_blast_results = os.path.join(tmp_dir, 'mobrecon_blast_results.txt')
+    mob_blast_results = os.path.join(tmp_dir, 'mob_blast_results.txt')
+    mpf_blast_results = os.path.join(tmp_dir, 'mpf_blast_results.txt')
+    orit_blast_results = os.path.join(tmp_dir, 'orit_blast_results.txt')
     repetitive_blast_results = os.path.join(tmp_dir, 'repetitive_blast_results.txt')
     contig_blast_results = os.path.join(tmp_dir, 'contig_blast_results.txt')
+    contig_report = os.path.join(out_dir, 'contig_report.txt')
 
+    logger.info('Processing fasta file {}'.format(args.infile))
+    logger.info('Analysis directory {}'.format(args.outdir))
 
-    # Input numeric params
-    min_rep_ident = float(args.min_rep_ident)
-    min_mob_ident = float(args.min_mob_ident)
-    min_con_ident = float(args.min_con_ident)
-    min_rpp_ident = float(args.min_rpp_ident)
+    database_dir = os.path.abspath(args.database_directory)
 
-    idents = {'min_rep_ident': min_rep_ident, 'min_mob_ident': min_mob_ident, 'min_con_ident': min_con_ident,
-              'min_rpp_ident': min_rpp_ident}
-
-    for param in idents:
-        value = float(idents[param])
-        if value < 60:
-            logger.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
-            sys.exit(-1)
-        if value > 100:
-            logger.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
-            sys.exit(-1)
-
-    min_rep_cov = float(args.min_rep_cov)
-    min_mob_cov = float(args.min_mob_cov)
-    min_con_cov = float(args.min_con_cov)
-    min_rpp_cov = float(args.min_rpp_cov)
-
-    covs = {'min_rep_cov': min_rep_cov, 'min_mob_cov': min_mob_cov, 'min_con_cov': min_con_cov,
-            'min_rpp_cov': min_rpp_cov}
-
-    for param in covs:
-        value = float(covs[param])
-        if value < 50:
-            logger.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
-            sys.exit(-1)
-        if value > 100:
-            logger.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
-            sys.exit(-1)
-
-    min_rep_evalue = float(args.min_rep_evalue)
-    min_mob_evalue = float(args.min_mob_evalue)
-    min_con_evalue = float(args.min_con_evalue)
-    min_rpp_evalue = float(args.min_rpp_evalue)
-
-    evalues = {'min_rep_evalue': min_rep_evalue, 'min_mob_evalue': min_mob_evalue, 'min_con_evalue': min_con_evalue,
-               'min_rpp_evalue': min_rpp_evalue}
-
-    for param in evalues:
-        value = float(evalues[param])
-        if value > 1:
-            logger.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
-            sys.exit(-1)
-
-    min_overlapp = int(args.min_overlap)
-    min_length = int(args.min_length)
-
-
-
-    # Input numeric params
-    min_rep_ident = float(args.min_rep_ident)
-    min_mob_ident = float(args.min_mob_ident)
-    min_con_ident = float(args.min_con_ident)
-    min_rpp_ident = float(args.min_rpp_ident)
-
-    idents = {'min_rep_ident': min_rep_ident, 'min_mob_ident': min_mob_ident, 'min_con_ident': min_con_ident,
-              'min_rpp_ident': min_rpp_ident}
-
-    for param in idents:
-        value = idents[param]
-        if value < 70:
-            logger.error("Error: {} is too low, please specify an integer between 70 - 100".format(param))
-            sys.exit(-1)
-        if value > 100:
-            logger.error("Error: {} is too high, please specify an integer between 70 - 100".format(param))
-            sys.exit(-1)
-
-    min_rep_cov = float(args.min_rep_cov)
-    min_mob_cov = float(args.min_mob_cov)
-    min_con_cov = float(args.min_con_cov)
-    min_rpp_cov = float(args.min_rpp_cov)
-
-    covs = {'min_rep_cov': min_rep_cov, 'min_mob_cov': min_mob_cov, 'min_con_cov': min_con_cov,
-            'min_rpp_cov': min_rpp_cov}
-
-    for param in covs:
-        value = covs[param]
-        if value < 50:
-            logger.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
-            sys.exit(-1)
-        if value > 100:
-            logger.error("Error: {} is too high, please specify an integer between 50 - 100".format(param))
-            sys.exit(-1)
-
-    min_rep_evalue = float(args.min_rep_evalue)
-    min_mob_evalue = float(args.min_mob_evalue)
-    min_con_evalue = float(args.min_con_evalue)
-    min_rpp_evalue = float(args.min_rpp_evalue)
-
-    evalues = {'min_rep_evalue': min_rep_evalue, 'min_mob_evalue': min_mob_evalue, 'min_con_evalue': min_con_evalue,
-               'min_rpp_evalue': min_rpp_evalue}
-
-    for param in evalues:
-        value = evalues[param]
-        if value > 1:
-            logger.error("Error: {} is too high, please specify an float evalue between 0 to 1".format(param))
-            sys.exit(-1)
-
-
-    # Input Databases
-    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
     if database_dir == default_database_dir:
         plasmid_ref_db = args.plasmid_db
-        replicon_ref = args.plasmid_replicons
         mob_ref = args.plasmid_mob
         mash_db = args.plasmid_mash_db
+        replicon_ref = args.plasmid_replicons
+        plasmid_meta = args.plasmid_meta
         repetitive_mask_file = args.repetitive_mask
+        mpf_ref = args.plasmid_mpf
+        plasmid_orit = args.plasmid_orit
+        verify_init(logger, database_dir)
     else:
         plasmid_ref_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas')
-        replicon_ref = os.path.join(database_dir, 'rep.dna.fas')
         mob_ref = os.path.join(database_dir, 'mob.proteins.faa')
         mash_db = os.path.join(database_dir, 'ncbi_plasmid_full_seqs.fas.msh')
+        replicon_ref = os.path.join(database_dir, 'rep.dna.fas')
+        plasmid_meta = os.path.join(database_dir, 'clusters.txt')
         repetitive_mask_file = os.path.join(database_dir, 'repetitive.dna.fas')
+        mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
+        plasmid_orit = os.path.join(database_dir, 'orit.fas')
 
+    LIT_PLASMID_TAXONOMY_FILE = os.path.join(database_dir, "host_range_literature_plasmidDB.txt")
+    NCBI_PLASMID_TAXONOMY_FILE = plasmid_meta
 
-    check_dependencies(logger)
+    if args.sample_id is None:
+        sample_id = re.sub(r"\.(fasta|fas|fa){1,1}", "", os.path.basename(args.infile))
+    else:
+        sample_id = args.sample_id
 
-    needed_dbs = [plasmid_ref_db, replicon_ref, mob_ref, mash_db, repetitive_mask_file,"{}.nin".format(repetitive_mask_file)]
-
-    for db in needed_dbs:
-        if (not os.path.isfile(db)):
-            logger.error('Error needed database missing "{}"'.format(db))
-            sys.exit(-1)
-
-    contig_report_file = os.path.join(out_dir, 'contig_report.txt')
-    minimus_prefix = os.path.join(tmp_dir, 'minimus')
-    filtered_blast = os.path.join(tmp_dir, 'filtered_blast.txt')
-    repetitive_blast_report = os.path.join(out_dir, 'repetitive_blast_report.txt')
-    mobtyper_results_file = os.path.join(out_dir, 'mobtyper_aggregate_report.txt')
-    keep_tmp = args.keep_tmp
+    verify_init(logger, database_dir)
 
     run_overhang = args.run_overhang
     unicycler_contigs = args.unicycler_contigs
 
-    if not isinstance(args.num_threads, int):
-        logger.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
+    # initialize analysis directory
+    if not os.path.isdir(args.outdir):
+        os.mkdir(args.outdir, 0o755)
 
-    logger.info('Creating tmp working directory {}'.format(tmp_dir))
+    elif not args.force:
+        logger.error("Error output directory exists, please specify a new directory or use --force to overwrite")
+        sys.exit(-1)
+    else:
+        shutil.rmtree(args.outdir)
+        os.mkdir(args.outdir, 0o755)
 
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir, 0o755)
+    else:
+        shutil.rmtree(tmp_dir)
+        os.mkdir(tmp_dir, 0o755)
 
+    # Initialize clustering distance thresholds
+    if not (args.primary_cluster_dist >= 0 and args.primary_cluster_dist <= 1):
+        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.primary_cluster_dist))
+        sys.exit()
+    else:
+        primary_distance = float(args.primary_cluster_dist)
+
+    if not (args.secondary_cluster_dist >= 0 and args.secondary_cluster_dist <= 1):
+        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.secondary_cluster_dist))
+        sys.exit()
+    else:
+        secondary_distance = float(args.secondary_cluster_dist)
+
+    # Input numeric params
+
+    min_overlapp = int(args.min_overlap)
+    min_length = int(args.min_length)
+
+    min_rep_ident = float(args.min_rep_ident)
+    min_mob_ident = float(args.min_mob_ident)
+    min_mpf_ident = float(args.min_mob_ident)  # Left in for future if we decide to allow modification
+    min_con_ident = float(args.min_con_ident)
+    min_rpp_ident = float(args.min_rpp_ident)
+
+    min_rep_cov = float(args.min_rep_cov)
+    min_mob_cov = float(args.min_mob_cov)
+    min_mpf_cov = float(args.min_mob_cov)  # Left in for future if we decide to allow modification
+    min_con_cov = float(args.min_con_cov)
+    min_rpp_cov = float(args.min_rpp_cov)
+
+    min_rep_evalue = float(args.min_rep_evalue)
+    min_mob_evalue = float(args.min_mob_evalue)
+    min_mpf_evalue = float(args.min_mob_evalue)  # Left in for future if we decide to allow modification
+    min_con_evalue = float(args.min_con_evalue)
+    min_rpp_evalue = float(args.min_rpp_evalue)
+
+    # Test that ETE3 db is ok and lock process check
+    dbstatus = ETE3_db_status_check(1, ETE3_LOCK_FILE, ETE3DBTAXAFILE, logging)
+    if dbstatus == False:
+        logging.error("Exiting due to lock file not removed: {}".format(ETE3_LOCK_FILE))
+        sys.exit(-1)
+
+    # Parse reference cluster information
+    reference_sequence_meta = read_sequence_info(plasmid_meta, MOB_CLUSTER_INFO_HEADER)
+
+    # process input fasta
     logger.info('Writing cleaned header input fasta file from {} to {}'.format(input_fasta, fixed_fasta))
     fix_fasta_header(input_fasta, fixed_fasta)
     contig_seqs = read_fasta_dict(fixed_fasta)
+    contig_info = {}
+    br = BlastRunner(fixed_fasta, tmp_dir)
+    br.makeblastdb(fixed_fasta, dbtype='nucl', logging=logging)
+    del (br)
 
-    logger.info('Running replicon blast on {}'.format(replicon_ref))
-    replicon_contigs = getRepliconContigs(
-        replicon_blast(replicon_ref, fixed_fasta, min_rep_ident, min_rep_cov, min_rep_evalue, tmp_dir,
-                       replicon_blast_results,
-                       num_threads=num_threads))
-
-    logger.info('Running relaxase blast on {}'.format(mob_ref))
-    mob_contigs = getRepliconContigs(
-        mob_blast(mob_ref, fixed_fasta, min_mob_ident, min_mob_cov, min_mob_evalue, tmp_dir, mob_blast_results,
-                  num_threads=num_threads))
-
-    logger.info('Running contig blast on {}'.format(plasmid_ref_db))
-    contig_blast(fixed_fasta, plasmid_ref_db, min_con_ident, min_con_cov, min_con_evalue, min_length,
-                 tmp_dir, contig_blast_results)
-
-    (pcl_clusters,reference_sequence_hits,contig_hit_scores) = contig_blast_group(filtered_blast, min_overlapp)
-    contig_cluster_membership = membership_voting(reference_sequence_hits,contig_hit_scores)
-    for contig_id in contig_cluster_membership:
-        if contig_id in pcl_clusters:
-            pcl_clusters[contig_id] = {contig_cluster_membership[contig_id]['clust_id']:contig_cluster_membership[contig_id]['score']}
-
-
-    logger.info('Running repetitive contig masking blast on {}'.format(mob_ref))
-    repetitive_contigs = repetitive_blast(fixed_fasta, repetitive_mask_file, min_rpp_ident, min_rpp_cov, min_rpp_evalue,
-                                          min_length, tmp_dir,
-                                          repetitive_blast_results, num_threads=num_threads)
-
-    circular_contigs = dict()
-
-
+    # Detect circular sequences
+    circular_contigs = {}
     if run_overhang:
         logger.info('Running internal circular contig detection on {}'.format(fixed_fasta))
-        circular_contigs = circularize(fixed_fasta, tmp_dir)
+        circular_contigs = circularize(fixed_fasta, tmp_dir, logging)
 
-    if unicycler_contigs:
-        for seqid in contig_seqs:
-            if 'circular=true' in seqid:
-                circular_contigs[seqid] = ''
+    for id in contig_seqs:
+        seq = contig_seqs[id]
+        contig_info[id] = {}
+        for feature in MOB_RECON_INFO_HEADER:
+            contig_info[id][feature] = ''
+        contig_info[id]['md5'] = calc_md5(seq)
+        contig_info[id]['gc'] = GC(seq)
+        contig_info[id]['size'] = len(seq)
+        contig_info[id]['contig_id'] = id
+        contig_info[id]['sample_id'] = sample_id
+        contig_info[id]['molecule_type'] = 'chromosome'
+        contig_info[id]['filtering_reason'] = 'none'
 
-    repetitive_dna = dict()
-    results_fh = open(repetitive_blast_report, 'w', encoding="utf-8")
-    results_fh.write("contig_id\tmatch_id\tmatch_type\tscore\tcontig_match_start\tcontig_match_end\n")
+        if run_overhang:
+            if id in circular_contigs:
+                contig_info[id]['circularity_status'] = 'circular'
+            else:
+                contig_info[id]['circularity_status'] = 'incomplete'
 
-    for contig_id in repetitive_contigs:
-        match_info = repetitive_contigs[contig_id]['id'].split('|')
-        repetitive_dna[contig_id] = "{}\t{}\t{}\t{}\t{}".format(
-            match_info[1],
-            match_info[len(match_info) - 1],
-            repetitive_contigs[contig_id]['score'],
-            repetitive_contigs[contig_id]['contig_start'],
-            repetitive_contigs[contig_id]['contig_end'])
-        results_fh.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(contig_id,
-                                                           match_info[1],
-                                                           match_info[len(match_info) - 1],
-                                                           repetitive_contigs[contig_id]['score'],
-                                                           repetitive_contigs[contig_id]['contig_start'],
-                                                           repetitive_contigs[contig_id]['contig_end']))
+        if unicycler_contigs:
+            if 'circular=true' in id or '_circ' in id:
+                contig_info[id]['circularity_status'] = 'circular'
+            elif id not in circular_contigs:
+                contig_info[id]['circularity_status'] = 'incomplete'
 
-    results_fh.close()
+        if contig_info[id]['circularity_status'] == '':
+            contig_info[id]['circularity_status'] = 'not tested'
 
-    seq_clusters = dict()
-    cluster_bitscores = dict()
-    for seqid in pcl_clusters:
-        cluster_id = list(pcl_clusters[seqid].keys())[0]
-        bitscore = pcl_clusters[seqid][cluster_id]
-        cluster_bitscores[cluster_id] = bitscore
+    # Blast reference databases
 
-    sorted_cluster_bitscores = sorted(list(cluster_bitscores.items()), key=operator.itemgetter(1))
-    sorted_cluster_bitscores.reverse()
-    contigs_assigned = dict()
-    for cluster_id, bitscore in sorted_cluster_bitscores:
+    identify_biomarkers(contig_info, fixed_fasta, tmp_dir, min_length, logging, \
+                        replicon_ref, min_rep_ident, min_rep_cov, min_rep_evalue, replicon_blast_results, \
+                        mob_ref, min_mob_ident, min_mob_cov, min_mob_evalue, mob_blast_results, \
+                        mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results, \
+                        repetitive_mask_file, min_rpp_ident, min_rpp_cov, min_rpp_evalue, \
+                        plasmid_orit, orit_blast_results, repetitive_blast_results, \
+                        num_threads=1)
 
-        if not cluster_id in seq_clusters:
-            seq_clusters[cluster_id] = dict()
-        for seqid in pcl_clusters:
-            if not cluster_id in pcl_clusters[seqid]:
+    # Filtering contigs against chromosome database
+
+    chrom_filter = False
+
+    if args.genome_filter_db_prefix:
+        chrom_filter = True
+        genome_filter_db_prefix = args.genome_filter_db_prefix
+        logger.info('Genome filter sequences provided: {}'.format(genome_filter_db_prefix))
+        matched = (glob.glob(genome_filter_db_prefix + "*"))
+        extensions = ['nsq', 'nin', 'nhr', 'nal']
+        found = [0, 0, 0, 0]
+        for f in matched:
+            for i in range(0, len(extensions)):
+                e = extensions[i]
+                if e in f:
+                    found[i] += 1
+
+        for i in found:
+            if i == 0:
+                logger.error('Error blast database not found with prefix: {}'.format(genome_filter_db_prefix))
+                sys.exit()
+        if not os.path.isfile(genome_filter_db_prefix + '.msh'):
+            logger.error('Error mash sketch not found with prefix: {}'.format(genome_filter_db_prefix))
+            sys.exit()
+
+    if chrom_filter:
+        cutoff_distance = float(args.mash_genome_neighbor_threshold)
+        chr_mash_dists = os.path.join(tmp_dir, 'mash_chr_dists.txt')
+        chr_blast_filter = os.path.join(tmp_dir, 'chr_contig_filter_report.txt')
+        chr_mash_sketch = genome_filter_db_prefix + ".msh"
+        close_genome_reps = find_mash_genomes(chr_mash_sketch, fixed_fasta, chr_mash_dists, cutoff_distance,
+                                              num_threads)
+
+        if len(close_genome_reps) > 0:
+            logger.info('Found close genome matches: {}'.format(",".join(close_genome_reps)))
+            seq_id_file = os.path.join(tmp_dir, "seqids.txt")
+            sf = open(seq_id_file, 'w')
+            for s in close_genome_reps:
+                sf.write("{}\n".format(s))
+            sf.close()
+
+            # fix labels to match the seq id format parsed by makeblastdb
+            for i in range(0, len(close_genome_reps)):
+                close_genome_reps[i] = "ref|{}|".format(close_genome_reps[i])
+
+            blastn(input_fasta=fixed_fasta, blastdb=genome_filter_db_prefix, min_ident=min_con_ident,
+                   min_cov=min_con_cov,
+                   evalue=min_con_evalue, min_length=min_length, out_dir=tmp_dir,
+                   blast_results_file=chr_blast_filter, num_threads=num_threads, logging=logging,
+                   seq_filterfile=seq_id_file)
+
+            chromosome_filter_seqs = BlastReader(chr_blast_filter, logging).df.drop(0)['qseqid'].tolist()
+
+            for contig_id in chromosome_filter_seqs:
+                if contig_id in contig_info:
+                    if contig_info[contig_id]['filtering_reason'] == 'none':
+                        contig_info[contig_id]['filtering_reason'] = 'chromosome'
+                        logger.info('Filtering contig: {} due to inclusion in genome filter {}'.format(contig_id,
+                                                                                                       genome_filter_db_prefix))
+                else:
+                    logger.error('Contig: {} not found in contig_df this is likely an error'.format(contig_id))
+
+            del (chromosome_filter_seqs)
+
+        else:
+            logger.info('No close genome matches found')
+
+    # Filter out sequences based on user filter
+    if args.filter_db:
+        filter_db = args.filter_db
+        logger.info('Filter sequences provided: {}'.format(filter_db))
+        if not os.path.isfile(filter_db + '.nsq') or \
+                os.path.isfile(filter_db + '.nin') or \
+                os.path.isfile(filter_db + '.nhr'):
+            br = BlastRunner(filter_db, os.path.dirname(filter_db))
+            br.makeblastdb(filter_db, dbtype='nucl')
+
+        run_filter = True
+    else:
+        run_filter = False
+
+    if run_filter:
+        logger.info('Blasting input fasta {} against filter db {}'.format(input_fasta, filter_db))
+        blast_filter = os.path.join(tmp_dir, 'contig_filter_report.txt')
+        blastn(input_fasta=fixed_fasta, blastdb=filter_db, min_ident=min_con_ident, min_cov=min_con_cov,
+               evalue=min_con_evalue, min_length=min_length, out_dir=tmp_dir,
+               blast_results_file=blast_filter, num_threads=num_threads, logging=logging)
+
+        user_filter_seqs = BlastReader(blast_filter, logging).df
+        if len(user_filter_seqs) > 0:
+            user_filter_seqs = user_filter_seqs.drop(0)['qseqid'].tolist()
+        else:
+            user_filter_seqs = []
+
+        for contig_id in user_filter_seqs:
+            if contig_id in contig_info:
+                contig_info[contig_id]['filtering_reason'] = 'user filter'
+                logger.info(
+                    'Filtering contig: {} due to inclusion in genome filter {}'.format(contig_id, filter_db))
+            else:
+                logger.error('Contig: {} not found in contig_df this is likely an error'.format(contig_id))
+
+        del (user_filter_seqs)
+
+    # blast plasmid database
+    logging.info("Blasting contigs against reference sequence db: {}".format(plasmid_ref_db))
+    blastn(input_fasta=fixed_fasta, blastdb=plasmid_ref_db, min_ident=min_con_ident, min_cov=min_con_cov,
+           evalue=min_con_evalue, min_length=min_length, out_dir=tmp_dir,
+           blast_results_file=contig_blast_results, num_threads=num_threads, logging=logging, seq_filterfile=None)
+
+    logging.info("Filtering contig blast results: {}".format(contig_blast_results))
+    contig_blast_df = BlastReader(contig_blast_results, logging).df
+
+    if len(contig_blast_df) > 0:
+        contig_blast_df = fixStart(contig_blast_df.drop(0)).sort_values(
+            ['sseqid', 'qseqid', 'sstart', 'send', 'bitscore'])
+        contig_blast_df = filter_overlaping_records(contig_blast_df, 500, 'qseqid', 'qstart', 'qend', 'bitscore')
+        contig_blast_df.reset_index(drop=True)
+        # remove blast formatting of seq id
+        for index, row in contig_blast_df.iterrows():
+            line = row['sseqid'].split('|')
+            if len(line) >= 2:
+                contig_blast_df.at[index, 'sseqid'] = line[1]
+        contig_blast_df = contig_blast_df[contig_blast_df.sseqid.isin(list(reference_sequence_meta.keys()))]
+        contig_blast_df.reset_index(drop=True)
+        logging.info("Assigning contigs to plasmid groups")
+        contig_info = assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info, tmp_dir,
+                                                 contig_seqs, mash_db, primary_distance, secondary_distance,
+                                                 num_threads)
+
+    # Triage Novel plasmids with biomarkers but not enough similaririty for valid contig hits
+    for contig_id in contig_info:
+        data = contig_info[contig_id]
+        if data['circularity_status'] == 'circular' and data['repetitive_dna_id'] == '' and data[
+            'primary_cluster_id'] == '':
+            rep_types = data['rep_type(s)']
+            mob_types = data['relaxase_type(s)']
+
+            if rep_types == '' or mob_types == '':
                 continue
-            if seqid in contig_seqs and seqid not in contigs_assigned:
-                seq_clusters[cluster_id][seqid] = contig_seqs[seqid]
-                contigs_assigned[seqid] = cluster_id
+            md5 = data['md5']
+            primary_clust_id = "{}".format(md5)
+            data['primary_cluster_id'] = "novel_{}".format(primary_clust_id)
+            data['secondary_cluster_id'] = ""
+            data['molecule_type'] = 'plasmid'
+            data['mash_nearest_neighbor'] = ''
+            data['mash_neighbor_distance'] = ''
+            data['mash_neighbor_identification'] = ''
 
-    # Add sequences with known replicons regardless of whether they belong to a mcl cluster
-    clust_id = 0
-    refined_clusters = dict()
-    for contig_id in mob_contigs:
-        if not contig_id in pcl_clusters:
+            cluster_dists = get_reconstructed_cluster_dists(mash_db, 0.1, {primary_clust_id: [contig_id]}, out_dir,
+                                                            contig_seqs, num_threads)
+
+            for clust_id in cluster_dists:
+                fail = False
+                for top_ref_id in cluster_dists[clust_id]:
+                    lowest_dist = cluster_dists[clust_id][top_ref_id]
+                    if top_ref_id not in reference_sequence_meta:
+                        fail = True
+                        continue
+                    else:
+                        fail = False
+                        break
+                if fail:
+                    continue
+
+            if lowest_dist <= 0.1:
+                data['mash_nearest_neighbor'] = top_ref_id
+                data['mash_neighbor_distance'] = lowest_dist
+                data['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
+
+            contig_info[contig_id] = data
+
+    results = []
+    contig_memberships = {'chromosome': {}, 'plasmid': {}}
+    for contig_id in contig_info:
+        data = contig_info[contig_id]
+
+        if data['primary_cluster_id'] != '' and data['mash_nearest_neighbor'] == '':
+            data['primary_cluster_id'] = ''
+            data['molecule_type'] = 'chromosome'
+        if data['filtering_reason'] == 'none':
+            data['filtering_reason'] = ''
+
+        if data['molecule_type'] == 'chromosome':
+            contig_memberships['chromosome'][contig_id] = ''
+        else:
+            clust_id = data['primary_cluster_id']
+            if not clust_id in contig_memberships['plasmid']:
+                contig_memberships['plasmid'][clust_id] = {}
+            contig_memberships['plasmid'][clust_id][contig_id] = data
+
+        results.append(data)
+
+    # Write contig report
+    logging.info("Writting contig results to {}".format(contig_report))
+    if len(results) > 0:
+
+        if len(contig_memberships['plasmid']) > 0:
+            ncbi = dict_from_alt_key_list(
+                read_file_to_dict(NCBI_PLASMID_TAXONOMY_FILE, MOB_CLUSTER_INFO_HEADER, separater="\t"),
+                "sample_id")
+            lit = dict_from_alt_key_list(
+                read_file_to_dict(LIT_PLASMID_TAXONOMY_FILE, LIT_PLASMID_TAXONOMY_HEADER, separater="\t"), "sample_id")
+
+            build_mobtyper_report(contig_memberships['plasmid'], out_dir, os.path.join(out_dir, "mobtyper_results.txt"),
+                                  contig_seqs, ncbi, lit)
+
+        writeReport(results, MOB_RECON_INFO_HEADER, contig_report)
+
+        logging.info("Writting chromosome sequences to {}".format(chromosome_file))
+        chr_fh = open(chromosome_file, 'w')
+        for contig_id in contig_memberships['chromosome']:
             if contig_id in contig_seqs:
-                if not clust_id in seq_clusters:
-                    seq_clusters["Novel_" + str(clust_id)] = dict()
-                    if not contig_id in pcl_clusters:
-                        pcl_clusters[contig_id] = dict()
-
-                    pcl_clusters[contig_id]["Novel_" + str(clust_id)] = 0
-                seq_clusters["Novel_" + str(clust_id)][contig_id] = contig_seqs[contig_id]
-            clust_id += 1
-
-    # Add sequences with known relaxases regardless of whether they belong to a mcl cluster
-
-    count_replicons = dict()
-    for contig_id in replicon_contigs:
-        if not contig_id in pcl_clusters:
-            if contig_id in contig_seqs:
-                if not clust_id in seq_clusters:
-                    seq_clusters["Novel_" + str(clust_id)] = dict()
-                    if not contig_id in pcl_clusters:
-                        pcl_clusters[contig_id] = dict()
-
-                    pcl_clusters[contig_id]["Novel_" + str(clust_id)] = dict()
-                seq_clusters["Novel_" + str(clust_id)][contig_id] = contig_seqs[contig_id]
-            clust_id += 1
-
-    refined_clusters = dict()
-
-    # split out circular sequences from each other
-
-    replicon_clusters = dict()
-    for contig_id in replicon_contigs:
-
-        for hit_id in replicon_contigs[contig_id]:
-            id, rep_type = hit_id.split('|')
-
-            cluster = list(pcl_clusters[contig_id].keys())[0]
-            if not cluster in replicon_clusters:
-                replicon_clusters[cluster] = 0
-            replicon_clusters[cluster] += 1
-
-    for id in seq_clusters:
-        cluster = seq_clusters[id]
-
-        if not id in refined_clusters:
-            refined_clusters[id] = dict()
-
-        for contig_id in cluster:
-            if contig_id in circular_contigs and len(cluster) > 1 and (
-                    id in replicon_clusters and replicon_clusters[id] > 1):
-                if not clust_id in refined_clusters:
-                    refined_clusters["Novel_" + str(clust_id)] = dict()
-                refined_clusters["Novel_" + str(clust_id)][contig_id] = cluster[contig_id]
-                clust_id += 1
-                continue
-
-            refined_clusters[id][contig_id] = cluster[contig_id]
-
-    seq_clusters = refined_clusters
-
-    m = mash()
-    mash_distances = dict()
-    mash_top_dists = dict()
-    contig_report = list()
-
-    results_fh = open(contig_report_file, 'w', encoding="utf-8")
-    results_fh.write("file_id\tcluster_id\tcontig_id\tcontig_length\tcircularity_status\trep_type\t" \
-                     "rep_type_accession\trelaxase_type\trelaxase_type_accession\tmash_nearest_neighbor\t"
-                     " mash_neighbor_distance\trepetitive_dna_id\tmatch_type\tscore\tcontig_match_start\tcontig_match_end\n")
-
-    filter_list = dict()
-    counter = 0
-
-    for cluster in seq_clusters:
-        clusters = seq_clusters[cluster]
-        total_cluster_length = 0
-
-        count_seqs = len(clusters)
-        count_rep = 0
-        count_small = 0
-        temp = dict()
-
-        for contig_id in clusters:
-
-            if contig_id in repetitive_contigs:
-                count_rep += 1
-            length = len(clusters[contig_id])
-            total_cluster_length += length
-            if length > max_contig_size:
-                continue
-            if length < 3000:
-                count_small += 1
-            temp[contig_id] = ''
-
-        if count_rep == count_seqs or (float(
-                count_rep) / count_seqs * 100 > 50 and
-                        count_small == count_seqs) or \
-                        total_cluster_length < 1400 or \
-                        total_cluster_length > max_plasmid_size:
-            continue
-
-        for contig_id in temp:
-            filter_list[contig_id] = ''
-
-        cluster_file = os.path.join(tmp_dir, 'clust_' + str(cluster) + '.fasta')
-        mash_file = os.path.join(tmp_dir, 'clust_' + str(cluster) + '.txt')
-        write_fasta_dict(clusters, cluster_file)
-
-        mashfile_handle = open(mash_file, 'w',encoding="utf-8")
-        m.run_mash(mash_db, cluster_file, mashfile_handle)
-
-        mash_results = m.read_mash(mash_file)
-        mash_top_hit = getMashBestHit(mash_results)
-
-        # delete low scoring clusters
-        if float(mash_top_hit['mash_hit_score']) > 0.05:
-            skip = True
-            for contig_id in clusters:
-                if contig_id in replicon_contigs:
-                    skip = False
-                    break
-                if contig_id in circular_contigs:
-                    skip = False
-                    break
-                if contig_id in mob_contigs:
-                    skip = False
-                    break
-            if skip:
-                for contig_id in clusters:
-                    del (filter_list[contig_id])
-                continue
-
-        new_clust_file = None
-        if os.path.isfile(cluster_file):
-            if float(mash_top_hit['mash_hit_score']) < 0.05:
-                cluster = mash_top_hit['clustid']
-                new_clust_file = os.path.join(out_dir, 'plasmid_' + cluster + ".fasta")
-
-            else:
-                cluster = 'novel_' + str(counter)
-                new_clust_file = os.path.join(out_dir, 'plasmid_' + cluster + ".fasta")
-                counter += 1
-
-            if os.path.isfile(new_clust_file):
-                temp_fh = open(cluster_file, 'r', encoding="utf-8")
-
-                data = temp_fh.read()
-
-                temp_fh.close()
-                temp_fh = open(new_clust_file, 'a', encoding="utf-8")
-                temp_fh.write(data)
-                temp_fh.close()
-                mash_file = os.path.join(tmp_dir, 'clust_' + str(cluster) + '.txt')
-                mashfile_handle = open(mash_file, 'w', encoding="utf-8")
-                m.run_mash(mash_db, cluster_file, mashfile_handle)
-                mash_results = m.read_mash(mash_file)
-                mash_top_hit = getMashBestHit(mash_results)
-
-            else:
-                os.rename(cluster_file, new_clust_file)
-
-        if new_clust_file is not None:
-            plasmid_files.append(new_clust_file)
-
-
-        for contig_id in clusters:
-            found_replicon_string = ''
-            found_replicon_id_string = ''
-            found_mob_string = ''
-            found_mob_id_string = ''
-            if run_overhang or unicycler_contigs:
-                contig_status = 'Incomplete'
-            else:
-                contig_status = 'Not Tested'
-
-            if contig_id in circular_contigs:
-                contig_status = 'Circular'
-
-            if contig_id in replicon_contigs:
-                rep_ids = dict()
-                rep_hit_ids = dict()
-
-                for hit_id in replicon_contigs[contig_id]:
-                    id, rep_type = hit_id.split('|')
-                    rep_ids[rep_type] = ''
-                    rep_hit_ids[id] = ''
-
-                found_replicon_string = ','.join(list(rep_ids.keys()))
-                found_replicon_id_string = ','.join(list(rep_hit_ids.keys()))
-
-            if contig_id in mob_contigs:
-                mob_ids = dict()
-                mob_hit_ids = dict()
-
-                for hit_id in mob_contigs[contig_id]:
-                    id, mob_type = hit_id.split('|')
-                    mob_ids[mob_type] = ''
-                    mob_hit_ids[id] = ''
-
-                found_mob_string = ','.join(list(mob_ids.keys()))
-                found_mob_id_string = ','.join(list(mob_hit_ids.keys()))
-
-            rep_dna_info = "\t\t\t\t"
-            if contig_id in repetitive_dna:
-                rep_dna_info = repetitive_dna[contig_id]
-
-            results_fh.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(re.sub("\.(fasta|fa|fas){1,1}","",file_id),
-                                                                                       cluster, contig_id,
-                                                                                       len(clusters[contig_id]),
-                                                                                       contig_status,
-                                                                                       found_replicon_string,
-                                                                                       found_replicon_id_string,
-                                                                                       found_mob_string,
-                                                                                       found_mob_id_string,
-                                                                                       mash_top_hit['top_hit'],
-                                                                                       mash_top_hit['mash_hit_score'],
-                                                                                       rep_dna_info))
-    chr_contigs = dict()
-
-    for contig_id in contig_seqs:
-        if contig_id not in filter_list:
-            chr_contigs[contig_id] = contig_seqs[contig_id]
-            rep_dna_info = "\t\t\t\t"
-            if contig_id in repetitive_dna:
-                rep_dna_info = repetitive_dna[contig_id]
-
-            found_replicon_string = ''
-            found_replicon_id_string = ''
-            found_mob_string = ''
-            found_mob_id_string = ''
-
-            if run_overhang or unicycler_contigs:
-                contig_status = 'Incomplete'
-            else:
-                contig_status = 'Not Tested'
-            if contig_id in circular_contigs:
-                contig_status = 'Circular'
-
-            if contig_id in replicon_contigs:
-                rep_ids = dict()
-                rep_hit_ids = dict()
-
-                for hit_id in replicon_contigs[contig_id]:
-                    id, rep_type = hit_id.split('|')
-                    rep_ids[rep_type] = ''
-                    rep_hit_ids[id] = ''
-
-                found_replicon_string = ','.join(list(rep_ids.keys()))
-                found_replicon_id_string = ','.join(list(rep_hit_ids.keys()))
-
-            if contig_id in mob_contigs:
-                mob_ids = dict()
-                mob_hit_ids = dict()
-
-                for hit_id in mob_contigs[contig_id]:
-                    id, mob_type = hit_id.split('|')
-                    mob_ids[mob_type] = ''
-                    mob_hit_ids[id] = ''
-
-                found_mob_string = ','.join(list(mob_ids.keys()))
-                found_mob_id_string = ','.join(list(mob_hit_ids.keys()))
-
-            results_fh.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(re.sub("\.(fasta|fa|fas){1,1}","",file_id), 'chromosome', contig_id,
-                                                                                       len(contig_seqs[contig_id]),
-                                                                                       contig_status, found_replicon_string, found_replicon_id_string, found_mob_string, found_mob_id_string,
-                                                                                       '', '', rep_dna_info))
-    results_fh.close()
-    write_fasta_dict(chr_contigs, chromosome_file)
-
-    if args.run_typer:
-        mobtyper_results = "file_id\t" \
-                            "num_contigs\t" \
-                            "total_length\t" \
-                            "gc\t" \
-                            "rep_type(s)\t" \
-                            "rep_type_accession(s)\t" \
-                            "relaxase_type(s)\t" \
-                            "relaxase_type_accession(s)\t" \
-                            "mpf_type\t" \
-                            "mpf_type_accession(s)\t" \
-                            "orit_type(s)\t" \
-                            "orit_accession(s)\t" \
-                            "PredictedMobility\t" \
-                            "mash_nearest_neighbor\t" \
-                            "mash_neighbor_distance\t" \
-                            "mash_neighbor_cluster\t" \
-                            "NCBI-HR-rank\t" \
-                            "NCBI-HR-Name\t" \
-                            "LitRepHRPlasmClass\t" \
-                            "LitPredDBHRRank\t" \
-                            "LitPredDBHRRankSciName\t" \
-                            "LitRepHRRankInPubs\t" \
-                            "LitRepHRNameInPubs\t" \
-                            "LitMeanTransferRate\t" \
-                            "LitClosestRefAcc\t" \
-                            "LitClosestRefDonorStrain\t" \
-                            "LitClosestRefRecipientStrain\t" \
-                            "LitClosestRefTransferRate\t" \
-                            "LitClosestConjugTemp\t" \
-                            "LitPMIDs\t" \
-                            "LitPMIDsNumber\t" \
-                            "LitClosestMashDist\n"
-        for plasmid_file_abs_path in plasmid_files:
-            mobtyper_results = mobtyper_results + "{}\n".format(run_mob_typer(plasmid_file_abs_path=plasmid_file_abs_path,
-                                                                            outdir=out_dir,
-                                                                            num_threads=int(num_threads),
-                                                                            database_dir=database_dir))
-        fh = open(mobtyper_results_file, 'w', encoding="utf-8")
-        fh.write(mobtyper_results)
-        fh.close()
+                chr_fh.write(">{}\n{}\n".format(contig_id, contig_seqs[contig_id]))
+        chr_fh.close()
 
     if not keep_tmp:
+        logging.info("Cleaning up temporary files {}".format(tmp_dir))
         shutil.rmtree(tmp_dir)
+    logger.info("MOB-recon completed and results written to {}".format(out_dir))
 
 
 # call main function
 if __name__ == '__main__':
     main()
-
-#TODO
-#Resolve empty aggregated reports bug
-#Plasmid size inflation with the same contigs
