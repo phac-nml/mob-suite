@@ -700,7 +700,7 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
         if data['molecule_type'] == 'chromosome' or data['primary_cluster_id'] == '':
             continue
         cluster_id = data['primary_cluster_id']
-        if not clust_id in cluster_membership:
+        if not cluster_id in cluster_membership:
             cluster_membership[cluster_id] = []
         cluster_membership[cluster_id].append(contig_id)
 
