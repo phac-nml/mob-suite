@@ -413,6 +413,8 @@ def main():
             distances = OrderedDict(sorted(mash_results[seq_id].items(), key=itemgetter(1), reverse=False))
             mash_neighbor_id = next(iter(distances))
             dist = distances[mash_neighbor_id]
+            if mash_neighbor_id not in reference_sequence_meta:
+                continue
             record['mash_nearest_neighbor'] = mash_neighbor_id
             record['mash_neighbor_distance'] = dist
             record['primary_cluster_id'] = reference_sequence_meta[mash_neighbor_id]['primary_cluster_id']
