@@ -408,6 +408,11 @@ def main():
         record['total_length'] = fastaSeqStats['size']
         record['num_contigs'] = fastaSeqStats['num_seq']
         record['gc'] = fastaSeqStats['gc_content']
+        record['mash_nearest_neighbor'] = '-'
+        record['mash_neighbor_distance'] = 1
+        record['primary_cluster_id'] = '-'
+        record['secondary_cluster_id'] = '-'
+        record['mash_neighbor_identification'] = '-'
 
         for seq_id in mash_results:
             distances = OrderedDict(sorted(mash_results[seq_id].items(), key=itemgetter(1), reverse=False))
@@ -475,7 +480,7 @@ def main():
         record['orit_type(s)'] = bio_markers[3]['types']
         record['orit_accession(s)'] = bio_markers[3]['acs']
 
-        if record['mash_neighbor_distance'] <= primary_distance:
+        if (isinstance(record['mash_neighbor_distance'],float) or isinstance(record['mash_neighbor_distance'],int)) and record['mash_neighbor_distance'] <= primary_distance:
             mob_cluster_id = record['primary_cluster_id']
         else:
             mob_cluster_id = None
