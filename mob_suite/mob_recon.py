@@ -1196,12 +1196,12 @@ def main():
     # Triage Novel plasmids with biomarkers but not enough similaririty for valid contig hits
     for contig_id in contig_info:
         data = contig_info[contig_id]
-        if data['circularity_status'] == 'circular' and data['repetitive_dna_id'] == '' and data[
-            'primary_cluster_id'] == '':
+
+        if data['circularity_status'] == 'circular' and data['repetitive_dna_id'] == '' and data['primary_cluster_id'] == '':
             rep_types = data['rep_type(s)']
             mob_types = data['relaxase_type(s)']
 
-            if rep_types == '' or mob_types == '':
+            if rep_types == '' and mob_types == '':
                 continue
             md5 = data['md5']
             primary_clust_id = "{}".format(md5)
