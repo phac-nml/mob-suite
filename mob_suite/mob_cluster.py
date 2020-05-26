@@ -460,6 +460,7 @@ def main():
         sys.exit()
 
     mob_typer_report_file = args.mob_typer_file
+
     if not os.path.isfile(mob_typer_report_file):
         logging.error('Error, input metadata file specified does not exist: {}'.format(mob_typer_report_file))
         sys.exit()
@@ -528,6 +529,7 @@ def main():
     del(organisms)
 
     for seq_id in new_seq_info:
+        print( new_seq_info[seq_id])
         organism = new_seq_info[seq_id]['organism']
         if organism in taxids:
             new_seq_info[seq_id]['taxid'] = taxids[organism][0]
@@ -609,6 +611,9 @@ def main():
 
         shutil.copy(ref_cluster_file, tmp_cluster_file)
         shutil.copy(ref_fasta, tmp_ref_fasta_file)
+        fh = open(tmp_ref_fasta_file,'a')
+        for seq_id in fasta_dict:
+            fh.write(">{}\n{}\n".format(seq_id,fasta_dict[seq_id]))
         logging.info('Creating new cluster assignments')
         new_seq_info = update_existing_db(new_seq_info,
                                           mob_cluster_seq_info,
