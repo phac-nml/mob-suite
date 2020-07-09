@@ -692,6 +692,74 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
                     contig_info[contig_id]['primary_cluster_id'] = ''
                     contig_info[contig_id]['molecule_type'] = 'chromosome'
 
+    ########working##########
+    cluster_links = {}
+    for contig_id in contig_info:
+        data = contig_info[contig_id]
+        if data['molecule_type'] == 'chromosome' or data['primary_cluster_id'] == '':
+            continue
+
+        clust_id = data['primary_cluster_id']
+        if clust_id not in cluster_links:
+            cluster_links[clust_id] = []
+        cluster_links[clust_id].append(contig_id)
+
+    recon_cluster_dists = get_reconstructed_cluster_dists(mash_db, 0.1, cluster_links, out_dir, contig_seqs,
+                                                          num_threads)
+    clusters_with_biomarkers = {}
+    for clust_id in cluster_links:
+        contigs = cluster_links[clust_id]
+        for contig_id in contigs:
+            if contig_id in relaxase_contigs or contig_id in replicon_contigs:
+                if clust_id not in clusters_with_biomarkers:
+                    clusters_with_biomarkers[clust_id] = []
+                clusters_with_biomarkers[clust_id].append(contig_id)
+
+    for clust_id in recon_cluster_dists:
+        fail = False
+        for top_ref_id in recon_cluster_dists[clust_id]:
+            lowest_dist = recon_cluster_dists[clust_id][top_ref_id]
+            if top_ref_id not in reference_sequence_meta:
+                fail = True
+                continue
+            else:
+                fail = False
+                break
+
+        if fail:
+            continue
+
+        top_ref_cluster_id = reference_sequence_meta[top_ref_id]['primary_cluster_id']
+        for contig_id in cluster_links[clust_id]:
+
+            # skip clusters which are just repetitive elemenets
+            if len(contained_repettive) == len(cluster_links[clust_id]):
+                contig_info[contig_id]['primary_cluster_id'] = ''
+                contig_info[contig_id]['molecule_type'] = 'chromosome'
+                continue
+
+            if lowest_dist <= primary_distance:
+                contig_info[contig_id]['primary_cluster_id'] = top_ref_cluster_id
+                contig_info[contig_id]['molecule_type'] = 'plasmid'
+                contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
+                contig_info[contig_id]['mash_neighbor_distance'] = lowest_dist
+                contig_info[contig_id]['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
+
+                if lowest_dist <= secondary_distance:
+                    contig_info[contig_id]['secondary_cluster_id'] = reference_sequence_meta[top_ref_id][
+                        'secondary_cluster_id']
+            else:
+                if len(contained_repettive) != len(cluster_links[clust_id]) and clust_id in clusters_with_biomarkers:
+                    contig_info[contig_id]['primary_cluster_id'] = "novel_{}".format(cluster_md5[clust_id])
+                    contig_info[contig_id]['molecule_type'] = 'plasmid'
+                    contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
+                    contig_info[contig_id]['mash_neighbor_distance'] = lowest_dist
+                    contig_info[contig_id]['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id][
+                        'organism']
+                else:
+                    contig_info[contig_id]['primary_cluster_id'] = ''
+                    contig_info[contig_id]['molecule_type'] = 'chromosome'
+
     #Fix MD5 assignment for plasmids which had changes
     cluster_membership = {}
 
