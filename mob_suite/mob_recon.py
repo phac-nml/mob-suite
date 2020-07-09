@@ -716,8 +716,8 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
                 clusters_with_biomarkers[clust_id].append(contig_id)
 
     cluster_md5 = {}
-    for clust_id in cluster_contig_links:
-        contigs = cluster_contig_links[clust_id]
+    for clust_id in cluster_links:
+        contigs = cluster_links[clust_id]
 
         seq = []
         for contig_id in contigs:
