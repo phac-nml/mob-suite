@@ -727,12 +727,12 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
         seq.sort(key=len)
         cluster_md5[clust_id] = calc_md5(''.join(seq))
 
-
+    print(cluster_links)
 
     for clust_id in recon_cluster_dists:
         fail = False
         for top_ref_id in recon_cluster_dists[clust_id]:
-            lowest_dist = recon_cluster_dists[clust_id][top_ref_id]
+            lowest_dist = float(recon_cluster_dists[clust_id][top_ref_id])
             if top_ref_id not in reference_sequence_meta:
                 fail = True
                 continue
@@ -742,17 +742,20 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
 
         if fail:
             continue
-
+        contained_repettive = list(set(repetitive_contigs) & set(cluster_links[clust_id]))
         top_ref_cluster_id = reference_sequence_meta[top_ref_id]['primary_cluster_id']
+        print("{}\t{}\t{}\t{}".format(clust_id,top_ref_id,lowest_dist,primary_distance))
         for contig_id in cluster_links[clust_id]:
 
             # skip clusters which are just repetitive elemenets
             if len(contained_repettive) == len(cluster_links[clust_id]):
+
                 contig_info[contig_id]['primary_cluster_id'] = ''
                 contig_info[contig_id]['molecule_type'] = 'chromosome'
                 continue
 
             if lowest_dist <= primary_distance:
+                print("Match")
                 contig_info[contig_id]['primary_cluster_id'] = top_ref_cluster_id
                 contig_info[contig_id]['molecule_type'] = 'plasmid'
                 contig_info[contig_id]['mash_nearest_neighbor'] = top_ref_id
@@ -774,6 +777,8 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
                     contig_info[contig_id]['primary_cluster_id'] = ''
                     contig_info[contig_id]['molecule_type'] = 'chromosome'
 
+    print(contig_info)
+
     #Fix MD5 assignment for plasmids which had changes
     cluster_membership = {}
 
@@ -786,6 +791,8 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
             cluster_membership[cluster_id] = []
         cluster_membership[cluster_id].append(contig_id)
 
+    print(cluster_membership)
+
     for clust_id in cluster_membership:
         contigs = cluster_membership[clust_id]
         seq = []
@@ -794,12 +801,13 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
             if contig_id in contig_seqs:
                 seq.append(contig_seqs[contig_id])
         if 'novel' in clust_id:
+            print
             clust_id = "novel_{}".format(calc_md5(''.join(sorted(seq,key=len))))
 
         for contig_id in contigs:
             contig_info[contig_id]['primary_cluster_id'] = clust_id
 
-
+    print(cluster_membership)
 
     return evaluate_contig_assignments(contig_info, primary_distance, secondary_distance)
 
