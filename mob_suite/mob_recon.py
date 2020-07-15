@@ -1162,8 +1162,8 @@ def main():
         genome_filter_db_prefix = args.genome_filter_db_prefix
         logger.info('Genome filter sequences provided: {}'.format(genome_filter_db_prefix))
         matched = (glob.glob(genome_filter_db_prefix + "*"))
-        extensions = ['nsq', 'nin', 'nhr', 'nal']
-        found = [0, 0, 0, 0]
+        extensions = ['nsq', 'nin', 'nhr']
+        found = [0, 0, 0]
         for f in matched:
             for i in range(0, len(extensions)):
                 e = extensions[i]
@@ -1318,10 +1318,10 @@ def main():
                 if fail:
                     continue
 
-            if lowest_dist <= 0.1:
-                data['mash_nearest_neighbor'] = top_ref_id
-                data['mash_neighbor_distance'] = lowest_dist
-                data['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
+                if lowest_dist <= 0.1:
+                    data['mash_nearest_neighbor'] = top_ref_id
+                    data['mash_neighbor_distance'] = lowest_dist
+                    data['mash_neighbor_identification'] = reference_sequence_meta[top_ref_id]['organism']
 
             contig_info[contig_id] = data
 
