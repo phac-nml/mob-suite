@@ -1,49 +1,112 @@
-<tool id="mob_typer" name="MOB-Typer" version="1.4.8">
+<tool id="mob_typer" name="MOB-Typer" version="3.0.0">
   <description>Get the plasmid type and mobility given its sequence</description>
   <requirements>
-     <requirement type="package" version="1.4.8">mob_suite</requirement>
-  </requirements>   
+     <requirement type="package" version="3.0.0">mob_suite</requirement>
+  </requirements>
+  <version_command>mob_typer --version</version_command>
   <command detect_errors="exit_code">
   <![CDATA[
-    ln -s "${input}" "${input.name}";
-    mob_typer  --num_threads \${GALAXY_SLOTS:-4} --infile "${input.name}" 
+    ln -s '${input}' '${input.name}' &&
+    mob_typer  --num_threads \${GALAXY_SLOTS:-4} --infile '${input.name}'
+
+
+   #if $adv_param.multi
+    --multi
+   #end if 
+
    --min_rep_evalue '$adv_param.min_rep_evalue_value'
    --min_mob_evalue '$adv_param.min_mob_evalue_value'
    --min_con_evalue '$adv_param.min_con_evalue_value'
-   --min_ori_evalue '$adv_param.min_ori_evalue_value'
-   --min_mpf_evalue '$adv_param.min_mpf_evalue'
+   --min_length '$adv_param.min_length'
    --min_rep_ident '$adv_param.min_rep_ident'
    --min_mob_ident '$adv_param.min_mob_ident'
-   --min_ori_ident '$adv_param.min_ori_ident'
-   --min_mpf_ident '$adv_param.min_mpf_ident'
-    --outdir '.';
+
+   --min_con_ident '$adv_param.min_con_ident'
+   --min_rep_cov '$adv_param.min_rep_cov'
+   --min_mob_cov '$adv_param.min_mob_cov'
+   --min_con_cov '$adv_param.min_con_cov'
+   --min_overlap '$adv_param.min_overlap'
+   
+   #if $adv_param.plasmid_db
+   --plasmid_db '$adv_param.plasmid_db'
+   #end if
+
+
+   #if $adv_param.plasmid_mash_db
+   --plasmid_mash_db '$adv_param.plasmid_mash_db'
+   #end if
+
+   #if $adv_param.plasmid_meta
+   --plasmid_meta '$adv_param.plasmid_meta'
+   #end if
+
+   #if $adv_param.repetitive_mask
+   --repetitive_mask '$adv_param.repetitive_mask'
+   #end if
+
+   #if $adv_param.plasmid_mob
+   --plasmid_mob '$adv_param.plasmid_mob'
+   #end if
+   
+   #if $adv_param.plasmid_mpf
+   --plasmid_mpf '$adv_param.plasmid_mpf'
+   #end if
+
+   #if $adv_param.plasmid_orit
+   --plasmid_orit '$adv_param.plasmid_orit'
+   #end if
+
+   #if $adv_param.debug
+   --debug
+   #end if
+
+   --out_file plasmid_report.txt;
+
   ]]>
   </command>
   <inputs>
     <param name="input" type="data" format="fasta" label="Input" help="FASTA file with contig(s)"/>
     <section name="adv_param" title="Advanced parameters" expanded="False">
+      <param name="multi" type="boolean" truevalue="true" falsevalue="" checked="false" label="Treat each input sequence as an independant plasmid?" />
       <param name="min_rep_evalue_value" type="float" value="0.00001" min="0.00001" max="1" label="Minimum evalue threshold for replicon blastn"/> 
       <param name="min_mob_evalue_value" type="float" value="0.00001" min="0.00001" max="1" label="Minimum evalue threshold for relaxase tblastn"/> 
       <param name="min_con_evalue_value" type="float" value="0.00001" min="0.00001" max="1" label="Minimum evalue threshold for contig blastn"/> 
-      <param name="min_ori_evalue_value" type="float" value="0.00001" min="0.00001" max="1" label="Minimum evalue threshold for oriT elements blastn"/>
-      <param name="min_mpf_evalue" type="float" value="0.00001" min="0.00001" max="1" label="Minimum evalue threshold for mpf elements blastn"/>
+      <param name="min_length" type="integer" value="1000" label="Minimum length of contigs to classify"/> 
       <param name="min_rep_ident" label="Minimum sequence identity for replicons" type="integer"  min="0" max="100" value="80"/>
       <param name="min_mob_ident" label="Minimum sequence identity for relaxases" type="integer"  min="0" max="100" value="80"/>
-      <param name="min_ori_ident" label="Minimum sequence identity for oriT elements" type="integer"  min="0" max="100" value="90"/>
-      <param name="min_mpf_ident" label="Minimum sequence identity for mpf elements" type="integer"  min="0" max="100" value="80"/>
-    </section>  
+      <param name="min_con_ident" label="Minimum sequence identity for contigs" type="integer"  min="0" max="100" value="80"/>
+      <param name="min_rep_cov" label="Minimum percentage coverage of replicon query by input assembly" type="integer"  min="0" max="100" value="80"/>
+      <param name="min_mob_cov" label="Minimum percentage coverage of relaxase query by input assembly" type="integer"  min="0" max="100" value="80"/>
+      <param name="min_con_cov" label="Minimum percentage coverage of assembly contig by the plasmid reference database to be considered" type="integer"  min="0" max="100" value="70"/>
+      <param name="min_overlap" label="Minimum overlap of fragments" type="integer"  min="0" max="100" value="10"/>
+      <param name="debug" type="boolean" truevalue="true" falsevalue="" checked="false" label="Provide debug information?" />
+      <param name="plasmid_db" optional="true" type="data" format="fasta" label="Reference Database of complete plasmids" help=""/>
+      <param name="plasmid_mash_db" optional="true" type="data" format="binary" label="Custom MASH database of plasmids" help="Companion MASH database of reference database"/>
+      <param name="plasmid_meta" type="data" optional="true" format="text" label="Plasmid cluster metadata file" help="MOB-cluster plasmid cluster formatted metadata file matched to the reference plasmid db"/>
+      <param name="plasmid_replicons" type="data" optional="true" format="fasta" label="FASTA file with plasmid replicons" help="FASTA of plasmid replicons"/>
+      <param name="repetitive_mask" type="data" optional="true" format="fasta" label="FASTA of known repetitive elements" help="FASTA of known repetitive elements"/>
+      <param name="plasmid_mob" type="data" optional="true" format="fasta" label="FASTA of plasmid relaxases" help="FASTA of plasmid relaxases"/>
+      <param name="plasmid_mpf" type="data" optional="true" format="fasta" label="FASTA of known plasmid mate-pair proteins" help="FASTA of known plasmid mate-pair proteins"/>
+      <param name="plasmid_orit" type="data" optional="true" format="fasta" label="FASTA of known plasmid oriT dna sequences" help="FASTA of known plasmid oriT dna sequences"/>
+    </section>
   </inputs>
   <outputs>
-    <data name="outfile1" label="${tool.name}: Plasmid report on ${input.name}" format="tabular">
-      <discover_datasets pattern=".+_report\.txt" visible="true" format="tabular" assign_primary_output="true"/>
-    </data>  
+    <data name="plasmid_report" from_work_dir="plasmid_report.txt" label="${tool.name}: Plasmid report on ${input.element_identifier}"  format="tabular" />
   </outputs>
   <tests>
     <test>
-        <param name="input" value="plasmid_476.fasta" ftype="fasta"/>
-        <assert_stdout>
-            <has_text text="JN253636"/> 
-         </assert_stdout>
+      <param name="input" value="plasmid_476.fasta" ftype="fasta"/>
+      <output name="plasmid_report">
+        <assert_contents>
+          <has_text text="KJ484639"/>
+          <has_text text="MOBP"/>
+          <has_text text="NC_019097"/>
+          <has_text text="conjugative"/>
+          <has_text text="AA474"/>
+          <has_text text="AI614"/>
+          <has_text_matching expression="family\tEnterobacteriaceae"/>
+        </assert_contents>
+      </output>
     </test>
   </tests>
   <help>

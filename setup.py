@@ -29,8 +29,8 @@ exec(open('mob_suite/version.py').read())
 setup(
     name='mob_suite',
     include_package_data=True,
-    version='3.0.0',
-    python_requires='>=3.7.0',
+    version='3.0.1',
+    python_requires='>=3.7.0,<4',
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     packages=find_packages(exclude=['tests', 'databases']),
@@ -46,15 +46,15 @@ setup(
     package_data={'mob_suite': ['config.json']},
 
     install_requires=[
-        'numpy>=1.11.1',
-        'tables>=3.3.0',
-        'pandas>=0.22.0',
-        'biopython>=1.70',
-        'pycurl>=7.43.0',
-        'scipy>=1.1.0',
-        'ete3>=3.0',
-        'six>=1.10',
-        'pyqt5>=5.0'
+        'numpy>=1.11.1,<2',
+        'tables>=3.3.0,<4',
+        'pandas>=0.22.0,<=1.0.5',
+        'biopython>=1.70,<2',
+        'pycurl>=7.43.0,<8',
+        'scipy>=1.1.0,<2',
+        'ete3>=3.0,<4',
+        'six>=1.10,<2',
+        'pyqt5>=5.0,<6'
     ],
 
     entry_points={
