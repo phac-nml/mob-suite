@@ -1,4 +1,4 @@
-{% set version = "3.0.0" %}
+{% set version = "3.0.1" %}
 
 package:
   name: mob_suite
@@ -28,9 +28,9 @@ requirements:
     - biopython >=1.70
     - pycurl >=7.43
     - scipy >=1.1
-    - ete3 >=3.0
-    - blast >= 2.9.0
-    - mash >= 2.2.2
+    - ete3 >=3.1.2
+    - blast >=2.9.0
+    - mash >=2.2.2
 
 
 test:

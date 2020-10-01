@@ -52,7 +52,7 @@ setup(
         'biopython>=1.70',
         'pycurl>=7.43.0',
         'scipy>=1.1.0',
-        'ete3>=3.0',
+        'ete3>=3.1.2',
         'six>=1.10',
         'pyqt5>=5.0'
     ],
