@@ -1,14 +1,9 @@
-from datetime import datetime
 import logging, sys
 
 
 from subprocess import Popen, PIPE
 import os
-
 import pandas as pd
-from pandas.io.common import EmptyDataError
-
-
 
 BLAST_TABLE_COLS = '''
 qseqid
@@ -177,30 +172,23 @@ class BlastReader:
             EmptyDataError: No data could be parsed from the `blastn` output file
         """
         self.blast_outfile = blast_outfile
-        try:
-            #self.df = pd.read_table(self.blast_outfile, header=None)
-            if not os.path.isfile(blast_outfile):
-                logging.warning('No BLASTN results to parse from file %s', blast_outfile)
-                self.df = pd.DataFrame()
-                return
 
-            if os.path.getsize(blast_outfile) == 0:
-                logging.warning('No BLASTN results to parse from file %s', blast_outfile)
-                self.df = pd.DataFrame()
-                return
-
-            self.df = pd.read_csv(self.blast_outfile,sep="\t",header=None)
-
-            self.df.columns = BLAST_TABLE_COLS
-
-            logger.debug(self.df.head())
-            self.is_missing = False
-
-
-        except EmptyDataError as exc:
+        if not os.path.isfile(blast_outfile):
             logging.warning('No BLASTN results to parse from file %s', blast_outfile)
-            self.is_missing = True
-            self.df = pd.DataFrame(index=['A'], columns='A')
+            self.df = pd.DataFrame()
+            return
+
+        if os.path.getsize(blast_outfile) == 0:
+            logging.warning('No BLASTN results to parse from file %s', blast_outfile)
+            self.df = pd.DataFrame()
+            return
+
+        self.df = pd.read_csv(self.blast_outfile,sep="\t",header=None)
+
+        self.df.columns = BLAST_TABLE_COLS
+
+        logger.debug(self.df.head())
+        self.is_missing = False
 
 
     def df_dict(self):

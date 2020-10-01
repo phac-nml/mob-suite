@@ -16,7 +16,6 @@ from mob_suite.constants import \
     MOB_RECON_INFO_HEADER, \
     ETE3_LOCK_FILE, \
     ETE3DBTAXAFILE, \
-    NCBI_PLASMID_TAXONOMY_HEADER, \
     default_database_dir, \
     LOG_FORMAT, \
     LIT_PLASMID_TAXONOMY_HEADER
@@ -791,8 +790,6 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
             cluster_membership[cluster_id] = []
         cluster_membership[cluster_id].append(contig_id)
 
-    #print(cluster_membership)
-
     for clust_id in cluster_membership:
         contigs = cluster_membership[clust_id]
         seq = []
@@ -801,13 +798,10 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
             if contig_id in contig_seqs:
                 seq.append(contig_seqs[contig_id])
         if 'novel' in clust_id:
-            #print
             clust_id = "novel_{}".format(calc_md5(''.join(sorted(seq,key=len))))
 
         for contig_id in contigs:
             contig_info[contig_id]['primary_cluster_id'] = clust_id
-
-    #print(cluster_membership)
 
     return evaluate_contig_assignments(contig_info, primary_distance, secondary_distance)
 
@@ -1151,7 +1145,7 @@ def main():
                         mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results, \
                         repetitive_mask_file, min_rpp_ident, min_rpp_cov, min_rpp_evalue, \
                         plasmid_orit, orit_blast_results, repetitive_blast_results, \
-                        num_threads=1)
+                        num_threads)
 
     # Filtering contigs against chromosome database
 
