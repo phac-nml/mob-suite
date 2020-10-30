@@ -1,5 +1,4 @@
 ![](https://img.shields.io/conda/dn/bioconda/mob_suite)
-![](https://img.shields.io/conda/pn/bioconda/mob_suite)
 ![](https://img.shields.io/docker/pulls/kbessonov/mob_suite)
 ![](https://img.shields.io/pypi/dm/mob-suite)
 ![](https://img.shields.io/github/v/release/phac-nml/mob-suite?include_prereleases)
