@@ -126,7 +126,7 @@ As of v. 3.0.0, we have added the ability of users to provide their own specific
 
 ```
 ### User sequence mask
-% mob_recon --infile assembly.fasta --outdir my_out_dir --
+% mob_recon --infile assembly.fasta --outdir my_out_dir --filter_db filter.fasta
 ```
 
 As of v. 3.0.0, we have provided the ability to use a collection of closed genomes which will be quickly checked using Mash for genomes which are genetically close and limit blast searches to those chromosomes. This more nuanced and automatic approach is recommended for users where there are sequences which should be filtered in one genomic context but not another. We provide as an optional download as set of closed Enterobacteriacea genomes from NCBI which can be used to provide added accuracy for some organisms such as E. coli and Klebsiella where there are sequences which switch between chromosome and plasmids.
