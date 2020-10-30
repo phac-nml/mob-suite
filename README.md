@@ -67,7 +67,6 @@ We recommend installing MOB-Suite via bioconda but you can install it via pip us
 
 ```
 % pip3 install mob_suite
-
 ```
 
 ### Docker image
@@ -76,7 +75,6 @@ A docker image is also available at [https://hub.docker.com/r/kbessonov/mob_suit
 ```
 % docker pull kbessonov/mob_suite:3.0.1 
 % docker run --rm -v $(pwd):/mnt/ "kbessonov/mob_suite:3.0.1" mob_recon -i /mnt/assembly.fasta -t -o /mnt/mob_recon_output
-
 ```
 
 ### Singularity image
@@ -110,7 +108,6 @@ You can perform plasmid typing using a fasta formated file containing a single p
 
 # Multiple independant plasmids
 % mob_typer --multi --infile assembly.fasta --out_file sample_mobtyper_results.txt
-
 ```
 
 ## Using MOB-recon to reconstruct plasmids from draft assemblies
