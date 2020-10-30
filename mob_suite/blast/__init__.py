@@ -6,7 +6,7 @@ from subprocess import Popen, PIPE
 import os
 
 import pandas as pd
-from pandas.io.common import EmptyDataError
+from pandas.errors import EmptyDataError
 
 
 

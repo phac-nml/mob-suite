@@ -1,6 +1,13 @@
+![](https://img.shields.io/conda/dn/bioconda/mob_suite)
+![](https://img.shields.io/docker/pulls/kbessonov/mob_suite)
+![](https://img.shields.io/pypi/dm/mob-suite)
+![](https://img.shields.io/github/v/release/phac-nml/mob-suite?include_prereleases)
+![](https://img.shields.io/github/last-commit/phac-nml/mob-suite)
+![](https://img.shields.io/github/issues/phac-nml/mob-suite)
+
 # MOB-suite: Software tools for clustering, reconstruction and typing of plasmids from draft assemblies
 
-## Introduction ## 
+## Introduction
 Plasmids are mobile genetic elements (MGEs), which allow for rapid evolution and adaption of
 bacteria to new niches through horizontal transmission of novel traits to different genetic
 backgrounds. The MOB-suite is designed to be a modular set of tools for the typing and
@@ -8,15 +15,12 @@ reconstruction of plasmid sequences from WGS assemblies.
 
 
 The MOB-suite depends on a series of databases which are too large to be hosted in git-hub. They can be downloaded or updated by running mob_init or if running any of the tools for the first time, the databases will download and initialize automatically if you do not specify an alternate database location. However, they are quite large so the first run will take a long time depending on your connection and speed of your computer.
-Databases can be manually downloaded from https://share.corefacility.ca/index.php/s/rYaAH7oxrSVtilN/download or https://zenodo.org/record/3786915/files/data.tar.gz?download=1. <br>
-Our new automatic chromosome depletion feature in MOB-recon can be based on any collection of closed chromosome sequences but we have a prebuilt database available here: https://share.corefacility.ca/index.php/s/GJOgxxtbhWoX8fV/download
+Databases can be manually downloaded from [here](https://share.corefacility.ca/index.php/s/rYaAH7oxrSVtilN/download) or [here](https://zenodo.org/record/3786915/files/data.tar.gz?download=1). <br>
+Our new automatic chromosome depletion feature in MOB-recon can be based on any collection of closed chromosome sequences but we have a prebuilt database available [here](https://share.corefacility.ca/index.php/s/GJOgxxtbhWoX8fV/download).
 
 ### MOB-init
-On first run of MOB-typer or MOB-recon, MOB-init should run to download the databases from figshare, sketch the databases and setup the blast databases. However, it can be run manually if the databases need to be re-initialized OR if you want to initialize the databases in an alternative directory.
+On first run of MOB-typer or MOB-recon, MOB-init (invoked by `mob_init` command) should run to download the databases from figshare, sketch the databases and setup the blast databases. However, it can be run manually if the databases need to be re-initialized OR if you want to initialize the databases in an alternative directory.
 
-```
-% mob_init
-```
 
 ### MOB-cluster
 This tool creates plasmid similarity groups using fast genomic distance estimation using Mash.  Plasmids are grouped into clusters using complete-linkage clustering and the cluster code accessions provided by the tool provide an approximation of operational taxonomic units OTU’s. The plasmid nomenclature is designed to group highly similar plasmids together which are unlikely to have multiple representatives within a single cell and have a strong concordance with replicon and relaxase typing but is universally applicable since it uses the complete sequence of the plasmid itself rather than specific biomarkers.
@@ -30,8 +34,9 @@ Provides in silico predictions of the replicon family, relaxase type, mate-pair 
 ## Installation ##
 
 ## Requires
-+ Python v. 3.7 +
-+ ete3 >= 3
++ Python >= 3.7
++ ete3 >= 3.1.2
++ pandas >=0.22.0,<=1.05
 + biopython >= 1.70
 + pytables  >= 3.3
 + pycurl >= 7.43
@@ -62,21 +67,20 @@ We recommend installing MOB-Suite via bioconda but you can install it via pip us
 
 ```
 % pip3 install mob_suite
-
 ```
 
 ### Docker image
 A docker image is also available at [https://hub.docker.com/r/kbessonov/mob_suite](https://hub.docker.com/r/kbessonov/mob_suite)
-```
-% docker pull kbessonov/mob_suite:2.0.0 
-% docker run --rm -v $(pwd):/mnt/ "kbessonov/mob_suite:2.0.0 " mob_recon -i /mnt/assembly.fasta -t -o /mnt/mob_recon_output
 
+```
+% docker pull kbessonov/mob_suite:3.0.1 
+% docker run --rm -v $(pwd):/mnt/ "kbessonov/mob_suite:3.0.1" mob_recon -i /mnt/assembly.fasta -t -o /mnt/mob_recon_output
 ```
 
 ### Singularity image
 A singularity image could be built via singularity recipe donated by Eric Deveaud. 
 The recipe (`recipe.singularity`) is located in the singularity folder of this repository. 
-The docker image section also has instructions on how to create singularity image from a docker image.
+The docker image [README section](https://hub.docker.com/repository/docker/kbessonov/mob_suite) also has instructions on how to create singularity image from a docker image.
 
 ```bash
 % singularity build mobsuite.simg recipe.singularity
@@ -104,7 +108,6 @@ You can perform plasmid typing using a fasta formated file containing a single p
 
 # Multiple independant plasmids
 % mob_typer --multi --infile assembly.fasta --out_file sample_mobtyper_results.txt
-
 ```
 
 ## Using MOB-recon to reconstruct plasmids from draft assemblies
@@ -120,12 +123,13 @@ As of v. 3.0.0, we have added the ability of users to provide their own specific
 
 ```
 ### User sequence mask
-% mob_recon --infile assembly.fasta --outdir my_out_dir --
+% mob_recon --infile assembly.fasta --outdir my_out_dir --filter_db filter.fasta
 ```
 
 As of v. 3.0.0, we have provided the ability to use a collection of closed genomes which will be quickly checked using Mash for genomes which are genetically close and limit blast searches to those chromosomes. This more nuanced and automatic approach is recommended for users where there are sequences which should be filtered in one genomic context but not another. We provide as an optional download as set of closed Enterobacteriacea genomes from NCBI which can be used to provide added accuracy for some organisms such as E. coli and Klebsiella where there are sequences which switch between chromosome and plasmids.
 <br><br>
 If reconstructed plasmids exceed the Mash distance for primary cluster assignment, then they will get assigned a name in the format novel_{md5} where the md5 hash is calculated based on all of the sequences belonging to that reconstructed plasmid. This will provide a unique name for them but any change will result in a changed in the md5 hash. It is inadvised to use these groups for further analyses. Rather they should be highlighted as cases where targeted long read sequencing is required to obtain a closer database representitive of that plasmid.
+
 ```
 ### Autodetected close genome filter
 % mob_recon --infile assembly.fasta --outdir my_out_dir -g 2019-11-NCBI-Enterobacteriacea-Chromosomes.fasta
