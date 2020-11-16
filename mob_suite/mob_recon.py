@@ -1228,7 +1228,7 @@ def main():
                 os.path.isfile(filter_db + '.nin') or \
                 os.path.isfile(filter_db + '.nhr'):
             br = BlastRunner(filter_db, os.path.dirname(filter_db))
-            br.makeblastdb(filter_db, dbtype='nucl')
+            br.makeblastdb(filter_db, dbtype='nucl', logging=logging)
 
         run_filter = True
     else:
@@ -1305,8 +1305,11 @@ def main():
             cluster_dists = get_reconstructed_cluster_dists(mash_db, 0.1, {primary_clust_id: [contig_id]}, out_dir,
                                                             contig_seqs, num_threads)
 
+            lowest_dist = 1
             for clust_id in cluster_dists:
                 fail = False
+
+                lowest_dist = 1
                 for top_ref_id in cluster_dists[clust_id]:
                     lowest_dist = cluster_dists[clust_id][top_ref_id]
                     if top_ref_id not in reference_sequence_meta:
