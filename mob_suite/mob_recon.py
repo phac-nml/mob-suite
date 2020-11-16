@@ -1249,7 +1249,7 @@ def main():
 
         for contig_id in user_filter_seqs:
             if contig_id in contig_info:
-                contig_info[contig_id]['filtering_reason'] = 'user filter'
+                contig_info[contig_id]['filtering_reason'] = 'user'
                 logger.info(
                     'Filtering contig: {} due to inclusion in genome filter {}'.format(contig_id, filter_db))
             else:
