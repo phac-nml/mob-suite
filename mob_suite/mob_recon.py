@@ -476,12 +476,13 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
 
     contig_list = list(contig_reference_coverage.keys())
 
-    unassigned_contigs = {}
-    for contig_id in contig_list:
+    temp = {}
+    for contig_id in contig_reference_coverage:
         if contig_id in filtered_contigs:
             continue
-        if contig_id not in unassigned_contigs:
-            unassigned_contigs[contig_id] = {}
+        temp[contig_id] = contig_reference_coverage[contig_id]
+    contig_reference_coverage = temp
+    del(temp)
 
     cluster_contig_links = get_seq_links(contig_reference_coverage, reference_sequence_meta)
     contig_link_counts = get_contig_link_counts(reference_hit_coverage, cluster_contig_links)
@@ -1208,7 +1209,6 @@ def main():
 
             for contig_id in chromosome_filter_seqs:
                 if contig_id in contig_info:
-                    if contig_info[contig_id]['filtering_reason'] == 'none':
                         contig_info[contig_id]['filtering_reason'] = 'chromosome'
                         logger.info('Filtering contig: {} due to inclusion in genome filter {}'.format(contig_id,
                                                                                                        genome_filter_db_prefix))
