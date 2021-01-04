@@ -18,6 +18,13 @@ The MOB-suite depends on a series of databases which are too large to be hosted 
 Databases can be manually downloaded from [here](https://share.corefacility.ca/index.php/s/rYaAH7oxrSVtilN/download) or [here](https://zenodo.org/record/3786915/files/data.tar.gz?download=1). <br>
 Our new automatic chromosome depletion feature in MOB-recon can be based on any collection of closed chromosome sequences but we have a prebuilt database available [here](https://share.corefacility.ca/index.php/s/GJOgxxtbhWoX8fV/download).
 
+##Citations
+Below are the manuscripts describing the algorithmic approaches used in the MOB-suite. 
+
+1) Robertson, James, and John H E Nash. “MOB-suite: software tools for clustering, reconstruction and typing of plasmids from draft assemblies.” Microbial genomics vol. 4,8 (2018): e000206. doi:10.1099/mgen.0.000206
+
+2) Robertson, James et al. “Universal whole-sequence-based plasmid typing and its utility to prediction of host range and epidemiological surveillance.” Microbial genomics vol. 6,10 (2020): mgen000435. doi:10.1099/mgen.0.000435
+
 ### MOB-init
 On first run of MOB-typer or MOB-recon, MOB-init (invoked by `mob_init` command) should run to download the databases from figshare, sketch the databases and setup the blast databases. However, it can be run manually if the databases need to be re-initialized OR if you want to initialize the databases in an alternative directory.
 
