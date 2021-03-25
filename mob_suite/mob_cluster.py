@@ -620,7 +620,7 @@ def main():
         cluster_assignments = {**mob_cluster_seq_info, **new_seq_info}
         logging.info('Writting cluster assignments to : {}'.format(tmp_cluster_file))
         writeClusterAssignments(tmp_cluster_file, MOB_CLUSTER_INFO_HEADER, cluster_assignments)
-        shutil.copy(tmp_ref_fasta_file, os.path.join(out_dir, update_fasta))
+        shutil.copy(tmp_ref_fasta_file, update_fasta)
 
 
     else:
