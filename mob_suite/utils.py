@@ -411,7 +411,19 @@ def initETE3Database(database_directory, ETE3DBTAXAFILE, logging):
     logging.info("ETE3 database init completed successfully.")
 
 
+
 def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE, logging):
+    """
+    Place a lock file while using ETE3 taxonomy database (taxa.sqlite) to prevent accidental concurrent multiprocess update
+    Parameters:
+        taxid - the taxonomy id which is 1 by default for database health testing
+        lockfilepath - path to the database lock file
+        ETE3DBTAXAFILE - path to ETE3 taxa.sqlite file
+        logging - logger object for logging messages
+    Returns:
+        Bool: True/False value with regards to database usage.
+              If .lock file is not removed after 10 min, program exits
+    """
     max_time = 600
     elapsed_time = 0
 
@@ -436,7 +448,13 @@ def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE, logging):
 
     else:
         logging.info("Creating Lock file {}".format(lockfilepath))
-        open(file=lockfilepath, mode="w").close()
+
+        #some file systems are read-only which will not support lock file writting
+        try:
+            open(file=lockfilepath, mode="w").close()
+        except Exception as e:
+            logging.info(e)
+            pass
 
         logging.info("Testing ETE3 taxonomy db {}".format(ETE3DBTAXAFILE))
         ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
@@ -446,8 +464,9 @@ def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE, logging):
         try:
             os.remove(lockfilepath)
             logging.info("Lock file removed.")
-        except:
-            logging.warning("Lock file is already removed by some other process.")
+        except Exception as e:
+            logging.warning("Lock file is already removed by some other process or read-only file system")
+            logging.warning(e)
 
         if len(lineage) > 0:
             return True
@@ -643,7 +662,7 @@ def verify_init(logger, database_dir):
     status_file = os.path.join(database_dir, 'status.txt')
     if not os.path.isfile(status_file):
         logger.info('MOB-databases need to be initialized, this will take some time')
-        p = Popen(['python', mob_init_path, '-d', database_dir],
+        p = Popen([sys.executable, mob_init_path, '-d', database_dir],
                   stdout=PIPE,
                   stderr=PIPE,
                   shell=False)

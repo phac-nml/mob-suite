@@ -76,6 +76,16 @@ We recommend installing MOB-Suite via bioconda but you can install it via pip us
 % pip3 install mob_suite
 ```
 
+### Source
+For system-wide installation one can follow these commands on Ubuntu distro that includes Python
+library dependencies and tools
+```bash
+apt update && apt python3-pip
+apt install libcurl4-openssl-dev libssl-dev #for pycurl
+pip3 install Cython
+apt install mash ncbi-blast+
+```
+
 ### Docker image
 A docker image is also available at [https://hub.docker.com/r/kbessonov/mob_suite](https://hub.docker.com/r/kbessonov/mob_suite)
 
@@ -91,6 +101,12 @@ The docker image [README section](https://hub.docker.com/repository/docker/kbess
 
 ```bash
 % singularity build mobsuite.simg recipe.singularity
+```
+
+In addition Singularity image can be pulled from [BioContainers repository](https://biocontainers.pro/tools/mob_suite) where `<version>` is
+the desired version (e.g. `3.0.2--py_0`)
+```bash
+singularity run https://depot.galaxyproject.org/singularity/mob_suite:<version>
 ```
 
 ## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and to predict mobility and replicative plasmid host-range

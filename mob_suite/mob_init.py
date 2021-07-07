@@ -143,7 +143,7 @@ def main():
         except Exception as e:
             logger.error("Failed to place a lock file at {}. Database diretory can not be accessed. Wrong path?".format(lockfilepath))
             logger.error("{}".format(e))
-            exit(-1)
+            pass
     else:
         while os.path.exists(lockfilepath):
             elapsed_time = time.time() - os.path.getmtime(lockfilepath)
