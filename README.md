@@ -103,8 +103,8 @@ The docker image [README section](https://hub.docker.com/repository/docker/kbess
 % singularity build mobsuite.simg recipe.singularity
 ```
 
-In addition Singularity image can be pulled from [BioContainers repository](https://biocontainers.pro/tools/mob_suite) where `<version>` is
-the desired version (e.g. `3.0.2--py_0`)
+Alternatively, Singularity image can be pulled from [BioContainers repository](https://biocontainers.pro/tools/mob_suite) where `<version>` is
+the desired version (e.g. `3.0.3--py_0`)
 ```bash
 singularity run https://depot.galaxyproject.org/singularity/mob_suite:<version>
 ```

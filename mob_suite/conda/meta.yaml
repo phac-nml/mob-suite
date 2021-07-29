@@ -1,4 +1,4 @@
-{% set version = "3.0.1" %}
+{% set version = "3.0.3" %}
 
 package:
   name: mob_suite
