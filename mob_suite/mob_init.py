@@ -245,6 +245,15 @@ def main():
         except:
             logger.warning("Lock file is already removed by some other process.")
             pass
+
+    #fix permissions to make sure others can read the directory
+    try:
+        for file in os.listdir(database_directory):
+            os.chmod(file,755)
+    except Exception as e:
+        print(e)
+        pass
+
     logger.info("MOB init completed successfully")
     return 0
 

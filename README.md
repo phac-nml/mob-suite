@@ -80,10 +80,11 @@ We recommend installing MOB-Suite via bioconda but you can install it via pip us
 For system-wide installation one can follow these commands on Ubuntu distro that includes Python
 library dependencies and tools
 ```bash
-apt update && apt python3-pip
+apt update && apt install python3-pip #installs gcc compiler for pycurl
 apt install libcurl4-openssl-dev libssl-dev #for pycurl
 pip3 install Cython
 apt install mash ncbi-blast+
+python3 setup.py install && mob_init #to install and init databases
 ```
 
 ### Docker image
