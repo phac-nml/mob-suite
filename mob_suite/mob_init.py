@@ -114,7 +114,7 @@ def extract(fname, outdir):
     for file_name in src_files:
         full_file_name = os.path.join(dir_name, file_name)
         if os.path.isfile(full_file_name):
-            shutil.copy(full_file_name, outdir)
+            shutil.copyfile(full_file_name, outdir)
     shutil.rmtree(dir_name)
     os.remove(fname)
 
@@ -246,13 +246,6 @@ def main():
             logger.warning("Lock file is already removed by some other process.")
             pass
 
-    #fix permissions to make sure others can read the directory
-    try:
-        for file in os.listdir(database_directory):
-            os.chmod(file,755)
-    except Exception as e:
-        print(e)
-        pass
 
     logger.info("MOB init completed successfully")
     return 0
