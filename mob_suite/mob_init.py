@@ -114,7 +114,7 @@ def extract(fname, outdir):
     for file_name in src_files:
         full_file_name = os.path.join(dir_name, file_name)
         if os.path.isfile(full_file_name):
-            shutil.copyfile(full_file_name, outdir)
+            shutil.copyfile(full_file_name, os.path.join(outdir,file_name))
     shutil.rmtree(dir_name)
     os.remove(fname)
 
