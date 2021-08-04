@@ -91,23 +91,28 @@ python3 setup.py install && mob_init #to install and init databases
 A docker image is also available at [https://hub.docker.com/r/kbessonov/mob_suite](https://hub.docker.com/r/kbessonov/mob_suite)
 
 ```
-% docker pull kbessonov/mob_suite:3.0.1 
-% docker run --rm -v $(pwd):/mnt/ "kbessonov/mob_suite:3.0.1" mob_recon -i /mnt/assembly.fasta -t -o /mnt/mob_recon_output
+% docker pull kbessonov/mob_suite:3.0.3 
+% docker run --rm -v $(pwd):/mnt/ "kbessonov/mob_suite:3.0.3" mob_recon -i /mnt/assembly.fasta -t -o /mnt/mob_recon_output
 ```
 
 ### Singularity image
-A singularity image could be built via singularity recipe donated by Eric Deveaud. 
-The recipe (`recipe.singularity`) is located in the singularity folder of this repository. 
-The docker image [README section](https://hub.docker.com/repository/docker/kbessonov/mob_suite) also has instructions on how to create singularity image from a docker image.
+A singularity image could be built locally via Singularity recipe donated by Eric Deveaud. 
+The recipe (`recipe.singularity`) is located in the `singularity` folder of this repository and installs MOB-Suite via `conda`. 
 
 ```bash
 % singularity build mobsuite.simg recipe.singularity
 ```
 
+In addition, Singularity currently supports docker images and automatically converts them to Singularity images format.
+```bash
+% singularity pull docker://kbessonov/mob_suite:3.0.3
+```
+
 Alternatively, Singularity image can be pulled from [BioContainers repository](https://biocontainers.pro/tools/mob_suite) where `<version>` is
 the desired version (e.g. `3.0.3--py_0`)
+
 ```bash
-singularity run https://depot.galaxyproject.org/singularity/mob_suite:<version>
+% singularity run https://depot.galaxyproject.org/singularity/mob_suite:<version>
 ```
 
 ## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and to predict mobility and replicative plasmid host-range
@@ -123,7 +128,7 @@ Clone this repository and install via setuptools.
 
 ## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and predict mobility
 
-You can perform plasmid typing using a fasta formated file containing a single plasmid represented by one or more contigs or it can treat all of the sequences in the fasta file as independant. The default behaviour is to treat all sequences in a file as from one plasmid, do not include multiple unrelated plasmids in the file without specifying --multi as they will be treated as a single plasmid.
+You can perform plasmid typing using a fasta formated file containing a single plasmid represented by one or more contigs or it can treat all of the sequences in the fasta file as independent. The default behaviour is to treat all sequences in a file as from one plasmid, so do not include multiple unrelated plasmids in the file without specifying --multi as they will be treated as a single plasmid.
 
 
 ```
@@ -143,7 +148,7 @@ unicycler is used, then the circularity information can be parsed directly from 
 % mob_recon --infile assembly.fasta --outdir my_out_dir
 ```
 
-As of v. 3.0.0, we have added the ability of users to provide their own specific set of sequences to remove from plasmid reconstruction. This should be performed with caution and with the knowlede of your organism.  Sequences which are frequently of plasmid origin but are not in your organism is the primary use case we envision for this feature.
+As of v. 3.0.0, we have added the ability of users to provide their own specific set of sequences to remove from plasmid reconstruction. This should be performed with caution and with the knowledge of your organism.  Filtering of sequences which are frequently of plasmid origin but are not in your organism is the primary use case we envision for this feature.
 
 ```
 ### User sequence mask
@@ -152,14 +157,14 @@ As of v. 3.0.0, we have added the ability of users to provide their own specific
 
 As of v. 3.0.0, we have provided the ability to use a collection of closed genomes which will be quickly checked using Mash for genomes which are genetically close and limit blast searches to those chromosomes. This more nuanced and automatic approach is recommended for users where there are sequences which should be filtered in one genomic context but not another. We provide as an optional download as set of closed Enterobacteriacea genomes from NCBI which can be used to provide added accuracy for some organisms such as E. coli and Klebsiella where there are sequences which switch between chromosome and plasmids.
 <br><br>
-If reconstructed plasmids exceed the Mash distance for primary cluster assignment, then they will get assigned a name in the format novel_{md5} where the md5 hash is calculated based on all of the sequences belonging to that reconstructed plasmid. This will provide a unique name for them but any change will result in a changed in the md5 hash. It is inadvised to use these groups for further analyses. Rather they should be highlighted as cases where targeted long read sequencing is required to obtain a closer database representitive of that plasmid.
+If reconstructed plasmids exceed the Mash distance for primary cluster assignment, then they will be assigned a name in the format novel_{md5} where the md5 hash is calculated based on all of the sequences belonging to that reconstructed plasmid. This will provide a unique name for the plasmids but any change will result in a corresponding change in the md5 hash. It is therefore not advised to use these assigned names for further analyses. Rather they should be highlighted as cases where targeted long read sequencing is required to obtain a closer database representative of that plasmid.
 
 ```
 ### Autodetected close genome filter
 % mob_recon --infile assembly.fasta --outdir my_out_dir -g 2019-11-NCBI-Enterobacteriacea-Chromosomes.fasta
 ```
 ## Using MOB-cluster
-Use this tool only to update the plasmid databases or build a new one and should only be completed with closed high quality plasmids. If you add in poor quality data it can severely impact MOB-recon. As od v. 3.0.0, MOB-cluster has been re-written to utilize the output from MOB-typer to greatly speed up the process of updating and builing plasmid databases by using pre-computed results. Clusters generated from earlier versions of MOB-suite are not compatibile with the new clusters. We have povided a mapping file of previous cluster assignments and their new cluster accessions. Each cluster code is unique and will not be re-used.
+Use this tool only to update the plasmid databases or build a new one, however MOB-cluster should only be run with closed high quality plasmids. If you add in poor quality data it can severely impact MOB-recon. As of v3.0.0, MOB-cluster has been re-written to utilize the output from MOB-typer to greatly speed up the process of updating and building plasmid databases by using pre-computed results. Clusters generated from earlier versions of MOB-suite are not compatible with the new clusters. We have provided a mapping file of previous cluster assignments and their new cluster accessions. Each cluster code is unique and will not be re-used.
 
 ```
 ### Build a new database
@@ -194,7 +199,7 @@ Use this tool only to update the plasmid databases or build a new one and should
 # MOB-recon contig report format
 | field  | Description |
 | --------- |  --------- | 
-| sample_id | Sample ID specified by user or deault to filename |
+| sample_id | Sample ID specified by user or default to filename |
 | molecule_type | Plasmid or Chromosome |
 | primary_cluster_id | primary MOB-cluster id of neighbor |
 | secondary_cluster_id | secondary MOB-cluster id of neighbor |
@@ -222,12 +227,12 @@ Use this tool only to update the plasmid databases or build a new one and should
 # MOB-typer report file format
 | field  | Description |
 | --------- |  --------- | 
-| sample_id | Sample ID specified by user or deault to filename |
+| sample_id | Sample ID specified by user or default to filename |
 | num_contigs | Number of sequences belonging to plasmid |
 | size | Length in base pairs |
 | gc | GC % |
 | md5 | md5 hash |
-| rep_type(s) | Replion type(s) |
+| rep_type(s) | Replicon type(s) |
 | rep_type_accession(s) | Replicon sequence accession(s) |
 | relaxase_type(s) | Relaxase type(s) |
 | relaxase_type_accession(s) | Relaxase sequence accession(s) |
@@ -252,7 +257,7 @@ Use this tool only to update the plasmid databases or build a new one and should
 # MOB-cluster sequence cluster information file
 | field  | Description |
 | --------- |  --------- | 
-| sample_id | Sample ID specified by user or deault to filename |
+| sample_id | Sample ID specified by user or default to filename |
 | size | Length in base pairs |
 | gc | GC % |
 | md5 | md5 hash |
