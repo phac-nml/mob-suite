@@ -114,7 +114,7 @@ def extract(fname, outdir):
     for file_name in src_files:
         full_file_name = os.path.join(dir_name, file_name)
         if os.path.isfile(full_file_name):
-            shutil.copy(full_file_name, outdir)
+            shutil.copyfile(full_file_name, os.path.join(outdir,file_name))
     shutil.rmtree(dir_name)
     os.remove(fname)
 
@@ -143,7 +143,7 @@ def main():
         except Exception as e:
             logger.error("Failed to place a lock file at {}. Database diretory can not be accessed. Wrong path?".format(lockfilepath))
             logger.error("{}".format(e))
-            exit(-1)
+            pass
     else:
         while os.path.exists(lockfilepath):
             elapsed_time = time.time() - os.path.getmtime(lockfilepath)
@@ -245,6 +245,8 @@ def main():
         except:
             logger.warning("Lock file is already removed by some other process.")
             pass
+
+
     logger.info("MOB init completed successfully")
     return 0
 
