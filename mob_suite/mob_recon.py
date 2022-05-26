@@ -1413,7 +1413,7 @@ def main():
     #fix plasmid fastas
     clusters = list(contig_memberships['plasmid'].keys())
     for cluster in clusters:
-        file =
+        file = os.path.join(out_dir, "plasmid_{}.fasta".format(cluster))
         if prefix is None:
             update = False
         else:
