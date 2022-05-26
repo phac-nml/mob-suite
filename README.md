@@ -16,7 +16,7 @@ reconstruction of plasmid sequences from WGS assemblies.
 
 The MOB-suite depends on a series of databases which are too large to be hosted in git-hub. They can be downloaded or updated by running mob_init or if running any of the tools for the first time, the databases will download and initialize automatically if you do not specify an alternate database location. However, they are quite large so the first run will take a long time depending on your connection and speed of your computer.
 Databases can be manually downloaded from [here](https://zenodo.org/record/3786915/files/data.tar.gz?download=1). <br>
-Our new automatic chromosome depletion feature in MOB-recon can be based on any collection of closed chromosome sequences but we have a prebuilt database available [here](https://share.corefacility.ca/index.php/s/GJOgxxtbhWoX8fV/download).
+Our new automatic chromosome depletion feature in MOB-recon can be based on any collection of closed chromosome sequences.
 
 ## Citations
 Below are the manuscripts describing the algorithmic approaches used in the MOB-suite. 
