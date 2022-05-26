@@ -54,7 +54,6 @@ setup(
         'scipy>=1.1.0,<2',
         'ete3>=3.0,<4',
         'six>=1.10,<2',
-        'pyqt5>=5.0,<6'
     ],
 
     entry_points={
