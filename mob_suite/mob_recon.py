@@ -998,12 +998,14 @@ def main():
     orit_blast_results = os.path.join(tmp_dir, 'orit_blast_results.txt')
     repetitive_blast_results = os.path.join(tmp_dir, 'repetitive_blast_results.txt')
     contig_blast_results = os.path.join(tmp_dir, 'contig_blast_results.txt')
+    contig_blast_results = os.path.join(tmp_dir, 'contig_blast_results.txt')
     prefix = None
     if args.prefix is not None:
         prefix = args.prefix
     contig_report = os.path.join(out_dir, 'contig_report.txt')
     if prefix is not None:
         contig_report = os.path.join(out_dir, "{}.contig_report.txt".format(prefix))
+        chromosome_file = os.path.join(out_dir, "{}.chromosome.fasta".format(prefix))
     logger.info('Processing fasta file {}'.format(args.infile))
     logger.info('Analysis directory {}'.format(args.outdir))
 
@@ -1411,7 +1413,11 @@ def main():
     #fix plasmid fastas
     clusters = list(contig_memberships['plasmid'].keys())
     for cluster in clusters:
-        file = os.path.join(out_dir,"plasmid_{}.fasta".format(cluster))
+        file =
+        if prefix is None:
+            update = False
+        else:
+            update = True
         seqs = read_fasta_dict(file)
         fh = open(file,'w')
         for seq_id in seqs:
@@ -1420,6 +1426,8 @@ def main():
                 seq_id = id_mapping[seq_id]
             fh.write(">{}\n{}\n".format(seq_id,seq))
         fh.close()
+        if update:
+            os.rename(file, os.path.join(out_dir, "{}.plasmid_{}.fasta".format(prefix,cluster)))
 
     #Peform MGE detection
     mge_results = blast_mge(fixed_fasta, repetitive_mask_file, tmp_dir, min_length,
