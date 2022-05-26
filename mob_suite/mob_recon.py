@@ -3,7 +3,7 @@ from mob_suite.version import __version__
 from collections import OrderedDict
 import logging, os, shutil, sys, re
 import pandas as pd
-from argparse import (ArgumentParser)
+from argparse import (ArgumentParser, ArgumentDefaultsHelpFormatter,RawDescriptionHelpFormatter)
 from mob_suite.blast import BlastRunner
 from mob_suite.blast import BlastReader
 from mob_suite.wrappers import mash
@@ -14,9 +14,7 @@ import glob
 from mob_suite.constants import \
     MOB_CLUSTER_INFO_HEADER, \
     MOB_RECON_INFO_HEADER, \
-    ETE3_LOCK_FILE, \
     ETE3DBTAXAFILE, \
-    NCBI_PLASMID_TAXONOMY_HEADER, \
     default_database_dir, \
     LOG_FORMAT, \
     LIT_PLASMID_TAXONOMY_HEADER
@@ -39,15 +37,18 @@ from mob_suite.utils import \
     blastn, \
     identify_biomarkers, \
     build_mobtyper_report, \
-    parseMash
+    parseMash, \
+    blast_mge, \
+    writeMGEresults
 
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
-
+    class CustomFormatter(ArgumentDefaultsHelpFormatter, RawDescriptionHelpFormatter):
+        pass
     parser = ArgumentParser(
         description="MOB-Recon: Typing and reconstruction of plasmids from draft and complete assemblies version: {}".format(
-            __version__))
+            __version__), formatter_class=CustomFormatter)
     parser.add_argument('-o', '--outdir', type=str, required=True, help='Output Directory to put results')
     parser.add_argument('-i', '--infile', type=str, required=True, help='Input assembly fasta file to process')
     parser.add_argument('-n', '--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
@@ -57,15 +58,16 @@ def parse_args():
     parser.add_argument('-b', '--filter_db', type=str, required=False, help='Path to fasta file to mask sequences')
     parser.add_argument('-g', '--genome_filter_db_prefix', type=str, required=False,
                         help='Prefix of mash sketch and blastdb of closed chromosomes to use for auto selection of close genomes for filtering')
+    parser.add_argument('-p', '--prefix', type=str, required=False, help='Prefix to append to result files')
     parser.add_argument('--mash_genome_neighbor_threshold', type=int, required=False,
                         help='Mash distance selecting valid closed genomes to filter', default=0.002)
 
     parser.add_argument('--max_contig_size', type=int, required=False,
                         help='Maximum size of a contig to be considered a plasmid',
-                        default=310000)
+                        default=450000)
     parser.add_argument('--max_plasmid_size', type=int, required=False,
                         help='Maximum size of a reconstructed plasmid',
-                        default=350000)
+                        default=450000)
     parser.add_argument('--min_rep_evalue', type=str, required=False,
                         help='Minimum evalue threshold for replicon blastn',
                         default=0.00001)
@@ -117,10 +119,6 @@ def parse_args():
                         help='Detect circular contigs with assembly overhangs', action='store_true')
 
     parser.add_argument('-k', '--keep_tmp', required=False, help='Do not delete temporary file directory',
-                        action='store_true')
-
-    parser.add_argument('-t', '--run_typer', required=False,
-                        help='Automatically run Mob-typer on the identified plasmids',
                         action='store_true')
 
     parser.add_argument('--debug', required=False, help='Show debug information', action='store_true')
@@ -985,7 +983,8 @@ def main():
 
     check_dependencies(logger)
     validate_args(args, logger)
-
+    max_contig_size = args.max_contig_size
+    max_plasmid_size = args.max_plasmid_size
     keep_tmp = args.keep_tmp
     input_fasta = args.infile
     out_dir = args.outdir
@@ -999,12 +998,19 @@ def main():
     orit_blast_results = os.path.join(tmp_dir, 'orit_blast_results.txt')
     repetitive_blast_results = os.path.join(tmp_dir, 'repetitive_blast_results.txt')
     contig_blast_results = os.path.join(tmp_dir, 'contig_blast_results.txt')
+    prefix = None
+    if args.prefix is not None:
+        prefix = args.prefix
     contig_report = os.path.join(out_dir, 'contig_report.txt')
-
+    if prefix is not None:
+        contig_report = os.path.join(out_dir, "{}.contig_report.txt".format(prefix))
     logger.info('Processing fasta file {}'.format(args.infile))
     logger.info('Analysis directory {}'.format(args.outdir))
 
     database_dir = os.path.abspath(args.database_directory)
+
+
+
 
     if database_dir == default_database_dir:
         plasmid_ref_db = args.plasmid_db
@@ -1025,6 +1031,7 @@ def main():
         repetitive_mask_file = os.path.join(database_dir, 'repetitive.dna.fas')
         mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
         plasmid_orit = os.path.join(database_dir, 'orit.fas')
+        ETE3DBTAXAFILE = os.path.abspath(database_dir + "/taxa.sqlite")
 
     LIT_PLASMID_TAXONOMY_FILE = os.path.join(database_dir, "host_range_literature_plasmidDB.txt")
     NCBI_PLASMID_TAXONOMY_FILE = plasmid_meta
@@ -1092,18 +1099,13 @@ def main():
     min_con_evalue = float(args.min_con_evalue)
     min_rpp_evalue = float(args.min_rpp_evalue)
 
-    # Test that ETE3 db is ok and lock process check
-    dbstatus = ETE3_db_status_check(1, ETE3_LOCK_FILE, ETE3DBTAXAFILE, logging)
-    if dbstatus == False:
-        logging.error("Exiting due to lock file not removed: {}".format(ETE3_LOCK_FILE))
-        sys.exit(-1)
 
     # Parse reference cluster information
     reference_sequence_meta = read_sequence_info(plasmid_meta, MOB_CLUSTER_INFO_HEADER)
 
     # process input fasta
     logger.info('Writing cleaned header input fasta file from {} to {}'.format(input_fasta, fixed_fasta))
-    fix_fasta_header(input_fasta, fixed_fasta)
+    id_mapping = fix_fasta_header(input_fasta, fixed_fasta)
     contig_seqs = read_fasta_dict(fixed_fasta)
     contig_info = {}
     br = BlastRunner(fixed_fasta, tmp_dir)
@@ -1152,7 +1154,7 @@ def main():
                         mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results, \
                         repetitive_mask_file, min_rpp_ident, min_rpp_cov, min_rpp_evalue, \
                         plasmid_orit, orit_blast_results, repetitive_blast_results, \
-                        num_threads=1)
+                        num_threads=num_threads)
 
     # Filtering contigs against chromosome database
 
@@ -1257,6 +1259,7 @@ def main():
 
         del (user_filter_seqs)
 
+
     # blast plasmid database
     logging.info("Blasting contigs against reference sequence db: {}".format(plasmid_ref_db))
     blastn(input_fasta=fixed_fasta, blastdb=plasmid_ref_db, min_ident=min_con_ident, min_cov=min_con_cov,
@@ -1328,11 +1331,41 @@ def main():
 
             contig_info[contig_id] = data
 
+    #Assign sequences to chromosome which exceed length limit
+    plasmid_sizes = {}
+    for contig_id in contig_info:
+        length = contig_info[contig_id]['size']
+        if contig_info[contig_id]['primary_cluster_id'] != '' and contig_info[contig_id]['mash_nearest_neighbor'] == '':
+            contig_info[contig_id]['primary_cluster_id'] = ''
+            contig_info[contig_id]['molecule_type'] = 'chromosome'
+            data['filtering_reason'] = "Contig length > {}bp".format(length)
+        if contig_info[contig_id]['size'] > max_contig_size:
+            contig_info[contig_id]['molecule_type'] == 'chromosome'
+        if contig_info[contig_id]['molecule_type']  == 'plasmid':
+            pID = contig_info[contig_id]['primary_cluster_id']
+
+            if not pID in plasmid_sizes:
+                plasmid_sizes[pID] = 0
+            plasmid_sizes[pID]+= length
+
+    for contig_id in contig_info:
+        if contig_info[contig_id]['molecule_type'] == 'plasmid':
+            pID = contig_info[contig_id]['primary_cluster_id']
+            length = contig_info[contig_id]['size']
+            if plasmid_sizes[pID] > max_plasmid_size:
+                contig_info[contig_id]['primary_cluster_id'] = ''
+                contig_info[contig_id]['secondary_cluster_id'] = ''
+                contig_info[contig_id]['molecule_type'] = 'chromosome'
+                data['filtering_reason'] = "Reconstructed plasmid length > {}bp".format(length)
+
     results = []
     contig_memberships = {'chromosome': {}, 'plasmid': {}}
+
     for contig_id in contig_info:
         data = contig_info[contig_id]
-
+        if contig_id in id_mapping:
+            original_id = id_mapping[contig_id]
+        data['contig_id'] = original_id
         if data['primary_cluster_id'] != '' and data['mash_nearest_neighbor'] == '':
             data['primary_cluster_id'] = ''
             data['molecule_type'] = 'chromosome'
@@ -1360,8 +1393,10 @@ def main():
             lit = dict_from_alt_key_list(
                 read_file_to_dict(LIT_PLASMID_TAXONOMY_FILE, LIT_PLASMID_TAXONOMY_HEADER, separater="\t"), "sample_id")
 
-            build_mobtyper_report(contig_memberships['plasmid'], out_dir, os.path.join(out_dir, "mobtyper_results.txt"),
-                                  contig_seqs, ncbi, lit)
+            mobtyper_report = os.path.join(out_dir, "mobtyper_results.txt")
+            if prefix is not None:
+                mobtyper_report = os.path.join(out_dir, "{}.mobtyper_results.txt".format(prefix))
+            build_mobtyper_report(contig_memberships['plasmid'], out_dir, mobtyper_report,contig_seqs, ncbi, lit)
 
         writeReport(results, MOB_RECON_INFO_HEADER, contig_report)
 
@@ -1369,8 +1404,31 @@ def main():
         chr_fh = open(chromosome_file, 'w')
         for contig_id in contig_memberships['chromosome']:
             if contig_id in contig_seqs:
-                chr_fh.write(">{}\n{}\n".format(contig_id, contig_seqs[contig_id]))
+                original_id = id_mapping[contig_id]
+                chr_fh.write(">{}\n{}\n".format(original_id, contig_seqs[contig_id]))
         chr_fh.close()
+
+    #fix plasmid fastas
+    clusters = list(contig_memberships['plasmid'].keys())
+    for cluster in clusters:
+        file = os.path.join(out_dir,"plasmid_{}.fasta".format(cluster))
+        seqs = read_fasta_dict(file)
+        fh = open(file,'w')
+        for seq_id in seqs:
+            seq = seqs[seq_id]
+            if seq_id in id_mapping:
+                seq_id = id_mapping[seq_id]
+            fh.write(">{}\n{}\n".format(seq_id,seq))
+        fh.close()
+
+    #Peform MGE detection
+    mge_results = blast_mge(fixed_fasta, repetitive_mask_file, tmp_dir, min_length,
+                            logging, min_rpp_ident, min_rpp_cov, min_rpp_evalue,num_threads)
+    mge_report_file = os.path.join(out_dir,"mge.report.txt")
+    if prefix is not None:
+        mge_report_file = os.path.join(out_dir, "{}.mge_report.txt".format(prefix))
+    writeMGEresults(contig_memberships, mge_results, mge_report_file)
+
 
     if not keep_tmp:
         logging.info("Cleaning up temporary files {}".format(tmp_dir))

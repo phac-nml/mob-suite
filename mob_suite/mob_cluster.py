@@ -1,5 +1,5 @@
 import logging, os, shutil, sys, re, scipy
-from argparse import (ArgumentParser)
+from argparse import (ArgumentParser, ArgumentDefaultsHelpFormatter,RawDescriptionHelpFormatter)
 from mob_suite.version import __version__
 import pandas as pd
 import scipy.cluster.hierarchy as sch
@@ -30,9 +30,10 @@ def init_console_logger(lvl):
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
-    default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
+    class CustomFormatter(ArgumentDefaultsHelpFormatter, RawDescriptionHelpFormatter):
+        pass
     parser = ArgumentParser(
-        description="MOB-Cluster: Generate and update existing plasmid clusters' version: {}".format(__version__))
+        description="MOB-Cluster: Generate and update existing plasmid clusters' version: {}".format(__version__), formatter_class=CustomFormatter)
     parser.add_argument('-m', '--mode', type=str, required=True,
                         help='Build: Create a new database from scratch, Update: Update an existing database with one or more sequences')
     parser.add_argument('-f', '--infile', type=str, required=True,

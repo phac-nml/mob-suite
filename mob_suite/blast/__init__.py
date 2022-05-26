@@ -1,6 +1,6 @@
 from datetime import datetime
 import logging, sys
-
+from pathlib import Path
 
 from subprocess import Popen, PIPE
 import os
@@ -43,14 +43,14 @@ class BlastRunner:
     def makeblastdb(self,fasta_path,dbtype,logging,parse_seqids=False):
         if parse_seqids:
             p = Popen(['makeblastdb',
-                      '-in', fasta_path,
+                      '-in', Path(fasta_path),
                        '-parse_seqids',
                       '-dbtype',dbtype],
                       stdout=PIPE,
                       stderr=PIPE)
         else:
             p = Popen(['makeblastdb',
-                      '-in', fasta_path,
+                      '-in', Path(fasta_path),
                       '-dbtype',dbtype],
                       stdout=PIPE,
                       stderr=PIPE)
@@ -66,10 +66,10 @@ class BlastRunner:
 
 
 
-    def run_tblastn(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,logging,num_threads=1,max_target_seqs=100000,seq_id_file=None):
+    def run_tblastn(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,logging,num_threads=1,max_target_seqs=100000000,seq_id_file=None):
         if seq_id_file:
             p = Popen(['tblastn',
-                       '-query', query_fasta_path,
+                       '-query', Path(query_fasta_path),
                        '-seqidlist', '{}'.format(seq_id_file),
                        '-num_threads','{}'.format(num_threads),
                        '-db', '{}'.format(db_path),
@@ -81,9 +81,9 @@ class BlastRunner:
                       stderr=PIPE)
         else:
             p = Popen(['tblastn',
-                       '-query', query_fasta_path,
+                       '-query', Path(query_fasta_path),
                        '-num_threads','{}'.format(num_threads),
-                       '-db', '{}'.format(db_path),
+                       '-db', '{}'.format(Path(db_path)),
                        '-evalue', '{}'.format(evalue),
                        '-out', blast_outfile,
                        '-max_target_seqs','{}'.format(max_target_seqs),
@@ -113,39 +113,37 @@ class BlastRunner:
                 logging.error(ex_msg)
                 raise Exception(ex_msg)
 
-    def run_blast(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,logging,num_threads=1,word_size=11,max_target_seqs=100000,seq_id_file=None):
-
+    def run_blast(self, query_fasta_path, blast_task, db_path, db_type, min_cov, min_ident, evalue,blast_outfile,logging,num_threads=1,word_size=11,max_target_seqs=100000000,seq_id_file=None):
 
         if seq_id_file :
             p = Popen(['blastn',
                        '-task', blast_task,
-                       '-query', query_fasta_path,
-                       '-db', '{}'.format(db_path),
+                       '-query', Path(query_fasta_path),
+                       '-db', '{}'.format(Path(db_path)),
                        '-seqidlist', '{}'.format(seq_id_file),
                        '-num_threads','{}'.format(num_threads),
                        '-evalue', '{}'.format(evalue),
                        '-dust', 'yes',
                        '-perc_identity', '{}'.format(min_ident),
                        '-max_target_seqs','{}'.format(max_target_seqs),
-                       '-out', blast_outfile,
+                       '-out', Path(blast_outfile),
                        '-outfmt', '6 {}'.format(' '.join(BLAST_TABLE_COLS))],
                       stdout=PIPE,
                       stderr=PIPE)
         else:
             p = Popen(['blastn',
                        '-task', blast_task,
-                       '-query', query_fasta_path,
-                       '-db', '{}'.format(db_path),
+                       '-query', '{}'.format(Path(query_fasta_path)),
+                       '-db', '{}'.format(Path(db_path)),
                        '-num_threads','{}'.format(num_threads),
                        '-evalue', '{}'.format(evalue),
                        '-dust', 'yes',
                        '-perc_identity', '{}'.format(min_ident),
                        '-max_target_seqs','{}'.format(max_target_seqs),
-                       '-out', blast_outfile,
+                       '-out', '{}'.format(Path(blast_outfile)),
                        '-outfmt', '6 {}'.format(' '.join(BLAST_TABLE_COLS))],
                       stdout=PIPE,
                       stderr=PIPE)
-
         p.wait()
         stdout = str(p.stdout.read())
         stderr = str(p.stderr.read())

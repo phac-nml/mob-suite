@@ -2,7 +2,7 @@
 
 import logging
 import os, re, shutil, sys, tempfile
-from argparse import (ArgumentParser, FileType)
+from argparse import (ArgumentParser, ArgumentDefaultsHelpFormatter,RawDescriptionHelpFormatter)
 from mob_suite.version import __version__
 import mob_suite.mob_init
 from collections import OrderedDict
@@ -26,7 +26,9 @@ from mob_suite.utils import fix_fasta_header, \
     determine_mpf_type, \
     hostrange, \
     dict_from_alt_key_list, \
-    read_file_to_dict
+    read_file_to_dict, \
+    blast_mge, \
+    writeMGEresults
 
 from mob_suite.constants import ETE3DBTAXAFILE, \
     MOB_TYPER_REPORT_HEADER, \
@@ -51,13 +53,15 @@ def init_console_logger(lvl=2):
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
-
+    class CustomFormatter(ArgumentDefaultsHelpFormatter, RawDescriptionHelpFormatter):
+        pass
     parser = ArgumentParser(
         description="MOB-Typer: Plasmid typing and mobility prediction: {}".format(
-            __version__))
+            __version__), formatter_class=CustomFormatter)
     parser.add_argument('-i', '--infile', type=str, required=True, help='Input assembly fasta file to process')
     parser.add_argument('-o', '--out_file', type=str, required=True, help='Output file to write results')
-    parser.add_argument('-a', '--analysis_dir', type=str, required=False, help='Analysis directory')
+    parser.add_argument('-g', '--mge_report_file', type=str, required=False, help='Output file for MGE results')
+    parser.add_argument('-a', '--analysis_dir', type=str, required=False, help='Working directory for storing temporary results')
     parser.add_argument('-n', '--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
     parser.add_argument('-s', '--sample_id', type=str, required=False, help='Sample Prefix for reports')
     parser.add_argument('-f', '--force', required=False, help='Overwrite existing directory',
@@ -74,14 +78,16 @@ def parse_args():
     parser.add_argument('--min_con_evalue', type=str, required=False, help='Minimum evalue threshold for contig blastn',
                         default=0.00001)
 
-    parser.add_argument('--min_length', type=str, required=False, help='Minimum length of contigs to classify',
-                        default=1000)
+    parser.add_argument('--min_length', type=str, required=False, help='Minimum length of blast hits',
+                        default=500)
     parser.add_argument('--min_rep_ident', type=int, required=False, help='Minimum sequence identity for replicons',
                         default=80)
     parser.add_argument('--min_mob_ident', type=int, required=False, help='Minimum sequence identity for relaxases',
                         default=80)
     parser.add_argument('--min_con_ident', type=int, required=False, help='Minimum sequence identity for contigs',
                         default=80)
+    parser.add_argument('--min_rpp_ident', type=int, required=False,
+                        help='Minimum sequence identity for MGE', default=80)
 
     parser.add_argument('--min_rep_cov', type=int, required=False,
                         help='Minimum percentage coverage of replicon query by input assembly',
@@ -94,6 +100,12 @@ def parse_args():
     parser.add_argument('--min_con_cov', type=int, required=False,
                         help='Minimum percentage coverage of assembly contig by the plasmid reference database to be considered',
                         default=70)
+    parser.add_argument('--min_rpp_cov', type=int, required=False,
+                        help='Minimum percentage coverage of MGE',
+                        default=80)
+    parser.add_argument('--min_rpp_evalue', type=str, required=False,
+                        help='Minimum evalue threshold for repetitve elements blastn',
+                        default=0.00001)
 
     parser.add_argument('--min_overlap', type=int, required=False,
                         help='Minimum overlap of fragments',
@@ -190,6 +202,7 @@ def main():
     # Script arguments
     input_fasta = args.infile
     report_file = args.out_file
+    mge_report_file = args.mge_report_file
     num_threads = int(args.num_threads)
     keep_tmp = args.keep_tmp
 
@@ -210,6 +223,7 @@ def main():
     else:
         secondary_distance = float(args.secondary_cluster_dist)
 
+    min_length = int(args.min_length)
 
     if database_dir == default_database_dir:
         mob_ref = args.plasmid_mob
@@ -218,6 +232,7 @@ def main():
         plasmid_meta = args.plasmid_meta
         mpf_ref = args.plasmid_mpf
         plasmid_orit = args.plasmid_orit
+        repetitive_mask_file = args.repetitive_mask
         verify_init(logger, database_dir)
     else:
         mob_ref = os.path.join(database_dir, 'mob.proteins.faa')
@@ -226,6 +241,8 @@ def main():
         plasmid_meta = os.path.join(database_dir, 'clusters.txt')
         mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
         plasmid_orit = os.path.join(database_dir, 'orit.fas')
+        repetitive_mask_file = os.path.join(database_dir, 'repetitive.dna.fas')
+        ETE3DBTAXAFILE = os.path.abspath(database_dir + "/taxa.sqlite")
 
     LIT_PLASMID_TAXONOMY_FILE = os.path.join(database_dir, "host_range_literature_plasmidDB.txt")
     NCBI_PLASMID_TAXONOMY_FILE = plasmid_meta
@@ -252,6 +269,7 @@ def main():
     min_mob_ident = float(args.min_mob_ident)
     min_ori_ident = float(args.min_rep_ident)
     min_mpf_ident = float(args.min_mob_ident)
+    min_rpp_ident = float(args.min_rpp_ident)
 
     idents = {'min_rep_ident': min_rep_ident, 'min_mob_ident': min_mob_ident, 'min_ori_ident': min_ori_ident}
 
@@ -270,6 +288,7 @@ def main():
     min_mob_cov = float(args.min_mob_cov)
     min_ori_cov = float(args.min_rep_cov)
     min_mpf_cov = float(args.min_mob_cov)
+    min_rpp_cov = float(args.min_rpp_cov)
 
     covs = {'min_rep_cov': min_rep_cov, 'min_mob_cov': min_mob_cov, 'min_con_cov': min_ori_cov,
             'min_rpp_cov': min_ori_cov}
@@ -289,6 +308,7 @@ def main():
     min_mob_evalue = float(args.min_mob_evalue)
     min_ori_evalue = float(args.min_rep_evalue)
     min_mpf_evalue = float(args.min_mob_evalue)
+    min_rpp_evalue = float(args.min_rpp_evalue)
 
     evalues = {'min_rep_evalue': min_rep_evalue, 'min_mob_evalue': min_mob_evalue, 'min_con_evalue': min_ori_evalue}
 
@@ -312,17 +332,11 @@ def main():
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir, 0o755)
 
-    # Test that ETE3 db is ok and lock process check
-    dbstatus = ETE3_db_status_check(1, ETE3_LOCK_FILE, ETE3DBTAXAFILE, logging)
-    if dbstatus == False:
-        logging.error("Exiting due to lock file not removed: {}".format(ETE3_LOCK_FILE))
-        sys.exit(-1)
-
     # Get cluster information
     reference_sequence_meta = read_sequence_info(plasmid_meta, MOB_CLUSTER_INFO_HEADER)
 
     # initilize master record tracking
-    fix_fasta_header(input_fasta, fixed_fasta)
+    id_mapping = fix_fasta_header(input_fasta, fixed_fasta)
     contig_seqs = read_fasta_dict(fixed_fasta)
     contig_info = {}
     for id in contig_seqs:
@@ -345,13 +359,13 @@ def main():
 
     # run individual marker blasts
 
-    contig_info = identify_biomarkers(contig_info, fixed_fasta, tmp_dir, 25, logging, \
-                                      replicon_ref, min_rep_ident, min_rep_cov, min_rep_evalue, replicon_blast_results, \
-                                      mob_ref, min_mob_ident, min_mob_cov, min_mob_evalue, mob_blast_results, \
-                                      mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results, \
-                                      None, None, None, None, \
-                                      plasmid_orit, orit_blast_results, repetitive_blast_results, \
-                                      num_threads=1)
+    contig_info =     identify_biomarkers(contig_info, fixed_fasta, tmp_dir, min_length, logging, \
+                        replicon_ref, min_rep_ident, min_rep_cov, min_rep_evalue, replicon_blast_results, \
+                        mob_ref, min_mob_ident, min_mob_cov, min_mob_evalue, mob_blast_results, \
+                        mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results, \
+                        repetitive_mask_file, min_rpp_ident, min_rpp_cov, min_rpp_evalue, \
+                        plasmid_orit, orit_blast_results, repetitive_blast_results, \
+                        num_threads=num_threads)
 
     m = mash()
     mobtyper_results = []
@@ -465,6 +479,12 @@ def main():
 
     for i in range(0, len(mobtyper_results)):
         record = mobtyper_results[i]
+        sample_id = record['sample_id']
+        if isinstance(record['sample_id'],list):
+            sample_id = record['sample_id'][0]
+        if sample_id in id_mapping:
+            original_id = id_mapping[sample_id]
+            record['sample_id'] = original_id
         bio_markers = sort_biomarkers({0: {'types': record['rep_type(s)'], 'acs': record['rep_type_accession(s)']},
                                        1: {'types': record['relaxase_type(s)'],
                                            'acs': record['relaxase_type_accession(s)']},
@@ -514,6 +534,24 @@ def main():
         mobtyper_results[i] = record
 
     writeReport(mobtyper_results, MOB_TYPER_REPORT_HEADER, report_file)
+
+    #Peform MGE detection
+    if mge_report_file is not None:
+        mge_results = blast_mge(fixed_fasta, repetitive_mask_file, tmp_dir, min_length,
+                                logging, min_rpp_ident, min_rpp_cov, min_rpp_evalue,num_threads)
+        contig_memberships = {'chromosome':{},'plasmid':{}}
+        for i in range(0,len(mobtyper_results)):
+            primary_cluster_id = mobtyper_results[i]['primary_cluster_id']
+            if not primary_cluster_id in contig_memberships['plasmid']:
+                contig_memberships['plasmid'][primary_cluster_id] = {}
+            contig_id = mobtyper_results[i]['sample_id']
+            mobtyper_results[i]['molecule_type'] = 'plasmid'
+            mobtyper_results[i]['contig_id'] = contig_id
+            mobtyper_results[i]['size'] = mobtyper_results[i]['total_length']
+            contig_memberships['plasmid'][primary_cluster_id][contig_id] = mobtyper_results[i]
+
+        writeMGEresults(contig_memberships, mge_results, mge_report_file)
+        logger.info("MOB-typer MGE results written to {}".format(mge_report_file))
 
     if not keep_tmp:
         shutil.rmtree(tmp_dir)

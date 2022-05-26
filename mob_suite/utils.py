@@ -11,6 +11,7 @@ from operator import itemgetter
 from ete3 import NCBITaxa
 from mob_suite.constants import \
     MOB_TYPER_REPORT_HEADER, \
+    MGE_INFO_HEADER, \
     ETE3DBTAXAFILE
 
 
@@ -301,6 +302,32 @@ def hostrange(replion_types, relaxase_types, mob_cluster_id, ncbi, lit):
             if ranks[i] == 'Family':
                 host_range_predictions['predicted_host_range_overall_rank'] = 'family'
                 host_range_predictions['predicted_host_range_overall_name'] = names[i]
+
+    unique_taxa =  sorted(list(set(host_range_predictions['observed_host_range_ncbi_name'].split(','))))
+    taxa =  host_range_predictions['observed_host_range_ncbi_name'].split(",")
+    ranks = host_range_predictions['observed_host_range_ncbi_rank'].split(",")
+    unique_ranks = []
+    for taxon in unique_taxa:
+        for i in range(0,len(ranks)):
+            if taxon == taxa[i]:
+                unique_ranks.append(ranks[i])
+                break
+
+    host_range_predictions['observed_host_range_overall_rank'] = ",".join(unique_ranks)
+    host_range_predictions['observed_host_range_ncbi_name'] = ",".join(unique_taxa)
+
+    unique_taxa =  sorted(list(set(host_range_predictions['predicted_host_range_overall_name'].split(','))))
+    taxa =  host_range_predictions['predicted_host_range_overall_name'].split(",")
+    ranks = host_range_predictions['predicted_host_range_overall_rank'].split(",")
+    unique_ranks = []
+    for taxon in unique_taxa:
+        for i in range(0,len(ranks)):
+            if taxon == taxa[i]:
+                unique_ranks.append(ranks[i])
+                break
+    host_range_predictions['predicted_host_range_overall_rank'] = ",".join(unique_ranks)
+    host_range_predictions['predicted_host_range_overall_name'] = ",".join(unique_taxa)
+
 
     return host_range_predictions
 
@@ -811,14 +838,21 @@ def recursive_filter_overlap_records(blast_df, overlap_threshold, contig_id_col,
 
 
 def fix_fasta_header(in_fasta, out_fasta):
-    ids = []
+    ids = {}
     fh = open(out_fasta, 'w')
+    incr=0
     with open(in_fasta, "r") as handle:
         for record in SeqIO.parse(handle, "fasta"):
-            id = str(record.description).replace(' ', '_')
-            id = id.replace(',', '_')
-            ids.append(id)
-            fh.write(">" + id + "\n" + str(record.seq) + "\n")
+            id = str(record.description)
+            status = 'false'
+            if 'circular=true' in id or '_circ' in id:
+                status = 'true'
+            seq = str(record.seq.upper())
+            md5 = calc_md5(seq)
+            new_id = "{}_{}_circular={}".format(incr,md5,status)
+            ids[new_id] = id
+            fh.write(">{}\n{}\n".format(new_id,seq))
+            incr+=1
     handle.close()
     fh.close()
     return ids
@@ -1262,3 +1296,94 @@ def identify_biomarkers(contig_info, fixed_fasta, tmp_dir, min_length, logging,
 
         del (repetitive_blast_df)
     return contig_info
+
+def blast_mge(contig_fasta, mge_fasta,tmp_dir, min_length, logging, min_rpp_ident, min_rpp_cov, min_rpp_evalue,num_threads=1):
+    # blast repetitive database
+    blast_results = os.path.join(tmp_dir,"mge.blast.results.txt")
+    blastn(input_fasta=mge_fasta, blastdb=contig_fasta, min_ident=min_rpp_ident, min_cov=min_rpp_cov,
+           evalue=min_rpp_evalue, min_length=min_length, out_dir=tmp_dir,
+           blast_results_file=blast_results, num_threads=num_threads, logging=logging)
+
+    #return empty dataframe if no blast results generated
+    if os.path.getsize(blast_results) == 0:
+        return {}
+
+    df = BlastReader(blast_results, logging).df
+    reduced_df = recursive_filter_overlap_records(fixStart(
+        df.drop(0).sort_values(['sseqid', 'sstart', 'send', 'bitscore'],
+                                                ascending=[True, True, True, False])), 5, 'sseqid', 'sstart',
+        'send',
+        'bitscore')
+
+    results = {}
+    for index,row in reduced_df.iterrows():
+        contig_id = row['sseqid']
+        if not contig_id in results:
+            results[contig_id] = []
+        results[contig_id].append(row.to_dict())
+
+    return results
+
+def writeMGEresults(contig_membership,mge_results,outfile):
+    out_string = ["\t".join(MGE_INFO_HEADER)]
+    for contig_id in contig_membership['chromosome']:
+        if not contig_id in mge_results:
+            continue
+
+        for i in range(0, len(mge_results[contig_id])):
+            row = {}
+            for field in MGE_INFO_HEADER:
+                row[field] = ''
+                if field in mge_results[contig_id]:
+                    row[field] = mge_results[contig_id][field]
+
+            id = mge_results[contig_id][i]['qseqid'].split('|')
+            row['mge_id'] = id[0]
+            row['mge_acs'] = id[1]
+            row['mge_type'] = id[2]
+            row['mge_subtype'] = id[3]
+            row['mge_length'] = mge_results[contig_id][i]['qlen']
+            row['mge_start'] = mge_results[contig_id][i]['qstart']
+            row['mge_end'] = mge_results[contig_id][i]['qend']
+            row['contig_start'] = mge_results[contig_id][i]['sstart']
+            row['contig_end'] = mge_results[contig_id][i]['send']
+
+            for field in contig_membership['chromosome'][contig_id]:
+                if field in row:
+                    row[field] = contig_membership['chromosome'][contig_id][field]
+
+            out_string.append("\t".join([str(x) for x in list(row.values())]))
+
+    for mobcluster in contig_membership['plasmid']:
+        for contig_id in contig_membership['plasmid'][mobcluster]:
+            if not contig_id in mge_results:
+                continue
+
+            for i in range(0, len(mge_results[contig_id])):
+                row = {}
+                for field in MGE_INFO_HEADER:
+                    row[field] = ''
+                    if field in mge_results[contig_id][i]:
+                        row[field] = mge_results[contig_id][i][field]
+                id = mge_results[contig_id][i]['qseqid'].split('|')
+                row['mge_id'] = id[0]
+                row['mge_acs'] = id[1]
+                row['mge_type'] = id[2]
+                row['mge_subtype'] = id[3]
+                row['mge_length'] =  mge_results[contig_id][i]['qlen']
+                row['mge_start'] = mge_results[contig_id][i]['qstart']
+                row['mge_end'] = mge_results[contig_id][i]['qend']
+                row['contig_start'] = mge_results[contig_id][i]['sstart']
+                row['contig_end'] = mge_results[contig_id][i]['send']
+
+                for field in contig_membership['plasmid'][mobcluster][contig_id]:
+                    if field in row:
+                        row[field] = contig_membership['plasmid'][mobcluster][contig_id][field]
+
+                out_string.append("\t".join([str(x) for x in list(row.values())]))
+
+
+    fh = open(outfile,'w')
+    fh.write("\n".join(out_string))
+    fh.close()
+

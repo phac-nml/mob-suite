@@ -73,6 +73,33 @@ MOB_RECON_INFO_HEADER = [
 
 ]
 
+MGE_INFO_HEADER = [
+    'sample_id',
+    'molecule_type',
+    'primary_cluster_id',
+    'secondary_cluster_id',
+    'contig_id',
+    'size',
+    'gc',
+    'md5',
+    'mge_id',
+    'mge_acs',
+    'mge_type',
+    'mge_subtype',
+    'mge_length',
+    'mge_start',
+    'mge_end',
+    'contig_start',
+    'contig_end',
+    'length',
+    'sstrand',
+    'qcovhsp',
+    'pident',
+    'evalue',
+    'bitscore'
+
+]
+
 NCBI_PLASMID_TAXONOMY_HEADER = [
     'sample_id',
     'num_contigs',
