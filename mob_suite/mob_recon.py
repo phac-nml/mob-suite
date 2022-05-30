@@ -1375,7 +1375,7 @@ def main():
             data['filtering_reason'] = ''
 
         if data['molecule_type'] == 'chromosome':
-            contig_memberships['chromosome'][contig_id] = ''
+            contig_memberships['chromosome'][contig_id] = data
         else:
             clust_id = data['primary_cluster_id']
             if not clust_id in contig_memberships['plasmid']:
@@ -1435,6 +1435,7 @@ def main():
     mge_report_file = os.path.join(out_dir,"mge.report.txt")
     if prefix is not None:
         mge_report_file = os.path.join(out_dir, "{}.mge_report.txt".format(prefix))
+
     writeMGEresults(contig_memberships, mge_results, mge_report_file)
 
 
