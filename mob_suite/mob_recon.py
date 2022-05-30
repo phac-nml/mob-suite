@@ -474,7 +474,8 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
 
     contig_list = list(contig_reference_coverage.keys())
     for contig_id in filtered_contigs:
-        del(contig_reference_coverage[contig_id])
+        if contig_id in contig_reference_coverage:
+            del(contig_reference_coverage[contig_id])
 
     print(contig_reference_coverage)
 
