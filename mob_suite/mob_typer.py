@@ -335,6 +335,8 @@ def main():
     with open(fixed_fasta, "r") as handle:
         for record in SeqIO.parse(handle, "fasta"):
             id = str(record.id)
+            for feature in MOB_TYPER_REPORT_HEADER:
+                contig_info[id][feature] = ''
             seq = str(record.seq)
             contig_info[id]['md5'] = calc_md5(seq)
             contig_info[id]['gc'] = GC(seq)
