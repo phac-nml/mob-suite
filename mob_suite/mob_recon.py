@@ -467,6 +467,7 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
     reference_hit_coverage = calc_hit_coverage(contig_blast_df, 1000, reference_sequence_meta)
     contig_reference_coverage = calc_contig_reference_cov(contig_blast_df, 1000, reference_sequence_meta)
     filtered_contigs = get_contigs_by_key_value(contig_info, 'filtering_reason', ['user', 'chromosome'])
+    print(filtered_contigs)
     repetitive_contigs = get_contigs_by_key_value(contig_info, 'filtering_reason', ['repetitve element'])
     circular_contigs = get_contigs_by_key_value(contig_info, 'circularity_status', ['circular'])
     replicon_contigs = get_contigs_with_value_set(contig_info, 'rep_type(s)')
