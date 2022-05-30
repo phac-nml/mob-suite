@@ -9,6 +9,7 @@ from collections import OrderedDict
 from operator import itemgetter
 from mob_suite.blast import BlastRunner
 from mob_suite.wrappers import mash
+from Bio import SeqIO
 
 from mob_suite.utils import fix_fasta_header, \
     calcFastaStats, \
@@ -149,9 +150,6 @@ def parse_args():
                             default_database_dir))
     parser.add_argument('--primary_cluster_dist', type=int, required=False,
                         help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
-    parser.add_argument('--secondary_cluster_dist', type=int, required=False,
-                        help='Mash distance for assigning primary cluster id 0 - 1',
-                        default=0.025)
     parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
 
     return parser.parse_args()
@@ -217,11 +215,6 @@ def main():
     else:
         primary_distance = float(args.primary_cluster_dist)
 
-    if not (args.secondary_cluster_dist >= 0 and args.secondary_cluster_dist <= 1):
-        logging.error('Error distance thresholds must be between 0 - 1: {}'.format(args.secondary_cluster_dist))
-        sys.exit()
-    else:
-        secondary_distance = float(args.secondary_cluster_dist)
 
     min_length = int(args.min_length)
 
@@ -297,7 +290,7 @@ def main():
 
         value = float(covs[param])
 
-        if value < 60:
+        if value < 50:
             logger.error("Error: {} is too low, please specify an integer between 50 - 100".format(param))
             sys.exit(-1)
         if value > 100:
@@ -339,16 +332,16 @@ def main():
     id_mapping = fix_fasta_header(input_fasta, fixed_fasta)
     contig_seqs = read_fasta_dict(fixed_fasta)
     contig_info = {}
-    for id in contig_seqs:
-        seq = contig_seqs[id]
-        contig_info[id] = {}
-        for feature in MOB_TYPER_REPORT_HEADER:
-            contig_info[id][feature] = ''
-        contig_info[id]['md5'] = calc_md5(seq)
-        contig_info[id]['gc'] = GC(seq)
-        contig_info[id]['size'] = len(seq)
-        contig_info[id]['contig_id'] = id
-        contig_info[id]['sample_id'] = sample_id
+    with open(fixed_fasta, "r") as handle:
+        for record in SeqIO.parse(handle, "fasta"):
+            id = str(record.id)
+            seq = str(record.seq)
+            contig_info[id]['md5'] = calc_md5(seq)
+            contig_info[id]['gc'] = GC(seq)
+            contig_info[id]['size'] = len(seq)
+            contig_info[id]['contig_id'] = id
+            contig_info[id]['sample_id'] = sample_id
+    handle.close()
 
     # Makeblastdb
     blast_runner = BlastRunner(fixed_fasta, tmp_dir)
@@ -367,7 +360,6 @@ def main():
                                       plasmid_orit, orit_blast_results, repetitive_blast_results, \
                                       num_threads=num_threads)
 
-    m = mash()
     m = mash()
     mobtyper_results = []
 
