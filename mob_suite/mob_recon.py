@@ -811,7 +811,7 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
     return evaluate_contig_assignments(contig_info, primary_distance, secondary_distance)
 
 
-def evaluate_contig_assignments(contig_info, primary_distance, secondary_distance):
+def evaluate_contig_assignments(contig_info, primary_distance):
     cluster_membership = {}
     biomarker_clusters = {}
     circular_contigs = []
@@ -1140,7 +1140,7 @@ def main():
                 contig_info[id]['circularity_status'] = 'incomplete'
 
         if unicycler_contigs:
-            if 'circular=true' in id or '_circ' in id:
+            if 'circular=true' in id:
                 contig_info[id]['circularity_status'] = 'circular'
             elif id not in circular_contigs:
                 contig_info[id]['circularity_status'] = 'incomplete'
