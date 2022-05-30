@@ -462,7 +462,7 @@ def get_contigs_with_value_set(contig_info, column_key):
 
 
 def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info, out_dir, contig_seqs, mash_db,
-                               primary_distance, secondary_distance, num_threads=1):
+                               primary_distance, num_threads=1):
     # Individual reference sequence coverage and overall score along with contig associations
     reference_hit_coverage = calc_hit_coverage(contig_blast_df, 1000, reference_sequence_meta)
     contig_reference_coverage = calc_contig_reference_cov(contig_blast_df, 1000, reference_sequence_meta)
@@ -808,7 +808,7 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
 
     #print(cluster_membership)
 
-    return evaluate_contig_assignments(contig_info, primary_distance, secondary_distance)
+    return evaluate_contig_assignments(contig_info, primary_distance)
 
 
 def evaluate_contig_assignments(contig_info, primary_distance):
@@ -1285,8 +1285,7 @@ def main():
         contig_blast_df.reset_index(drop=True)
         logging.info("Assigning contigs to plasmid groups")
         contig_info = assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info, tmp_dir,
-                                                 contig_seqs, mash_db, primary_distance, secondary_distance,
-                                                 num_threads)
+                                                 contig_seqs, mash_db, primary_distance, num_threads)
 
     # Triage Novel plasmids with biomarkers but not enough similaririty for valid contig hits
     for contig_id in contig_info:
