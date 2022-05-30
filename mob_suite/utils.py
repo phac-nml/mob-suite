@@ -1326,6 +1326,7 @@ def blast_mge(contig_fasta, mge_fasta,tmp_dir, min_length, logging, min_rpp_iden
 
 def writeMGEresults(contig_membership,mge_results,outfile):
     out_string = ["\t".join(MGE_INFO_HEADER)]
+    print(contig_membership['chromosome'])
     for contig_id in contig_membership['chromosome']:
         if not contig_id in mge_results:
             continue
