@@ -695,6 +695,10 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
     cluster_links = {}
     for contig_id in contig_info:
         data = contig_info[contig_id]
+        if contig_id in filtered_contigs:
+            data['molecule_type'] = 'chromosome'
+            data['primary_cluster_id'] = ''
+
         if data['molecule_type'] == 'chromosome' or data['primary_cluster_id'] == '':
             continue
 
@@ -717,7 +721,6 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
     cluster_md5 = {}
     for clust_id in cluster_links:
         contigs = cluster_links[clust_id]
-
         seq = []
         for contig_id in contigs:
             if contig_id in contig_seqs:
