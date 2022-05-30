@@ -138,7 +138,7 @@ class detectCircularity:
 
             if contig_start_query == 1  and contig_end_subject == contig_length:
                 circular_contigs[contig_id_query] = 'Circular: Overlap {} bp'.format(length)
-
+        print(circular_contigs)
         return circular_contigs
 
 
