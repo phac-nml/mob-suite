@@ -467,21 +467,16 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
     reference_hit_coverage = calc_hit_coverage(contig_blast_df, 1000, reference_sequence_meta)
     contig_reference_coverage = calc_contig_reference_cov(contig_blast_df, 1000, reference_sequence_meta)
     filtered_contigs = get_contigs_by_key_value(contig_info, 'filtering_reason', ['user', 'chromosome'])
-    print(filtered_contigs)
     repetitive_contigs = get_contigs_by_key_value(contig_info, 'filtering_reason', ['repetitve element'])
     circular_contigs = get_contigs_by_key_value(contig_info, 'circularity_status', ['circular'])
     replicon_contigs = get_contigs_with_value_set(contig_info, 'rep_type(s)')
     relaxase_contigs = get_contigs_with_value_set(contig_info, 'relaxase_type(s)')
 
     contig_list = list(contig_reference_coverage.keys())
+    for contig_id in filtered_contigs:
+        del(contig_reference_coverage[contig_id])
 
-    temp = {}
-    for contig_id in contig_reference_coverage:
-        if contig_id in filtered_contigs:
-            continue
-        temp[contig_id] = contig_reference_coverage[contig_id]
-    contig_reference_coverage = temp
-    del(temp)
+    print(contig_reference_coverage)
 
     cluster_contig_links = get_seq_links(contig_reference_coverage, reference_sequence_meta)
     contig_link_counts = get_contig_link_counts(reference_hit_coverage, cluster_contig_links)
