@@ -1141,7 +1141,7 @@ def main():
                 contig_info[id]['circularity_status'] = 'incomplete'
 
         if unicycler_contigs:
-            if 'circular=true' in id:
+            if 'circular=true' in id or id in circular_contigs:
                 contig_info[id]['circularity_status'] = 'circular'
             elif id not in circular_contigs:
                 contig_info[id]['circularity_status'] = 'incomplete'
