@@ -476,8 +476,12 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
     for contig_id in filtered_contigs:
         if contig_id in contig_reference_coverage:
             del(contig_reference_coverage[contig_id])
+        if contig_id in contig_reference_coverage:
+            del (contig_reference_coverage[contig_id])
+        for ref_id in reference_hit_coverage:
+            if contig_id in reference_hit_coverage[ref_id]:
+                del(reference_hit_coverage[ref_id][contig_id])
 
-    print(contig_reference_coverage)
 
     cluster_contig_links = get_seq_links(contig_reference_coverage, reference_sequence_meta)
     contig_link_counts = get_contig_link_counts(reference_hit_coverage, cluster_contig_links)
