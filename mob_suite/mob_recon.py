@@ -698,6 +698,10 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
         if contig_id in filtered_contigs:
             data['molecule_type'] = 'chromosome'
             data['primary_cluster_id'] = ''
+            data['secondary_cluster_id'] = ''
+            data['mash_nearest_neighbor	'] = ''
+            data['mash_neighbor_distance'] = ''
+            data['mash_neighbor_identification'] = ''
 
         if data['molecule_type'] == 'chromosome' or data['primary_cluster_id'] == '':
             continue
