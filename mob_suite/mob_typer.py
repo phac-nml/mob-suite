@@ -2,7 +2,7 @@
 
 import logging
 import os, re, shutil, sys, tempfile
-from argparse import (ArgumentParser, ArgumentDefaultsHelpFormatter,RawDescriptionHelpFormatter)
+from argparse import (ArgumentParser, ArgumentDefaultsHelpFormatter, RawDescriptionHelpFormatter)
 from mob_suite.version import __version__
 import mob_suite.mob_init
 from collections import OrderedDict
@@ -35,7 +35,7 @@ from mob_suite.constants import ETE3DBTAXAFILE, \
     MOB_TYPER_REPORT_HEADER, \
     MOB_CLUSTER_INFO_HEADER, \
     default_database_dir, \
-    ETE3_LOCK_FILE,  \
+    ETE3_LOCK_FILE, \
     LIT_PLASMID_TAXONOMY_HEADER
 
 
@@ -54,15 +54,18 @@ def init_console_logger(lvl=2):
 
 def parse_args():
     "Parse the input arguments, use '-h' for help"
+
     class CustomFormatter(ArgumentDefaultsHelpFormatter, RawDescriptionHelpFormatter):
         pass
+
     parser = ArgumentParser(
         description="MOB-Typer: Plasmid typing and mobility prediction: {}".format(
             __version__), formatter_class=CustomFormatter)
     parser.add_argument('-i', '--infile', type=str, required=True, help='Input assembly fasta file to process')
     parser.add_argument('-o', '--out_file', type=str, required=True, help='Output file to write results')
     parser.add_argument('-g', '--mge_report_file', type=str, required=False, help='Output file for MGE results')
-    parser.add_argument('-a', '--analysis_dir', type=str, required=False, help='Working directory for storing temporary results')
+    parser.add_argument('-a', '--analysis_dir', type=str, required=False,
+                        help='Working directory for storing temporary results')
     parser.add_argument('-n', '--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
     parser.add_argument('-s', '--sample_id', type=str, required=False, help='Sample Prefix for reports')
     parser.add_argument('-f', '--force', required=False, help='Overwrite existing directory',
@@ -174,7 +177,6 @@ def main():
 
     logger.info('Processing fasta file {}'.format(args.infile))
 
-
     if not os.path.isfile(args.infile):
         logger.info('Error, fasta file does not exist {}'.format(args.infile))
         sys.exit()
@@ -214,7 +216,6 @@ def main():
         sys.exit()
     else:
         primary_distance = float(args.primary_cluster_dist)
-
 
     min_length = int(args.min_length)
 
@@ -330,7 +331,6 @@ def main():
 
     # initilize master record tracking
     id_mapping = fix_fasta_header(input_fasta, fixed_fasta)
-    contig_seqs = read_fasta_dict(fixed_fasta)
     contig_info = {}
     with open(fixed_fasta, "r") as handle:
         for record in SeqIO.parse(handle, "fasta"):
@@ -473,7 +473,7 @@ def main():
     for i in range(0, len(mobtyper_results)):
         record = mobtyper_results[i]
         sample_id = record['sample_id']
-        if isinstance(record['sample_id'],list):
+        if isinstance(record['sample_id'], list):
             sample_id = record['sample_id'][0]
         if sample_id in id_mapping:
             original_id = id_mapping[sample_id]
@@ -493,18 +493,21 @@ def main():
         record['orit_type(s)'] = bio_markers[3]['types']
         record['orit_accession(s)'] = bio_markers[3]['acs']
 
-        if (isinstance(record['mash_neighbor_distance'],float) or isinstance(record['mash_neighbor_distance'],int)) and record['mash_neighbor_distance'] <= primary_distance:
+        if (isinstance(record['mash_neighbor_distance'], float) or isinstance(record['mash_neighbor_distance'],
+                                                                              int)) and record[
+            'mash_neighbor_distance'] <= primary_distance:
             mob_cluster_id = record['primary_cluster_id']
         else:
             mob_cluster_id = None
 
-        #Patches that sometimes results are concatonated into strings if contigs are merged into a single results
-        if isinstance(record['rep_type(s)'],list):
+        # Patches that sometimes results are concatonated into strings if contigs are merged into a single results
+        if isinstance(record['rep_type(s)'], list):
             record['rep_type(s)'] = ",".join(record['rep_type(s)'])
         if isinstance(record['relaxase_type_accession(s)'], list):
             record['relaxase_type_accession(s)'] = ",".join(record['relaxase_type_accession(s)'])
 
-        host_range = hostrange(record['rep_type(s)'].split(','), record['relaxase_type_accession(s)'].split(','), mob_cluster_id, ncbi, lit)
+        host_range = hostrange(record['rep_type(s)'].split(','), record['relaxase_type_accession(s)'].split(','),
+                               mob_cluster_id, ncbi, lit)
 
         for field in host_range:
             record[field] = host_range[field]
@@ -528,12 +531,12 @@ def main():
 
     writeReport(mobtyper_results, MOB_TYPER_REPORT_HEADER, report_file)
 
-    #Peform MGE detection
+    # Peform MGE detection
     if mge_report_file is not None:
         mge_results = blast_mge(fixed_fasta, repetitive_mask_file, tmp_dir, min_length,
-                                logging, min_rpp_ident, min_rpp_cov, min_rpp_evalue,num_threads)
-        contig_memberships = {'chromosome':{},'plasmid':{}}
-        for i in range(0,len(mobtyper_results)):
+                                logging, min_rpp_ident, min_rpp_cov, min_rpp_evalue, num_threads)
+        contig_memberships = {'chromosome': {}, 'plasmid': {}}
+        for i in range(0, len(mobtyper_results)):
             primary_cluster_id = mobtyper_results[i]['primary_cluster_id']
             if not primary_cluster_id in contig_memberships['plasmid']:
                 contig_memberships['plasmid'][primary_cluster_id] = {}
