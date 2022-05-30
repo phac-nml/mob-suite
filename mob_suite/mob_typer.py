@@ -359,14 +359,15 @@ def main():
 
     # run individual marker blasts
 
-    contig_info =     identify_biomarkers(contig_info, fixed_fasta, tmp_dir, min_length, logging, \
-                        replicon_ref, min_rep_ident, min_rep_cov, min_rep_evalue, replicon_blast_results, \
-                        mob_ref, min_mob_ident, min_mob_cov, min_mob_evalue, mob_blast_results, \
-                        mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results, \
-                        repetitive_mask_file, min_rpp_ident, min_rpp_cov, min_rpp_evalue, \
-                        plasmid_orit, orit_blast_results, repetitive_blast_results, \
-                        num_threads=num_threads)
+    contig_info = identify_biomarkers(contig_info, fixed_fasta, tmp_dir, 25, logging, \
+                                      replicon_ref, min_rep_ident, min_rep_cov, min_rep_evalue, replicon_blast_results, \
+                                      mob_ref, min_mob_ident, min_mob_cov, min_mob_evalue, mob_blast_results, \
+                                      mpf_ref, min_mpf_ident, min_mpf_cov, min_mpf_evalue, mpf_blast_results, \
+                                      None, None, None, None, \
+                                      plasmid_orit, orit_blast_results, repetitive_blast_results, \
+                                      num_threads=num_threads)
 
+    m = mash()
     m = mash()
     mobtyper_results = []
 
