@@ -499,7 +499,7 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
     group_membership = {}
     # assign circular contigs with replicon or relaxase first
     for contig_id in circular_contigs:
-        if contig_id in repetitive_contigs:
+        if contig_id in repetitive_contigs or contig_id in filtered_contigs:
             continue
         if contig_id in replicon_contigs or contig_id in relaxase_contigs:
             if contig_id not in contig_cluster_scores:
@@ -616,7 +616,7 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
         if clust_id not in cluster_links:
             cluster_links[clust_id] = []
         cluster_links[clust_id].append(contig_id)
-
+    print(cluster_links)
     recon_cluster_dists = get_reconstructed_cluster_dists(mash_db, 0.1, cluster_links, out_dir, contig_seqs,
                                                           num_threads)
     cluster_md5 = {}
