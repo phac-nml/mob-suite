@@ -73,13 +73,13 @@ def parse_args():
     parser.add_argument('-x', '--multi', required=False, help='Treat each sequence as an independant plasmid',
                         action='store_true')
 
-    parser.add_argument('--min_rep_evalue', type=str, required=False,
+    parser.add_argument('--min_rep_evalue', type=float, required=False,
                         help='Minimum evalue threshold for replicon blastn',
                         default=0.00001)
-    parser.add_argument('--min_mob_evalue', type=str, required=False,
+    parser.add_argument('--min_mob_evalue', type=float, required=False,
                         help='Minimum evalue threshold for relaxase tblastn',
                         default=0.00001)
-    parser.add_argument('--min_con_evalue', type=str, required=False, help='Minimum evalue threshold for contig blastn',
+    parser.add_argument('--min_con_evalue', type=float, required=False, help='Minimum evalue threshold for contig blastn',
                         default=0.00001)
 
     parser.add_argument('--min_length', type=str, required=False, help='Minimum length of blast hits',
@@ -107,7 +107,7 @@ def parse_args():
     parser.add_argument('--min_rpp_cov', type=int, required=False,
                         help='Minimum percentage coverage of MGE',
                         default=80)
-    parser.add_argument('--min_rpp_evalue', type=str, required=False,
+    parser.add_argument('--min_rpp_evalue', type=float, required=False,
                         help='Minimum evalue threshold for repetitve elements blastn',
                         default=0.00001)
 

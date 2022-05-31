@@ -68,19 +68,19 @@ def parse_args():
     parser.add_argument('--max_plasmid_size', type=int, required=False,
                         help='Maximum size of a reconstructed plasmid',
                         default=450000)
-    parser.add_argument('--min_rep_evalue', type=str, required=False,
+    parser.add_argument('--min_rep_evalue', type=float, required=False,
                         help='Minimum evalue threshold for replicon blastn',
                         default=0.00001)
-    parser.add_argument('--min_mob_evalue', type=str, required=False,
+    parser.add_argument('--min_mob_evalue', type=float, required=False,
                         help='Minimum evalue threshold for relaxase tblastn',
                         default=0.00001)
-    parser.add_argument('--min_con_evalue', type=str, required=False, help='Minimum evalue threshold for contig blastn',
+    parser.add_argument('--min_con_evalue', type=float, required=False, help='Minimum evalue threshold for contig blastn',
                         default=0.00001)
-    parser.add_argument('--min_rpp_evalue', type=str, required=False,
+    parser.add_argument('--min_rpp_evalue', type=float, required=False,
                         help='Minimum evalue threshold for repetitve elements blastn',
                         default=0.00001)
 
-    parser.add_argument('--min_length', type=str, required=False, help='Minimum length of contigs to classify',
+    parser.add_argument('--min_length', type=int, required=False, help='Minimum length of contigs to classify',
                         default=1000)
 
     parser.add_argument('--min_rep_ident', type=int, required=False, help='Minimum sequence identity for replicons',
