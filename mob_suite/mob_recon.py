@@ -59,7 +59,7 @@ def parse_args():
     parser.add_argument('-g', '--genome_filter_db_prefix', type=str, required=False,
                         help='Prefix of mash sketch and blastdb of closed chromosomes to use for auto selection of close genomes for filtering')
     parser.add_argument('-p', '--prefix', type=str, required=False, help='Prefix to append to result files')
-    parser.add_argument('--mash_genome_neighbor_threshold', type=int, required=False,
+    parser.add_argument('--mash_genome_neighbor_threshold', type=float, required=False,
                         help='Mash distance selecting valid closed genomes to filter', default=0.002)
 
     parser.add_argument('--max_contig_size', type=int, required=False,
@@ -157,9 +157,9 @@ def parse_args():
                         help='Directory you want to use for your databases. If the databases are not already '
                              'downloaded, they will be downloaded automatically. Defaults to {}'.format(
                             default_database_dir))
-    parser.add_argument('--primary_cluster_dist', type=int, required=False,
+    parser.add_argument('--primary_cluster_dist', type=float, required=False,
                         help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
-    parser.add_argument('--secondary_cluster_dist', type=int, required=False,
+    parser.add_argument('--secondary_cluster_dist', type=float, required=False,
                         help='Mash distance for assigning primary cluster id 0 - 1',
                         default=0.025)
     parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)

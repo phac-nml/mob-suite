@@ -151,7 +151,7 @@ def parse_args():
                         help='Directory you want to use for your databases. If the databases are not already '
                              'downloaded, they will be downloaded automatically. Defaults to {}'.format(
                             default_database_dir))
-    parser.add_argument('--primary_cluster_dist', type=int, required=False,
+    parser.add_argument('--primary_cluster_dist', type=float, required=False,
                         help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
     parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
 

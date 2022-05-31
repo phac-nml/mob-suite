@@ -48,9 +48,9 @@ def parse_args():
     parser.add_argument('-r', '--ref_fasta_file', type=str, required=False,
                         help='Existing MOB-cluster fasta file of sequences contained in the MOB-cluster file')
     parser.add_argument('--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
-    parser.add_argument('--primary_cluster_dist', type=int, required=False,
+    parser.add_argument('--primary_cluster_dist', type=float, required=False,
                         help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
-    parser.add_argument('--secondary_cluster_dist', type=int, required=False,
+    parser.add_argument('--secondary_cluster_dist', type=float, required=False,
                         help='Mash distance for assigning primary cluster id 0 - 1', default=0.025)
     parser.add_argument('--debug', required=False, help='Show debug information', action='store_true')
     parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__)
