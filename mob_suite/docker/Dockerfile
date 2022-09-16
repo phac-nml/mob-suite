@@ -7,5 +7,5 @@ RUN apt install libcurl4-openssl-dev libssl-dev -y
 RUN pip3 install Cython numpy
 RUN apt install mash ncbi-blast+ -y
 RUN cd mob-suite && python3 setup.py install && cd .. && rm -rf mob-suite
-RUN mob_init 
+#RUN mob_init 
 RUN apt clean
