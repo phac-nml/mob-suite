@@ -1305,7 +1305,7 @@ def blast_mge(contig_fasta, mge_fasta,tmp_dir, min_length, logging, min_rpp_iden
            blast_results_file=blast_results, num_threads=num_threads, logging=logging)
 
     #return empty dataframe if no blast results generated
-    if os.path.getsize(blast_results) == 0:
+    if not os.path.isfile(blast_results) or os.path.getsize(blast_results) == 0:
         return {}
 
     df = BlastReader(blast_results, logging).df
