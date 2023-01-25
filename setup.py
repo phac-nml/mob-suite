@@ -29,7 +29,7 @@ exec(open('mob_suite/version.py').read())
 setup(
     name='mob_suite',
     include_package_data=True,
-    version='3.1.1',
+    version='3.1.2',
     python_requires='>=3.7.0,<4',
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
