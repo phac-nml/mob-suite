@@ -126,7 +126,7 @@ def main():
 
 
     if os.path.exists(database_directory) == False:
-        os.mkdir(database_directory)
+        os.makedirs(database_directory)
     else:
         logger.info("Database directory folder already exists at {}".format(database_directory))
 
@@ -164,8 +164,15 @@ def main():
 
     logger.info('Initializing databases...this will take some time')
     # Find available threads and use the maximum number available for mash sketch but cap it at 32
-    num_threads = min(multiprocessing.cpu_count(), 32)
+    try:
+        num_threads = len(os.sched_getaffinity(0))
+    except AttributeError:
+        num_threads = multiprocessing.cpu_count()
 
+    if num_threads > 32:
+        num_threads = 32
+    if num_threads < 1:
+        num_threads = 1
 
     if not os.path.exists(database_directory):
         os.makedirs(database_directory)

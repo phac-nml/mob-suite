@@ -171,8 +171,4 @@ LIT_PLASMID_TAXONOMY_HEADER = [
 
 default_database_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'databases')
 
-ETE3DBTAXAFILE = os.path.abspath(default_database_dir + "/taxa.sqlite")
-
-ETE3_LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "databases/ETE3_DB.lock")
-
 LOG_FORMAT = '%(asctime)s %(name)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'

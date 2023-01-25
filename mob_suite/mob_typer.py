@@ -18,9 +18,8 @@ from mob_suite.utils import fix_fasta_header, \
     read_sequence_info, \
     writeReport, \
     sort_biomarkers, \
-    ETE3_db_status_check, \
     calc_md5, \
-    GC, \
+    gc_fraction, \
     read_fasta_dict, \
     identify_biomarkers, \
     parseMash, \
@@ -31,11 +30,9 @@ from mob_suite.utils import fix_fasta_header, \
     blast_mge, \
     writeMGEresults
 
-from mob_suite.constants import ETE3DBTAXAFILE, \
-    MOB_TYPER_REPORT_HEADER, \
+from mob_suite.constants import MOB_TYPER_REPORT_HEADER, \
     MOB_CLUSTER_INFO_HEADER, \
     default_database_dir, \
-    ETE3_LOCK_FILE, \
     LIT_PLASMID_TAXONOMY_HEADER
 
 
@@ -187,7 +184,7 @@ def main():
         tmp_dir = args.analysis_dir
 
     if not os.path.isdir(tmp_dir):
-        os.mkdir(tmp_dir, 0o755)
+        os.makedirs(tmp_dir, 0o755)
 
     if not isinstance(args.num_threads, int):
         logger.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
@@ -218,6 +215,7 @@ def main():
         primary_distance = float(args.primary_cluster_dist)
 
     min_length = int(args.min_length)
+    ETE3DBTAXAFILE = os.path.abspath(database_dir + "/taxa.sqlite")
 
     if database_dir == default_database_dir:
         mob_ref = args.plasmid_mob
@@ -236,7 +234,7 @@ def main():
         mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
         plasmid_orit = os.path.join(database_dir, 'orit.fas')
         repetitive_mask_file = os.path.join(database_dir, 'repetitive.dna.fas')
-        ETE3DBTAXAFILE = os.path.abspath(database_dir + "/taxa.sqlite")
+
 
     LIT_PLASMID_TAXONOMY_FILE = os.path.join(database_dir, "host_range_literature_plasmidDB.txt")
     NCBI_PLASMID_TAXONOMY_FILE = plasmid_meta
@@ -340,7 +338,7 @@ def main():
                 contig_info[id][feature] = ''
             seq = str(record.seq)
             contig_info[id]['md5'] = calc_md5(seq)
-            contig_info[id]['gc'] = GC(seq)
+            contig_info[id]['gc'] = gc_fraction(seq)
             contig_info[id]['size'] = len(seq)
             contig_info[id]['contig_id'] = id
             contig_info[id]['sample_id'] = sample_id
@@ -510,7 +508,7 @@ def main():
             record['relaxase_type_accession(s)'] = ",".join(record['relaxase_type_accession(s)'])
 
         host_range = hostrange(record['rep_type(s)'].split(','), record['relaxase_type_accession(s)'].split(','),
-                               mob_cluster_id, ncbi, lit)
+                               mob_cluster_id, ncbi, lit,ETE3DBTAXAFILE)
 
         for field in host_range:
             record[field] = host_range[field]

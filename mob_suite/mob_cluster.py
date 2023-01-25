@@ -487,11 +487,11 @@ def main():
 
     if not os.path.isdir(out_dir):
         logging.info('Creating directory {}'.format(args.outdir))
-        os.mkdir(out_dir, 0o755)
+        os.makedirs(out_dir, 0o755)
     tmp_dir = os.path.join(out_dir, '__tmp')
     if not os.path.isdir(tmp_dir):
         logging.info('Creating directory {}'.format(args.outdir))
-        os.mkdir(tmp_dir, 0o755)
+        os.makedirs(tmp_dir, 0o755)
 
     taxonomy_file = args.taxonomy
 

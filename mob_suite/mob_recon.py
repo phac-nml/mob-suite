@@ -14,7 +14,6 @@ import glob
 from mob_suite.constants import \
     MOB_CLUSTER_INFO_HEADER, \
     MOB_RECON_INFO_HEADER, \
-    ETE3DBTAXAFILE, \
     default_database_dir, \
     LOG_FORMAT, \
     LIT_PLASMID_TAXONOMY_HEADER
@@ -29,7 +28,7 @@ from mob_suite.utils import \
     read_sequence_info, \
     fixStart, \
     calc_md5, \
-    GC, \
+    gc_fraction, \
     ETE3_db_status_check, \
     writeReport, \
     dict_from_alt_key_list, \
@@ -998,7 +997,6 @@ def main():
     orit_blast_results = os.path.join(tmp_dir, 'orit_blast_results.txt')
     repetitive_blast_results = os.path.join(tmp_dir, 'repetitive_blast_results.txt')
     contig_blast_results = os.path.join(tmp_dir, 'contig_blast_results.txt')
-    contig_blast_results = os.path.join(tmp_dir, 'contig_blast_results.txt')
     prefix = None
     if args.prefix is not None:
         prefix = args.prefix
@@ -1010,9 +1008,7 @@ def main():
     logger.info('Analysis directory {}'.format(args.outdir))
 
     database_dir = os.path.abspath(args.database_directory)
-
-
-
+    print
 
     if database_dir == default_database_dir:
         plasmid_ref_db = args.plasmid_db
@@ -1043,27 +1039,26 @@ def main():
     else:
         sample_id = args.sample_id
 
-    verify_init(logger, database_dir)
 
     run_overhang = args.run_overhang
     unicycler_contigs = args.unicycler_contigs
 
     # initialize analysis directory
     if not os.path.isdir(args.outdir):
-        os.mkdir(args.outdir, 0o755)
+        os.makedirs(args.outdir, 0o755)
 
     elif not args.force:
         logger.error("Error output directory exists, please specify a new directory or use --force to overwrite")
         sys.exit(-1)
     else:
         shutil.rmtree(args.outdir)
-        os.mkdir(args.outdir, 0o755)
+        os.makedirs(args.outdir, 0o755)
 
     if not os.path.isdir(tmp_dir):
-        os.mkdir(tmp_dir, 0o755)
+        os.makedirs(tmp_dir, 0o755)
     else:
         shutil.rmtree(tmp_dir)
-        os.mkdir(tmp_dir, 0o755)
+        os.makedirs(tmp_dir, 0o755)
 
     # Initialize clustering distance thresholds
     if not (args.primary_cluster_dist >= 0 and args.primary_cluster_dist <= 1):
@@ -1126,7 +1121,7 @@ def main():
         for feature in MOB_RECON_INFO_HEADER:
             contig_info[id][feature] = ''
         contig_info[id]['md5'] = calc_md5(seq)
-        contig_info[id]['gc'] = GC(seq)
+        contig_info[id]['gc'] = gc_fraction(seq)
         contig_info[id]['size'] = len(seq)
         contig_info[id]['contig_id'] = id
         contig_info[id]['sample_id'] = sample_id
@@ -1398,7 +1393,7 @@ def main():
             mobtyper_report = os.path.join(out_dir, "mobtyper_results.txt")
             if prefix is not None:
                 mobtyper_report = os.path.join(out_dir, "{}.mobtyper_results.txt".format(prefix))
-            build_mobtyper_report(contig_memberships['plasmid'], out_dir, mobtyper_report,contig_seqs, ncbi, lit)
+            build_mobtyper_report(contig_memberships['plasmid'], out_dir, mobtyper_report,contig_seqs, ncbi, lit,ETE3DBTAXAFILE)
 
         writeReport(results, MOB_RECON_INFO_HEADER, contig_report)
 

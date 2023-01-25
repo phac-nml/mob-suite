@@ -29,7 +29,7 @@ exec(open('mob_suite/version.py').read())
 setup(
     name='mob_suite',
     include_package_data=True,
-    version='3.1.0',
+    version='3.1.1',
     python_requires='>=3.7.0,<4',
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
@@ -46,7 +46,7 @@ setup(
     package_data={'mob_suite': ['config.json']},
 
     install_requires=[
-        'numpy>=1.11.1,<2',
+        'numpy>=1.11.1,<1.23.5',
         'tables>=3.3.0,<4',
         'pandas>=0.22.0,<=1.0.5',
         'biopython>=1.70,<2',
