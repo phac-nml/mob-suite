@@ -1029,7 +1029,7 @@ def main():
         repetitive_mask_file = os.path.join(database_dir, 'repetitive.dna.fas')
         mpf_ref = os.path.join(database_dir, 'mpf.proteins.faa')
         plasmid_orit = os.path.join(database_dir, 'orit.fas')
-        ETE3DBTAXAFILE = os.path.abspath(database_dir + "/taxa.sqlite")
+    ETE3DBTAXAFILE = os.path.abspath(database_dir + "/taxa.sqlite")
 
     LIT_PLASMID_TAXONOMY_FILE = os.path.join(database_dir, "host_range_literature_plasmidDB.txt")
     NCBI_PLASMID_TAXONOMY_FILE = plasmid_meta
