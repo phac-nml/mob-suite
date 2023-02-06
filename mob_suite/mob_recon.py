@@ -1008,7 +1008,6 @@ def main():
     logger.info('Analysis directory {}'.format(args.outdir))
 
     database_dir = os.path.abspath(args.database_directory)
-    print
 
     if database_dir == default_database_dir:
         plasmid_ref_db = args.plasmid_db
