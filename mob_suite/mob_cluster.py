@@ -17,7 +17,7 @@ from mob_suite.utils import \
 from mob_suite.wrappers import mash
 
 from mob_suite.constants import LOG_FORMAT, ACS_LETTER_VALUES, ACS_FORMAT_VALUES, ACS_VALUES_TO_LETTERS, MAX_ACS_VALUE, \
-    MOB_TYPER_REPORT_HEADER, MOB_CLUSTER_INFO_HEADER
+    MOB_TYPER_REPORT_HEADER, MOB_CLUSTER_INFO_HEADER, default_database_dir
 
 
 def init_console_logger(lvl):
@@ -47,6 +47,12 @@ def parse_args():
                         help='Existing MOB-cluster file to add the new sequences to')
     parser.add_argument('-r', '--ref_fasta_file', type=str, required=False,
                         help='Existing MOB-cluster fasta file of sequences contained in the MOB-cluster file')
+    parser.add_argument('-d', '--database_directory',
+                        default=default_database_dir,
+                        required=False,
+                        help='Directory you want to use for your databases. If the databases are not already '
+                             'downloaded, they will be downloaded automatically. Defaults to {}'.format(
+                            default_database_dir))
     parser.add_argument('--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
     parser.add_argument('--primary_cluster_dist', type=float, required=False,
                         help='Mash distance for assigning primary cluster id 0 - 1', default=0.06)
@@ -494,6 +500,7 @@ def main():
         os.makedirs(tmp_dir, 0o755)
 
     taxonomy_file = args.taxonomy
+    database_dir = os.path.abspath(args.database_directory)
 
     records = read_file_to_dict(mob_typer_report_file, MOB_TYPER_REPORT_HEADER, separater="\t")
 
@@ -525,7 +532,8 @@ def main():
         if seq_id in new_seq_info:
             new_seq_info[seq_id]['organism'] = organism
 
-    taxids = NamesToTaxIDs(organisms)
+    ETE3DBTAXAFILE = os.path.abspath(database_dir + "/taxa.sqlite")
+    taxids = NamesToTaxIDs(organisms, ETE3DBTAXAFILE)
     del(organisms)
 
     for seq_id in new_seq_info:
