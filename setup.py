@@ -49,7 +49,7 @@ setup(
         'numpy>=1.11.1,<1.23.5',
         'tables>=3.3.0,<4',
         'pandas>=0.22.0,<=1.0.5',
-        'biopython>=1.70,<2',
+        'biopython>=1.8,<2',
         'pycurl>=7.43.0,<8',
         'scipy>=1.1.0,<2',
         'ete3>=3.0,<4',
@@ -58,6 +58,7 @@ setup(
 
     entry_points={
         'console_scripts': [
+            'Sequenoscope=Sequenoscope:main'
             'mob_init=mob_suite.mob_init:main',
             'mob_recon=mob_suite.mob_recon:main',
             'mob_cluster=mob_suite.mob_cluster:main',
