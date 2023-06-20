@@ -533,7 +533,7 @@ def main():
             new_seq_info[seq_id]['organism'] = organism
 
     ETE3DBTAXAFILE = os.path.abspath(database_dir + "/taxa.sqlite")
-    taxids = NamesToTaxIDs(organisms, ETE3DBTAXAFILE)
+    taxids = NamesToTaxIDs(organisms, ETE3DBTAXAFILE, database_dir)
     del(organisms)
 
     for seq_id in new_seq_info:

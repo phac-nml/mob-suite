@@ -82,7 +82,7 @@ def filter_invalid_taxids(taxids):
 def getHeirarchy(taxid,ETE3DBTAXAFILE):
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
-        initETE3Database()
+        initETE3Database(database_directory, ETE3DBTAXAFILE)
 
     ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
@@ -106,7 +106,7 @@ def getHeirarchy(taxid,ETE3DBTAXAFILE):
 def getTaxid(taxon,ETE3DBTAXAFILE):
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
-        initETE3Database()
+        initETE3Database(database_directory, ETE3DBTAXAFILE)
 
     ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
@@ -121,10 +121,10 @@ def getTaxid(taxon,ETE3DBTAXAFILE):
 
 
 
-def NamesToTaxIDs(names,ETE3DBTAXAFILE):
+def NamesToTaxIDs(names,ETE3DBTAXAFILE,database_directory):
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
-        initETE3Database(ETE3DBTAXAFILE)
+        initETE3Database(database_directory, ETE3DBTAXAFILE)
 
     ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
 
@@ -141,7 +141,7 @@ def NamesToTaxIDs(names,ETE3DBTAXAFILE):
 def getTaxonConvergence(taxids,ETE3DBTAXAFILE):
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
-        initETE3Database(ETE3DBTAXAFILE)
+        initETE3Database(database_directory, ETE3DBTAXAFILE)
 
     ncbi = NCBITaxa(dbfile=ETE3DBTAXAFILE)
 
@@ -369,7 +369,7 @@ def isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         return True
 
 
-def initETE3Database(database_directory, ETE3DBTAXAFILE, logging):
+def initETE3Database(database_directory, ETE3DBTAXAFILE):
     lockfilepath = os.path.join(database_directory, ".lock")
 
     if os.path.exists(lockfilepath) == False:
