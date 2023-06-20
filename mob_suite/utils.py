@@ -268,7 +268,7 @@ def hostrange(replion_types, relaxase_types, mob_cluster_id, ncbi, lit, ETE3DBTA
     # move host-range prediction up to family when it is at genus or species level
     if host_range_predictions['predicted_host_range_overall_rank'] == 'genus' or host_range_predictions[
         'predicted_host_range_overall_rank'] == 'species':
-        taxid = getTaxid(host_range_predictions['predicted_host_range_overall_name'],ETE3DBTAXAFILE)
+        taxid = getTaxid(host_range_predictions['predicted_host_range_overall_name'],ETE3DBTAXAFILE,database_directory)
         heir = getHeirarchy(taxid,ETE3DBTAXAFILE,database_directory)
         names = heir['names']
         ranks = heir['ranks']
