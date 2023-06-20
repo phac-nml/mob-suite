@@ -79,7 +79,7 @@ def filter_invalid_taxids(taxids):
     return filtered
 
 
-def getHeirarchy(taxid,ETE3DBTAXAFILE):
+def getHeirarchy(taxid,ETE3DBTAXAFILE,database_directory):
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
         initETE3Database(database_directory, ETE3DBTAXAFILE)
@@ -103,7 +103,7 @@ def getHeirarchy(taxid,ETE3DBTAXAFILE):
     return {'names': names, 'ranks': names}
 
 
-def getTaxid(taxon,ETE3DBTAXAFILE):
+def getTaxid(taxon,ETE3DBTAXAFILE,database_directory):
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
         initETE3Database(database_directory, ETE3DBTAXAFILE)
@@ -138,7 +138,7 @@ def NamesToTaxIDs(names,ETE3DBTAXAFILE,database_directory):
 
 
 
-def getTaxonConvergence(taxids,ETE3DBTAXAFILE):
+def getTaxonConvergence(taxids,ETE3DBTAXAFILE,database_directory):
     if not isETE3DBTAXAFILEexists(ETE3DBTAXAFILE):
         logging.info("Did not find taxa.sqlite in {}. Initializaing ete3 taxonomy database".format(ETE3DBTAXAFILE))
         initETE3Database(database_directory, ETE3DBTAXAFILE)
@@ -206,7 +206,7 @@ def getTaxonConvergence(taxids,ETE3DBTAXAFILE):
     return (['-', '-'])
 
 
-def hostrange(replion_types, relaxase_types, mob_cluster_id, ncbi, lit,ETE3DBTAXAFILE):
+def hostrange(replion_types, relaxase_types, mob_cluster_id, ncbi, lit, ETE3DBTAXAFILE, database_directory):
     host_range_predictions = {
         'observed_host_range_ncbi_name': '',
         'observed_host_range_ncbi_rank': '',
@@ -251,25 +251,25 @@ def hostrange(replion_types, relaxase_types, mob_cluster_id, ncbi, lit,ETE3DBTAX
         ncbi_unique_taxids = filter_invalid_taxids(
             list(set(ncbi_replicon_taxids + ncbi_cluster_taxids + ncbi_relaxase_taxids)))
         host_range_predictions['observed_host_range_ncbi_rank'], host_range_predictions[
-            'observed_host_range_ncbi_name'] = getTaxonConvergence(ncbi_unique_taxids,ETE3DBTAXAFILE)
+            'observed_host_range_ncbi_name'] = getTaxonConvergence(ncbi_unique_taxids,ETE3DBTAXAFILE,database_directory)
 
     # Determine taxids associated with literature
 
     lit_unique_taxids = filter_invalid_taxids(list(set(lit_replicon_taxids)))
 
     host_range_predictions['reported_host_range_lit_rank'], host_range_predictions[
-        'reported_host_range_lit_name'] = getTaxonConvergence(lit_unique_taxids,ETE3DBTAXAFILE)
+        'reported_host_range_lit_name'] = getTaxonConvergence(lit_unique_taxids,ETE3DBTAXAFILE,database_directory)
 
     # determine overall host range
     overall_taxids = filter_invalid_taxids(list(set(ncbi_unique_taxids + lit_unique_taxids)))
     host_range_predictions['predicted_host_range_overall_rank'], host_range_predictions[
-        'predicted_host_range_overall_name'] = getTaxonConvergence(overall_taxids,ETE3DBTAXAFILE)
+        'predicted_host_range_overall_name'] = getTaxonConvergence(overall_taxids,ETE3DBTAXAFILE,database_directory)
 
     # move host-range prediction up to family when it is at genus or species level
     if host_range_predictions['predicted_host_range_overall_rank'] == 'genus' or host_range_predictions[
         'predicted_host_range_overall_rank'] == 'species':
         taxid = getTaxid(host_range_predictions['predicted_host_range_overall_name'],ETE3DBTAXAFILE)
-        heir = getHeirarchy(taxid,ETE3DBTAXAFILE)
+        heir = getHeirarchy(taxid,ETE3DBTAXAFILE,database_directory)
         names = heir['names']
         ranks = heir['ranks']
 
