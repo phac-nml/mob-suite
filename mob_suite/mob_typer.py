@@ -508,7 +508,7 @@ def main():
             record['relaxase_type_accession(s)'] = ",".join(record['relaxase_type_accession(s)'])
 
         host_range = hostrange(record['rep_type(s)'].split(','), record['relaxase_type_accession(s)'].split(','),
-                               mob_cluster_id, ncbi, lit,ETE3DBTAXAFILE)
+                               mob_cluster_id, ncbi, lit, ETE3DBTAXAFILE, database_dir)
 
         for field in host_range:
             record[field] = host_range[field]
