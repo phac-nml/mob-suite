@@ -58,7 +58,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'Sequenoscope=Sequenoscope:main'
+            'Sequenoscope=Sequenoscope:main',
             'mob_init=mob_suite.mob_init:main',
             'mob_recon=mob_suite.mob_recon:main',
             'mob_cluster=mob_suite.mob_cluster:main',
