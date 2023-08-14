@@ -538,6 +538,8 @@ def main():
                                 logging, min_rpp_ident, min_rpp_cov, min_rpp_evalue, num_threads)
         contig_memberships = {'chromosome': {}, 'plasmid': {}}
         for i in range(0, len(mobtyper_results)):
+            if not 'total_length' in mobtyper_results[i]:
+                continue
             primary_cluster_id = mobtyper_results[i]['primary_cluster_id']
             if not primary_cluster_id in contig_memberships['plasmid']:
                 contig_memberships['plasmid'][primary_cluster_id] = {}
