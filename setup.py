@@ -2,7 +2,7 @@
 import os
 from distutils.core import setup
 from setuptools import find_packages
-
+from mob_suite.version import __version__
 author = 'James Robertson, Kyrylo Bessonov'
 
 classifiers = """
@@ -29,7 +29,7 @@ exec(open('mob_suite/version.py').read())
 setup(
     name='mob_suite',
     include_package_data=True,
-    version='3.1.5',
+    version=__version__,
     python_requires='>=3.7.0,<4',
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
