@@ -471,6 +471,8 @@ def main():
 
         mobtyper_results.append(record)
 
+
+
     for i in range(0, len(mobtyper_results)):
         record = mobtyper_results[i]
         sample_id = record['sample_id']
@@ -532,10 +534,25 @@ def main():
 
     writeReport(mobtyper_results, MOB_TYPER_REPORT_HEADER, report_file)
 
+    id_lookup = {}
+    for id in id_mapping:
+        id_lookup[id_mapping[id]] = id
+
     # Peform MGE detection
     if mge_report_file is not None:
         mge_results = blast_mge(fixed_fasta, repetitive_mask_file, tmp_dir, min_length,
                                 logging, min_rpp_ident, min_rpp_cov, min_rpp_evalue, num_threads)
+
+        tmp = {}
+        for contig_id in mge_results:
+            if contig_id in id_lookup:
+                label = id_lookup[contig_id]
+            else:
+                continue
+            tmp[label] = mge_results[contig_id]
+
+        mge_results = tmp
+
         contig_memberships = {'chromosome': {}, 'plasmid': {}}
         for i in range(0, len(mobtyper_results)):
             if not 'total_length' in mobtyper_results[i]:
@@ -545,8 +562,8 @@ def main():
                 contig_memberships['plasmid'][primary_cluster_id] = {}
             contig_id = mobtyper_results[i]['sample_id']
             mobtyper_results[i]['molecule_type'] = 'plasmid'
+
             mobtyper_results[i]['contig_id'] = contig_id
-            mobtyper_results[i]['size'] = mobtyper_results[i]['total_length']
             contig_memberships['plasmid'][primary_cluster_id][contig_id] = mobtyper_results[i]
 
         if len(mobtyper_results) > 0:
