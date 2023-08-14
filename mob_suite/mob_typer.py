@@ -549,8 +549,11 @@ def main():
             mobtyper_results[i]['size'] = mobtyper_results[i]['total_length']
             contig_memberships['plasmid'][primary_cluster_id][contig_id] = mobtyper_results[i]
 
-        writeMGEresults(contig_memberships, mge_results, mge_report_file)
-        logger.info("MOB-typer MGE results written to {}".format(mge_report_file))
+        if len(mobtyper_results) > 0:
+            writeMGEresults(contig_memberships, mge_results, mge_report_file)
+            logger.info("MOB-typer MGE results written to {}".format(mge_report_file))
+        else:
+            logger.info("No MOB-typer MGE to write")
 
     if not keep_tmp:
         shutil.rmtree(tmp_dir)
