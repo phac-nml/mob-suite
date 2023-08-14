@@ -1392,7 +1392,7 @@ def main():
             mobtyper_report = os.path.join(out_dir, "mobtyper_results.txt")
             if prefix is not None:
                 mobtyper_report = os.path.join(out_dir, "{}.mobtyper_results.txt".format(prefix))
-            build_mobtyper_report(contig_memberships['plasmid'], out_dir, mobtyper_report,contig_seqs, ncbi, lit,ETE3DBTAXAFILE)
+            build_mobtyper_report(contig_memberships['plasmid'], out_dir, mobtyper_report,contig_seqs, ncbi, lit, ETE3DBTAXAFILE, database_dir)
 
         writeReport(results, MOB_RECON_INFO_HEADER, contig_report)
 
