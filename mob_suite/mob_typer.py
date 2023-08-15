@@ -534,10 +534,6 @@ def main():
 
     writeReport(mobtyper_results, MOB_TYPER_REPORT_HEADER, report_file)
 
-    id_lookup = {}
-    for id in id_mapping:
-        id_lookup[id_mapping[id]] = id
-
     # Peform MGE detection
     if mge_report_file is not None:
         mge_results = blast_mge(fixed_fasta, repetitive_mask_file, tmp_dir, min_length,
@@ -545,8 +541,8 @@ def main():
 
         tmp = {}
         for contig_id in mge_results:
-            if contig_id in id_lookup:
-                label = id_lookup[contig_id]
+            if contig_id in id_mapping:
+                label = id_mapping[contig_id]
             else:
                 continue
             tmp[label] = mge_results[contig_id]
@@ -555,8 +551,6 @@ def main():
 
         contig_memberships = {'chromosome': {}, 'plasmid': {}}
         for i in range(0, len(mobtyper_results)):
-            if not 'total_length' in mobtyper_results[i]:
-                continue
             primary_cluster_id = mobtyper_results[i]['primary_cluster_id']
             if not primary_cluster_id in contig_memberships['plasmid']:
                 contig_memberships['plasmid'][primary_cluster_id] = {}
@@ -566,7 +560,7 @@ def main():
             mobtyper_results[i]['contig_id'] = contig_id
             contig_memberships['plasmid'][primary_cluster_id][contig_id] = mobtyper_results[i]
 
-        if len(mobtyper_results) > 0:
+        if len(mge_results) > 0:
             writeMGEresults(contig_memberships, mge_results, mge_report_file)
             logger.info("MOB-typer MGE results written to {}".format(mge_report_file))
         else:

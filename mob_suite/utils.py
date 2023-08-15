@@ -1362,3 +1362,37 @@ def writeMGEresults(contig_membership,mge_results,outfile):
     fh.write("\n".join(out_string))
     fh.close()
 
+
+def writeMGEresults(contig_membership,mge_results,outfile):
+    if len(mge_results) == 0:
+        return
+    header = "\t".join(["\t".join(MGE_INFO_HEADER)])
+    with open(outfile,'w') as out:
+        out.write(f'{header}\n')
+        for molecule_type in contig_membership:
+            for contig_id in contig_membership[molecule_type]:
+                if not contig_id in mge_results:
+                    continue
+                for i in range(0, len(mge_results[contig_id])):
+                    row = {}
+                    for field in MGE_INFO_HEADER:
+                        row[field] = ''
+                        if field in mge_results[contig_id]:
+                            row[field] = mge_results[contig_id][field]
+
+                    id = mge_results[contig_id][i]['qseqid'].split('|')
+                    row['mge_id'] = id[0]
+                    row['mge_acs'] = id[1]
+                    row['mge_type'] = id[2]
+                    row['mge_subtype'] = id[3]
+                    row['mge_length'] = mge_results[contig_id][i]['qlen']
+                    row['mge_start'] = mge_results[contig_id][i]['qstart']
+                    row['mge_end'] = mge_results[contig_id][i]['qend']
+                    row['contig_start'] = mge_results[contig_id][i]['sstart']
+                    row['contig_end'] = mge_results[contig_id][i]['send']
+
+                    for field in contig_membership[molecule_type][contig_id]:
+                        if field in row:
+                            row[field] = contig_membership[molecule_type][contig_id][field]
+
+                    out.write("{}\n".format("\t".join([str(x) for x in list(row.values())])))
