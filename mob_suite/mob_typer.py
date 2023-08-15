@@ -548,7 +548,6 @@ def main():
             tmp[label] = mge_results[contig_id]
 
         mge_results = tmp
-
         contig_memberships = {'chromosome': {}, 'plasmid': {}}
         for i in range(0, len(mobtyper_results)):
             primary_cluster_id = mobtyper_results[i]['primary_cluster_id']
@@ -556,7 +555,6 @@ def main():
                 contig_memberships['plasmid'][primary_cluster_id] = {}
             contig_id = mobtyper_results[i]['sample_id']
             mobtyper_results[i]['molecule_type'] = 'plasmid'
-
             mobtyper_results[i]['contig_id'] = contig_id
             contig_memberships['plasmid'][primary_cluster_id][contig_id] = mobtyper_results[i]
 
