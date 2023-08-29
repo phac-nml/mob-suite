@@ -1363,3 +1363,32 @@ def writeMGEresults(contig_membership,mge_results,outfile):
     fh = open(outfile,'w')
     fh.write("\n".join(out_string))
     fh.close()
+
+
+def create_biomarker_dataframe(parameters,id_mapping,logging):
+
+    data_frames = []
+    for label in parameters:
+        file = parameters[label]['file']       
+        blast_df = pd.read_csv(file,header=0,sep="\t")
+        if len(blast_df) == 0:
+            continue
+        blast_df['sseqid'] = blast_df['sseqid'].replace(id_mapping)
+        blast_df['length'].astype('int32')
+        blast_df['qcovs'].astype('float64')
+        blast_df['qcovhsp'].astype('float64')
+        blast_df['evalue'].astype('float64')
+        blast_df['pident'].astype('float64')
+        blast_df = blast_df.loc[blast_df['length'] >= parameters[label]['min_length']]
+        blast_df = blast_df.loc[blast_df['qcovs'] >= parameters[label]['min_cov']]
+        blast_df = blast_df.loc[blast_df['qcovhsp'] >= parameters[label]['min_hsp_cov']]
+        blast_df = blast_df.loc[blast_df['evalue'] <= parameters[label]['evalue']]
+        blast_df = blast_df.loc[blast_df['pident'] >= parameters[label]['min_ident']]
+        blast_df = blast_df.reset_index(drop=True)
+        blast_df = fixStart(blast_df)
+        blast_df = recursive_filter_overlap_records(blast_df, 5, 'sseqid', 'sstart', 'send', 'bitscore')
+        blast_df = blast_df.reset_index(drop=True)
+        blast_df['biomarker'] = label
+        data_frames.append(blast_df)
+        
+    return pd.concat(data_frames)

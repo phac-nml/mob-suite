@@ -28,7 +28,8 @@ from mob_suite.utils import fix_fasta_header, \
     dict_from_alt_key_list, \
     read_file_to_dict, \
     blast_mge, \
-    writeMGEresults
+    writeMGEresults, \
+    create_biomarker_dataframe
 
 from mob_suite.constants import MOB_TYPER_REPORT_HEADER, \
     MOB_CLUSTER_INFO_HEADER, \
@@ -60,6 +61,7 @@ def parse_args():
             __version__), formatter_class=CustomFormatter)
     parser.add_argument('-i', '--infile', type=str, required=True, help='Input assembly fasta file to process')
     parser.add_argument('-o', '--out_file', type=str, required=True, help='Output file to write results')
+    parser.add_argument('--biomarker_report_file', type=str, required=False, help='Output file for biomarker blast results')
     parser.add_argument('-g', '--mge_report_file', type=str, required=False, help='Output file for MGE results')
     parser.add_argument('-a', '--analysis_dir', type=str, required=False,
                         help='Working directory for storing temporary results')
@@ -202,6 +204,7 @@ def main():
     mge_report_file = args.mge_report_file
     num_threads = int(args.num_threads)
     keep_tmp = args.keep_tmp
+    biomarker_report_file = args.biomarker_report_file
 
     if args.multi:
         multi = True
@@ -563,6 +566,48 @@ def main():
             logger.info("MOB-typer MGE results written to {}".format(mge_report_file))
         else:
             logger.info("No MOB-typer MGE to write")
+
+    if biomarker_report_file is not None:
+            
+        biomarker_params = {
+            'oriT': {
+                'file':orit_blast_results,
+                'min_length': 80,
+                'min_cov':min_rep_cov,
+                'min_hsp_cov': 25,
+                'evalue':min_rep_evalue,
+                'min_ident':min_rep_ident
+            },
+            'replicon': {
+                'file':replicon_blast_results,
+                'min_length': 80,
+                'min_cov':min_rep_cov,
+                'min_hsp_cov': 25,
+                'evalue':min_rep_evalue,
+                'min_ident':min_rep_ident
+            },
+            'relaxase': {
+                'file':mob_blast_results,
+                'min_length': 40,
+                'min_cov':min_mob_cov,
+                'min_hsp_cov': 25,
+                'evalue':min_mob_evalue,
+                'min_ident':min_mob_ident
+            },        
+            'mate-pair-formation': {
+                'file':mpf_blast_results,
+                'min_length': 40,
+                'min_cov':min_mpf_cov,
+                'min_hsp_cov': 25,
+                'evalue':min_mpf_evalue,
+                'min_ident':min_mpf_ident
+            },
+
+        }
+
+        biomarker_df = create_biomarker_dataframe(biomarker_params,id_mapping,logging)
+        biomarker_df.to_csv(biomarker_report_file,header=True,sep="\t",index=False)
+
 
     if not keep_tmp:
         shutil.rmtree(tmp_dir)

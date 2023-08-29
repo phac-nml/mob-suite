@@ -38,7 +38,8 @@ from mob_suite.utils import \
     build_mobtyper_report, \
     parseMash, \
     blast_mge, \
-    writeMGEresults
+    writeMGEresults, \
+    create_biomarker_dataframe
 
 
 def parse_args():
@@ -1432,6 +1433,44 @@ def main():
 
     writeMGEresults(contig_memberships, mge_results, mge_report_file)
 
+    biomarker_params = {
+        'oriT': {
+            'file':orit_blast_results,
+            'min_length': 80,
+            'min_cov':min_rep_cov,
+            'min_hsp_cov': 25,
+            'evalue':min_rep_evalue,
+            'min_ident':min_rep_ident
+        },
+        'replicon': {
+            'file':replicon_blast_results,
+            'min_length': 80,
+            'min_cov':min_rep_cov,
+            'min_hsp_cov': 25,
+            'evalue':min_rep_evalue,
+            'min_ident':min_rep_ident
+        },
+        'relaxase': {
+            'file':mob_blast_results,
+            'min_length': 40,
+            'min_cov':min_mob_cov,
+            'min_hsp_cov': 25,
+            'evalue':min_mob_evalue,
+            'min_ident':min_mob_ident
+        },        
+        'mate-pair-formation': {
+            'file':mpf_blast_results,
+            'min_length': 40,
+            'min_cov':min_mpf_cov,
+            'min_hsp_cov': 25,
+            'evalue':min_mpf_evalue,
+            'min_ident':min_mpf_ident
+        },
+
+    }
+
+    biomarker_df = create_biomarker_dataframe(biomarker_params,id_mapping,logging)
+    biomarker_df.to_csv(os.path.join(out_dir,"biomarkers.blast.txt"),header=True,sep="\t",index=False)
 
     if not keep_tmp:
         logging.info("Cleaning up temporary files {}".format(tmp_dir))
