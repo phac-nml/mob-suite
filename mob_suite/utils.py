@@ -1369,7 +1369,10 @@ def create_biomarker_dataframe(parameters,id_mapping,logging):
 
     data_frames = []
     for label in parameters:
-        file = parameters[label]['file']       
+        file = parameters[label]['file']  
+        print(file, label)     
+        if not os.path.isfile(file):
+            continue
         blast_df = pd.read_csv(file,header=0,sep="\t")
         if len(blast_df) == 0:
             continue

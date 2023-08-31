@@ -37,10 +37,8 @@ def arguments():
                         action='count',
                         help='Set the verbosity level. Can by used multiple times')
 
-    parser.add_argument('-V', '--version', action='version', version="%(prog)s (" + __version__ + ")")
-
-    args = parser.parse_args()
-
+    parser.add_argument('-V', '--version', action='version', version="%(prog)s " + __version__ + "")
+    args, unknown_args = parser.parse_known_args()
     return args
 
 
@@ -119,17 +117,20 @@ def extract(fname, outdir):
     os.remove(fname)
 
 def main():
+    
     args = arguments()
-
+    
 
     database_directory = os.path.abspath(args.database_directory)
 
 
     if os.path.exists(database_directory) == False:
         os.makedirs(database_directory)
+        logger.info("Database directory folder created at {}".format(database_directory))
     else:
         logger.info("Database directory folder already exists at {}".format(database_directory))
 
+    
     # Helper function to simplify adding database_directory to everything
     prepend_db_dir = functools.partial(os.path.join, database_directory)
 
@@ -230,9 +231,7 @@ def main():
     try:
         logger.info("Init ete3 library ...")
         ete3taxadbpath = os.path.abspath(os.path.join(database_directory,"taxa.sqlite"))
-        ncbi = NCBITaxa()
-        ncbi.dbfile=ete3taxadbpath
-        ncbi.update_taxonomy_database()
+        NCBITaxa(dbfile=ete3taxadbpath) #the creatuib if NCBITaxa class triggers update_taxonomy_database()
     except Exception as e:
         logger.error("Init of ete3 library failed with error {}. Removing lock file".format(e))
         os.remove(lockfilepath)
