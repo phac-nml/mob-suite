@@ -54,7 +54,7 @@ Provides in silico predictions of the replicon family, relaxase type, mate-pair 
 ## Dependencies
 
 + blast+ v. 2.3.0
-+ mashi v. 2.0
++ mash v. 2.0
 
 
 ## Installation
