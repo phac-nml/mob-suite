@@ -42,18 +42,19 @@ Provides in silico predictions of the replicon family, relaxase type, mate-pair 
 
 ## Requires
 + Python >= 3.7
-+ ete3 >= 3.1.2
-+ pandas >=0.22.0,<=1.05
-+ biopython >= 1.70
++ ete3 >= 3.0
++ pandas >= 0.22.0,<=1.05
++ biopython >= 1.80
 + pytables  >= 3.3
 + pycurl >= 7.43
-+ numpy >= 1.18.1
-+ scipy >= 1.4.1
++ numpy >= 1.11.1
++ scipy >= 1.1.0
++ six >= 1.10
 
 ## Dependencies
 
 + blast+ v. 2.3.0
-+ mash
++ mashi v. 2.0
 
 
 ## Installation
