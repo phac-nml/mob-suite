@@ -320,7 +320,12 @@ def blastn(input_fasta, blastdb, min_ident, min_cov, evalue, min_length, out_dir
         return False
 
     blast_df = BlastReader(blast_results_file, logging).df
-
+    blast_df['length'] = blast_df['length'].astype('int64')
+    blast_df['qlen'] = blast_df['qlen'].astype('int64')
+    blast_df['qcovs'] = blast_df['qcovs'].astype('float64')
+    blast_df['qcovhsp'] = blast_df['qcovhsp'].astype('float64')
+    blast_df['evalue'] = blast_df['evalue'].astype('float64')
+    blast_df['pident'] = blast_df['pident'].astype('float64')
     blast_df = blast_df.loc[blast_df['length'] >= min_length]
     blast_df = blast_df.loc[blast_df['qlen'] <= max_length]
     blast_df = blast_df.loc[blast_df['qcovs'] >= min_cov]
@@ -758,6 +763,7 @@ def filter_overlaping_records(blast_df, overlap_threshold, contig_id_col, contig
         contig_end = row[contig_end_col]
         score = float(row[bitscore_col])
 
+
         if prev_contig_id == '':
             prev_index = index
             prev_contig_id = contig_id
@@ -773,10 +779,12 @@ def filter_overlaping_records(blast_df, overlap_threshold, contig_id_col, contig
             prev_contig_end = contig_end
             prev_score = score
             continue
-
+        if prev_index in filter_indexes:
+            continue
         if (contig_start >= prev_contig_start and contig_start <= prev_contig_end) or (
                 contig_end >= prev_contig_start and contig_end <= prev_contig_end):
             overlap = abs(contig_start - prev_contig_end)
+
 
             if overlap > overlap_threshold:
                 if prev_score < score:
@@ -1373,10 +1381,11 @@ def create_biomarker_dataframe(parameters,id_mapping,logging):
         if not os.path.isfile(file):
             continue
         blast_df = pd.read_csv(file,header=0,sep="\t")
+
         if len(blast_df) == 0:
             continue
         blast_df['sseqid'] = blast_df['sseqid'].replace(id_mapping)
-        blast_df['length'].astype('int32')
+        blast_df['length'].astype('int64')
         blast_df['qcovs'].astype('float64')
         blast_df['qcovhsp'].astype('float64')
         blast_df['evalue'].astype('float64')
@@ -1387,6 +1396,7 @@ def create_biomarker_dataframe(parameters,id_mapping,logging):
         blast_df = blast_df.loc[blast_df['evalue'] <= parameters[label]['evalue']]
         blast_df = blast_df.loc[blast_df['pident'] >= parameters[label]['min_ident']]
         blast_df = blast_df.reset_index(drop=True)
+
         blast_df = fixStart(blast_df)
         blast_df = recursive_filter_overlap_records(blast_df, 5, 'sseqid', 'sstart', 'send', 'bitscore')
         blast_df = blast_df.reset_index(drop=True)
