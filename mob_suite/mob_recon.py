@@ -1470,8 +1470,12 @@ def main():
     }
 
     biomarker_df = create_biomarker_dataframe(biomarker_params,id_mapping,logging)
-    biomarker_df.to_csv(os.path.join(out_dir,"biomarkers.blast.txt"),header=True,sep="\t",index=False)
-
+    if biomarker_df.empty == False:
+        logging.info(f"Writting plasmid biomarkers report contaning {biomarker_df.shape[0]} biomarkers")
+        biomarker_df.to_csv(os.path.join(out_dir,"biomarkers.blast.txt"),header=True,sep="\t",index=False)
+    else:
+        logging.warning("Plasmid biomarkers report is empty and will not be reported")
+    
     if not keep_tmp:
         logging.info("Cleaning up temporary files {}".format(tmp_dir))
         shutil.rmtree(tmp_dir)

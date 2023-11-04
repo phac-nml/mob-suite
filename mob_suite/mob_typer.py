@@ -67,11 +67,8 @@ def parse_args():
                         help='Working directory for storing temporary results')
     parser.add_argument('-n', '--num_threads', type=int, required=False, help='Number of threads to be used', default=1)
     parser.add_argument('-s', '--sample_id', type=str, required=False, help='Sample Prefix for reports')
-    parser.add_argument('-f', '--force', required=False, help='Overwrite existing directory',
-                        action='store_true')
     parser.add_argument('-x', '--multi', required=False, help='Treat each sequence as an independant plasmid',
                         action='store_true')
-
     parser.add_argument('--min_rep_evalue', type=float, required=False,
                         help='Minimum evalue threshold for replicon blastn',
                         default=0.00001)

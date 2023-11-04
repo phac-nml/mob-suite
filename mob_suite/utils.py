@@ -1374,7 +1374,7 @@ def writeMGEresults(contig_membership,mge_results,outfile):
 
 
 def create_biomarker_dataframe(parameters,id_mapping,logging):
-
+    logging.info("Creating plasmid biomarkers report ...")
     data_frames = []
     for label in parameters:
         file = parameters[label]['file']  
@@ -1402,5 +1402,8 @@ def create_biomarker_dataframe(parameters,id_mapping,logging):
         blast_df = blast_df.reset_index(drop=True)
         blast_df['biomarker'] = label
         data_frames.append(blast_df)
-        
-    return pd.concat(data_frames)
+    
+    if len(data_frames) > 0:    
+        return pd.concat(data_frames)
+    else:
+        return pd.DataFrame()

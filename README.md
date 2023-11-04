@@ -42,7 +42,7 @@ Provides in silico predictions of the replicon family, relaxase type, mate-pair 
 
 ## Requires
 + Python >= 3.7
-+ ete3 >= 3.1.3
++ ete3 >= 3.1.3 (due to updated taxonomy database init)
 + pandas >= 0.22.0,<=1.05
 + biopython >= 1.80
 + pytables  >= 3.3
@@ -77,8 +77,8 @@ We recommend installing MOB-Suite via bioconda but you can install it via pip us
 ```
 
 ### Source
-For system-wide installation one can follow these commands on Ubuntu distro that includes Python
-library dependencies and tools
+To build from source code directly on Ubuntu Linux distro, follow these commands that include Python
+libraries and other dependencies install
 ```bash
 apt update && apt install python3-pip #installs gcc compiler for pycurl
 apt install libcurl4-openssl-dev libssl-dev #for pycurl
@@ -88,31 +88,36 @@ python3 setup.py install && mob_init #to install and init databases
 ```
 
 ### Docker image
-A docker image is also available at [https://hub.docker.com/r/kbessonov/mob_suite](https://hub.docker.com/r/kbessonov/mob_suite)
+A docker images are also available at [https://hub.docker.com/r/kbessonov/mob_suite](https://hub.docker.com/r/kbessonov/mob_suite) and at [https://quay.io/repository/biocontainers/mob_suite](https://quay.io/repository/biocontainers/mob_suite?tab=tags)
 
 ```
-% docker pull kbessonov/mob_suite:3.0.3 
-% docker run --rm -v $(pwd):/mnt/ "kbessonov/mob_suite:3.0.3" mob_recon -i /mnt/assembly.fasta -t -o /mnt/mob_recon_output
+% latest_tag=$(curl -H "Authorization: Bearer X" -X GET "https://quay.io/api/v1/repository/biocontainers/mob_suite/tag/" | jq .tags[].name | head -1 | sed -e 's|\"||g')
+% docker pull quay.io/biocontainers/mob_suite:${latest_tag} 
+% docker run --rm -v $(pwd):/mnt/ "kbessonov/mob_suite:${latest_tag}" mob_recon -i /mnt/assembly.fasta -t -o /mnt/mob_recon_output
 ```
 
 ### Singularity image
-A singularity image could be built locally via Singularity recipe donated by Eric Deveaud. 
+A singularity image could be built locally via Singularity recipe donated by Eric Deveaud or pulled from one of the repositories.
+
 The recipe (`recipe.singularity`) is located in the `singularity` folder of this repository and installs MOB-Suite via `conda`. 
 
 ```bash
 % singularity build mobsuite.simg recipe.singularity
 ```
 
-In addition, Singularity currently supports docker images and automatically converts them to Singularity images format.
-```bash
-% singularity pull docker://kbessonov/mob_suite:3.0.3
-```
+As the simplest alternative, Singularity image can be pulled from [BioContainers repository](https://biocontainers.pro/tools/mob_suite) where `<version>` is
+the desired version (e.g. `3.0.3--py_0`) or [Quay.io](https://quay.io/biocontainers/mob_suite) or [Docker Hub](https://hub.docker.com/r/kbessonov/mob_suite) repositories.
 
-Alternatively, Singularity image can be pulled from [BioContainers repository](https://biocontainers.pro/tools/mob_suite) where `<version>` is
-the desired version (e.g. `3.0.3--py_0`)
+The MOB-Suite image (`mob_suite.sif`) will be generated using one of the following 3 methods.Next MOB-Suite tools could be run a on mounted directory via `--bind` like so `singularity run mob_suite.sif --bind $PWD:/mnt  mob_recon -i /mnt/<input_fasta>  -o /mnt/<output_directory>`
 
 ```bash
-% singularity run https://depot.galaxyproject.org/singularity/mob_suite:<version>
+# Method 1
+% singularity pull mob_suite.sif https://depot.galaxyproject.org/singularity/mob_suite:<version>
+# Method 2
+% singularity pull mob_suite.sif docker://kbessonov/mob_suite:3.0.3 #or for the latest version
+# Method 3 - recommended
+% latest_version=$(curl -H "Authorization: Bearer X" -X GET "https://quay.io/api/v1/repository/biocontainers/mob_suite/tag/" | jq .tags[].name | head -1 | sed -e 's|\"||g')
+% singularity pull mob_suite.sif docker://quay.io/biocontainers/mob_suite:${latest_version}
 ```
 
 ## Using MOB-typer to perform replicon and relaxase typing of complete plasmids and to predict mobility and replicative plasmid host-range
