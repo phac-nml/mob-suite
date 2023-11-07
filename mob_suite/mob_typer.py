@@ -416,7 +416,7 @@ def main():
         record['sample_id'] = sample_id
         fastaSeqStats = calcFastaStats(fixed_fasta)
         record['md5'] = fastaSeqStats['md5']
-        record['total_length'] = fastaSeqStats['size']
+        record['size'] = fastaSeqStats['size']
         record['num_contigs'] = fastaSeqStats['num_seq']
         record['gc'] = fastaSeqStats['gc_content']
         record['mash_nearest_neighbor'] = '-'
