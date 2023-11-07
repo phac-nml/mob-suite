@@ -182,8 +182,11 @@ def main():
     else:
         tmp_dir = args.analysis_dir
 
+
     if not os.path.isdir(tmp_dir):
+        logger.info('Creating analysis directory {}'.format(tmp_dir))
         os.makedirs(tmp_dir, 0o755)
+
 
     if not isinstance(args.num_threads, int):
         logger.info('Error number of threads must be an integer, you specified "{}"'.format(args.num_threads))
