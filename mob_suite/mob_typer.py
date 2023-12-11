@@ -574,7 +574,7 @@ def main():
                 'file':orit_blast_results,
                 'min_length': 80,
                 'min_cov':min_rep_cov,
-                'min_hsp_cov': 25,
+                'min_hsp_cov': 15,
                 'evalue':min_rep_evalue,
                 'min_ident':min_rep_ident
             },
@@ -604,7 +604,7 @@ def main():
             },
 
         }
-
+        
         biomarker_df = create_biomarker_dataframe(biomarker_params,id_mapping,logging)
         biomarker_df.to_csv(biomarker_report_file,header=True,sep="\t",index=False)
 

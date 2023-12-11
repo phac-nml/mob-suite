@@ -800,7 +800,6 @@ def filter_overlaping_records(blast_df, overlap_threshold, contig_id_col, contig
 
     for index in exclude_filter:
         filter_indexes.append(index)
-
     blast_df.drop(filter_indexes, inplace=True)
 
     return blast_df.reset_index(drop=True)
@@ -1021,7 +1020,6 @@ def build_mobtyper_report(plasmid_contig_info, out_dir, outfile, seq_dict, ncbi,
 
         mob_typer_results[clust_id]['mpf_type_accession(s)'] = ",".join(
             mob_typer_results[clust_id]['mpf_type_accession(s)'])
-
         mob_typer_results[clust_id]['orit_type(s)'] = ",".join(mob_typer_results[clust_id]['orit_type(s)'])
         mob_typer_results[clust_id]['orit_accession(s)'] = ",".join(mob_typer_results[clust_id]['orit_accession(s)'])
 
@@ -1380,8 +1378,8 @@ def create_biomarker_dataframe(parameters,id_mapping,logging):
         file = parameters[label]['file']  
         if not os.path.isfile(file):
             continue
-        blast_df = pd.read_csv(file,header=0,sep="\t")
-
+        blast_df = pd.read_csv(file, header=0, sep="\t")
+     
         if len(blast_df) == 0:
             continue
         blast_df['sseqid'] = blast_df['sseqid'].replace(id_mapping)
@@ -1398,11 +1396,14 @@ def create_biomarker_dataframe(parameters,id_mapping,logging):
         blast_df = blast_df.reset_index(drop=True)
 
         blast_df = fixStart(blast_df)
+        if label == 'replicon' or label == 'relaxase' or label == 'mate-pair-formation':
+            blast_df = remove_split_hits(blast_df,'qseqid', 'sseqid', 'sstart', 'send', 'bitscore')
+        blast_df.sort_values(['sseqid', 'sstart', 'send', 'bitscore'],ascending=[True, True, True, False], inplace=True)
+    
         blast_df = recursive_filter_overlap_records(blast_df, 5, 'sseqid', 'sstart', 'send', 'bitscore')
         blast_df = blast_df.reset_index(drop=True)
         blast_df['biomarker'] = label
         data_frames.append(blast_df)
-    
     if len(data_frames) > 0:    
         return pd.concat(data_frames)
     else:
