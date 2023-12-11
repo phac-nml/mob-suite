@@ -5,6 +5,7 @@ include setup.py
 include mob_suite/config.json
 include mob_suite/tests/TestData/*
 include mob_suite/tests/*.py
+include mob_suite/example/*
 
 
 

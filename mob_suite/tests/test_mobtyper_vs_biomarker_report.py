@@ -1,4 +1,4 @@
-import subprocess, os, time, random, sys
+import os, time, random, sys
 from statistics import mean
 from Bio import SeqIO
 import pandas as pd
@@ -25,6 +25,9 @@ def clean_missing_dashes(L):
 
 
 def test_mean_and_multireplicon_frame(mode = None):
+    if os.path.exists("run_test") == False:
+        os.mkdir("run_test")
+
     if mode == None:
         return 0
     logger.info("Testing MOB-typer for biomarker and mobtyper reports consistency in terms of biomarker names (not accessions)")

@@ -12,6 +12,8 @@ logger.setLevel(logging.INFO)
 
 def test_mean_and_multireplicon_frame():
     logger.info("Testing MOB-typer")
+    if os.path.exists("run_test") == False:
+        os.mkdir("run_test")
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/pCAV1453-208.fasta",
         "--out_file", TEST_ROOT + "/run_test/mobtyper_pCAV1453-208_results.txt",
