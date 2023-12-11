@@ -97,5 +97,5 @@ def test_mean_and_multireplicon_frame(mode = None):
     assert len(SAMPLES_WITH_ISSUES_DF) == 0, "Test failed with {0:.1f}% success rate".format((NRANDOMSAMPLES2TEST-n_issues2solve)/n_records*100)
 
 
-#test_mean_and_multireplicon_frame(mode="list of sample ids")
+test_mean_and_multireplicon_frame(mode="list of sample ids")
 test_mean_and_multireplicon_frame(mode="random sampling")
