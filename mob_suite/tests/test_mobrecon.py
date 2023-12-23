@@ -7,13 +7,13 @@ logger=logging.getLogger()
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG)
 
-if not os.path.exists(os.path.join(TEST_ROOT,"run_test")):
-    os.mkdir(os.path.join(TEST_ROOT,"run_test"))
+def check_if_output_dir_exists_and_create():
+    if not os.path.exists(os.path.join(TEST_ROOT,"run_test")):
+        os.mkdir(os.path.join(TEST_ROOT,"run_test"))
 
 
 def test_mob_recon_with_mob_typer_report():
-    if os.path.exists("run_test") == False:
-        os.mkdir("run_test")
+    check_if_output_dir_exists_and_create()
     #IncFIB,IncFII multi-plasmids
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/Pseudomonas/test_contigs.fasta",
@@ -28,7 +28,7 @@ def test_mob_recon_with_mob_typer_report():
     assert sum(1 for line in open(mobtyper_results_file)) == 2 , "Results file is empty, something went wrong"
 
 def test_mob_recon_no_plasmid_biomarkers():
-
+    check_if_output_dir_exists_and_create()
     args = [
         "--infile", ROOT_MODULE + "/example/assembly_no_biomarkers.fasta",
         "--outdir", TEST_ROOT + "/run_test/mob_recon_no_plasmid_markers",
@@ -41,6 +41,7 @@ def test_mob_recon_no_plasmid_biomarkers():
     assert os.path.exists(os.path.join(TEST_ROOT,"run_test/mob_recon_no_plasmid_markers/biomarker_report.txt")) == False
 
 def test_mob_recon_typical_run():
+    check_if_output_dir_exists_and_create()
     args = [
         "--infile", ROOT_MODULE + "/example/SRR3703080_illumina_unicycler.fasta",
         "--outdir", TEST_ROOT+"/run_test/mob_recon_SRR3703080",

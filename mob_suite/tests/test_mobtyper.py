@@ -9,11 +9,13 @@ logging.basicConfig(format=LOG_FORMAT)
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+def check_if_output_dir_exists_and_create():
+    if not os.path.exists(os.path.join(TEST_ROOT,"run_test")):
+        os.mkdir(os.path.join(TEST_ROOT,"run_test"))
 
 def test_mean_and_multireplicon_frame():
     logger.info("Testing MOB-typer")
-    if os.path.exists("run_test") == False:
-        os.mkdir("run_test")
+    check_if_output_dir_exists_and_create()
     args = [
         "--infile", os.path.dirname(__file__) + "/TestData/pCAV1453-208.fasta",
         "--out_file", TEST_ROOT + "/run_test/mobtyper_pCAV1453-208_results.txt",

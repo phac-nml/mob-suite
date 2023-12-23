@@ -23,10 +23,13 @@ logger.setLevel(logging.INFO)
 def clean_missing_dashes(L):
     return [i for i in L if i != '-']
 
+def check_if_output_dir_exists_and_create():
+    if not os.path.exists(os.path.join(TEST_ROOT,"run_test")):
+        os.mkdir(os.path.join(TEST_ROOT,"run_test"))
+
 
 def test_mean_and_multireplicon_frame(mode = None):
-    if os.path.exists("run_test") == False:
-        os.mkdir("run_test")
+    check_if_output_dir_exists_and_create()
 
     if mode == None:
         return 0
