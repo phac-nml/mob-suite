@@ -438,11 +438,24 @@ def get_contig_link_counts(reference_hit_coverage, cluster_contig_links):
             contig_link_counts[contig_id] += 1
             contig_clust_assoc[contig_id][clust_id] = cluster_scores[clust_id]
 
-    for contig_id in contig_clust_assoc:
-        contig_clust_assoc[contig_id] = OrderedDict(
-            sorted(iter(contig_clust_assoc[contig_id].items()), key=lambda x: x[1], reverse=True))
+    contig_clust_scores_comparator = {}
 
-    return OrderedDict(sorted(iter(contig_link_counts.items()), key=lambda x: x[1], reverse=False))
+    for contig_id in contig_clust_assoc:
+        # below, we sort ascending because we want lower link count first
+        # but we also want a higher score to win the tie-breaker and come first
+        # so taking the negative allows us to sort ascending and have both
+        # (link-count, ...clust-scores) as the sort key.
+        contig_clust_scores_comparator[contig_id] = sorted([-v for v in contig_clust_assoc[contig_id].values()])
+
+    ordered_link_counts = OrderedDict(
+        sorted(
+            iter(contig_link_counts.items()),
+            # sort key is (contig_link_count, ...cluster_scores)
+            key=lambda x: (x[1], *contig_clust_scores_comparator[x[0]]),
+            reverse=False
+        )
+    )
+    return ordered_link_counts
 
 
 def get_contigs_by_key_value(contig_info, column_key, reasons):
@@ -1457,7 +1470,7 @@ def main():
             'min_hsp_cov': 25,
             'evalue':min_mob_evalue,
             'min_ident':min_mob_ident
-        },        
+        },
         'mate-pair-formation': {
             'file':mpf_blast_results,
             'min_length': 40,
@@ -1475,7 +1488,7 @@ def main():
         biomarker_df.to_csv(os.path.join(out_dir,"biomarkers.blast.txt"),header=True,sep="\t",index=False)
     else:
         logging.warning("Plasmid biomarkers report is empty and will not be reported")
-    
+
     if not keep_tmp:
         logging.info("Cleaning up temporary files {}".format(tmp_dir))
         shutil.rmtree(tmp_dir)
