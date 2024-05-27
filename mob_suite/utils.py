@@ -668,7 +668,7 @@ def verify_init(logger, database_dir):
     mob_init_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mob_init.py')
     status_file = os.path.join(database_dir, 'status.txt')
     if not os.path.isfile(status_file):
-        logger.info('MOB-databases need to be initialized, this will take some time')
+        logger.info(f'MOB-databases need to be initialized at {database_dir}, this will take some time ...')
         p = Popen([sys.executable, mob_init_path, '-d', database_dir],
                   stdout=PIPE,
                   stderr=PIPE,
@@ -822,20 +822,34 @@ def recursive_filter_overlap_records(blast_df, overlap_threshold, contig_id_col,
 def fix_fasta_header(in_fasta, out_fasta):
     ids = {}
     fh = open(out_fasta, 'w')
-    incr=0
+    #incr=0
+    md5_contigid_len = []
     with open(in_fasta, "r") as handle:
         for record in SeqIO.parse(handle, "fasta"):
             id = str(record.description)
-            status = 'false'
-            if 'circular=true' in id or '_circ' in id:
-                status = 'true'
-            seq = str(record.seq.upper())
+            #status = 'false'
+            #if 'circular=true' in id or '_circ' in id:
+            #    status = 'true'
+            seq = str(record.seq)
             md5 = calc_md5(seq)
-            new_id = "{}_{}_circular={}".format(incr,md5,status)
-            ids[new_id] = id
-            fh.write(">{}\n{}\n".format(new_id,seq))
-            incr+=1
+            md5_contigid_len.append((md5, id, len(seq)))
+            #new_id = f"{incr}_{md5}_circular={status}"#.format(incr,md5,status)
+            #ids[new_id] = id
+            #fh.write(">{}\n{}\n".format(new_id,seq))
+            #incr+=1
     handle.close()
+    #sort contigs by length and then by md5 checksum to guarantee unique ordering
+    records_index_dict = SeqIO.index(in_fasta, "fasta")
+    for incr, (md5, id, seq_len) in enumerate(sorted(md5_contigid_len, key=lambda x: (x[2], x[0]), reverse = True)):
+        record = records_index_dict[id]
+        id = str(record.description)
+        status = 'false'
+        if 'circular=true' in id or '_circ' in id:
+            status = 'true'
+        seq = str(record.seq.upper())
+        new_id = f"{incr}_{md5}_circular={status}_{seq_len}"#.format(incr,md5,status)
+        ids[new_id] = id
+        fh.write(">{}\n{}\n".format(new_id,seq))
     fh.close()
     return ids
 
@@ -905,7 +919,8 @@ def init_console_logger(lvl=2):
     return logging.getLogger(__name__)
 
 
-def writeReport(data_list, header, outfile):
+def writeReport(data_list, header, outfile):  
+        
     with open(outfile, 'w') as fh:
         fh.write("{}\n".format("\t".join(header)))
         for i in range(0, len(data_list)):
