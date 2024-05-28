@@ -61,24 +61,6 @@ def test_mob_recon_typical_run():
     assert os.path.exists(os.path.join(TEST_ROOT,"run_test/mob_recon_SRR3703080/contig_report.txt")) == True, "File does not exits"
     assert os.path.exists(os.path.join(TEST_ROOT,"run_test/mob_recon_SRR3703080/plasmid_AA474.fasta")) == True, "File does not exists"
 
-def test_contig_order(tmpdir):
-    #TEST_ROOT = "/Users/kirill/WORK/MOBSuiteHostRange2018/Source/fork/mob-suite/mob_suite/tests"
-    contig_blast_df = pandas.read_csv(os.path.join(TEST_ROOT, 'TestData/contig_order_issue/contig_blast_df.tsv'), 
-                                      sep="\t")
-    reference_sequence_meta = mob_suite.mob_recon.read_sequence_info(os.path.join(default_database_dir,'clusters.txt'), 
-                                                 MOB_CLUSTER_INFO_HEADER)
-    contig_seqs = mob_suite.utils.read_fasta_dict(os.path.join(TEST_ROOT, 'TestData/contig_order_issue/fixed.input.fasta'))
-    with open(os.path.join(TEST_ROOT,'TestData/contig_order_issue/back_contig_seqs.txt')) as f:
-        contig_info = json.load(f)
-    mash_db = os.path.join(default_database_dir,'ncbi_plasmid_full_seqs.fas.msh')
-    primary_distance = 0.06; secondary_distance = 0.025
-    logger.info("Starting the cluster assignemtn")
-    contig_info = mob_suite.mob_recon.assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info, tmpdir,
-                                                 contig_seqs, mash_db, primary_distance, secondary_distance,
-                                                 4)
-    print(len(contig_info.keys()))
-    assert 1 == 2
-
 
 def test_contig_order_on_final_results(tmpdir):
     check_if_output_dir_exists_and_create()
