@@ -25,9 +25,10 @@ jobs:
         python-version: "3.12"
     - name: Install dependencies
       run: |
-        sudo apt-get install mash ncbi-blast+ libcurl4-openssl-dev libssl-dev python3-dev python3-numpy -y
+        sudo apt-get install mash ncbi-blast+ libcurl4-openssl-dev libssl-dev python3-dev python3-numpy python3-pandas -y
         python -m pip install --upgrade pip setuptools
-        pip install pytest Cython
+        pip3 install pytest Cython
+        pip3 install numpy==1.11.1
         if [ -f requirements.txt ]; then 
           pip install -r requirements.txt;
         else
