@@ -26,9 +26,11 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install mash ncbi-blast+ libcurl4-openssl-dev libssl-dev python3-pip python3-dev python3-numpy python3-pandas -y
+        sudo apt-get install mash ncbi-blast+ libcurl4-openssl-dev libssl-dev ca-certificates -y
+        sudo apt-get python3-pip python3-dev python3-numpy python3-pandas -y
         python3 -m pip install --upgrade pip setuptools
         pip3 install pytest Cython
+        sudo cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
         if [ -f requirements.txt ]; then 
           pip3 install -r requirements.txt;
         else
