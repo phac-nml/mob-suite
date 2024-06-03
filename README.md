@@ -44,7 +44,7 @@ Provides in silico predictions of the replicon family, relaxase type, mate-pair 
 + Python >= 3.7
 + ete3 >= 3.1.3 (due to updated taxonomy database init)
 + pandas >= 0.22.0,<=1.05
-+ biopython >= 1.80
++ biopython >= 1.80,<2
 + pytables  >= 3.3
 + pycurl >= 7.43
 + numpy >= 1.11.1

@@ -88,6 +88,8 @@ def download_to_file(url, file):
         c.setopt(c.FOLLOWLOCATION, True)
         c.setopt(c.WRITEDATA, f)
         c.setopt(c.NOPROGRESS, False)
+        c.setopt(pycurl.SSL_VERIFYPEER, 0)
+        c.setopt(pycurl.SSL_VERIFYHOST, 0)
         c.perform()
         c.close()
 
