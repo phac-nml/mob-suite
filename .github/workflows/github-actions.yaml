@@ -27,8 +27,12 @@ jobs:
       run: |
         sudo apt-get install mash ncbi-blast+ libcurl4-openssl-dev libssl-dev -y
         python -m pip install --upgrade pip
-        pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install pytest
+        if [ -f requirements.txt ]; then 
+          pip install -r requirements.txt;
+        else
+          pip install -e .
+        fi
     - name: Test with pytest
       run: |
         pytest -o log_cli=true --basetemp=tmp-pytest
