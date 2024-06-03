@@ -429,7 +429,7 @@ def get_contig_link_counts(reference_hit_coverage, cluster_contig_links, contig_
 
     # for each contig how many clusters a given contig is associated with, 
     # their cluster ids and their scores plus the contig size and # of links to plasmid clusters
-    contig_clust_assoc = {} 
+    contig_clust_assoc = {}; contig_link_counts = {}
     for clust_id in cluster_contig_links:
         contigs = cluster_contig_links[clust_id]
         for contig_id in contigs:
