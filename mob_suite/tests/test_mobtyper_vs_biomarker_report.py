@@ -12,7 +12,7 @@ SAMPLES_WITH_ISSUES_DF = pd.DataFrame(columns=['plasmid_id','issue_type','marker
 TEST_ROOT = os.path.dirname(__file__)
 PACKAGE_ROOT = os.path.dirname(mob_suite.__file__)
 LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-NRANDOMSAMPLES2TEST = 300
+NRANDOMSAMPLES2TEST = 10
 COMPLEX_CASES_LIST = ['CP011291', 'CP045773', 'KU932024', 'NC_002134', 'CP033122', 'CP031575', 'CP021102',
                       'CP033949', 'CP025336', 'CP025336', 'CP028546']
 

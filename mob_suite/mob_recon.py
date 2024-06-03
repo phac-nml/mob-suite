@@ -424,25 +424,24 @@ def calc_cluster_scores(reference_hit_coverage):
     return OrderedDict(sorted(iter(list(cluster_scores.items())), key=lambda x: x[1], reverse=True))
 
 
-def get_contig_link_counts(reference_hit_coverage, cluster_contig_links):
+def get_contig_link_counts(reference_hit_coverage, cluster_contig_links, contig_info):
     cluster_scores = calc_cluster_scores(reference_hit_coverage)
 
-    contig_link_counts = {}
+    # for each contig how many clusters a given contig is associated with, 
+    # their cluster ids and their scores plus the contig size and # of links to plasmid clusters
     contig_clust_assoc = {}
     for clust_id in cluster_contig_links:
         contigs = cluster_contig_links[clust_id]
         for contig_id in contigs:
-            if not contig_id in contig_link_counts:
-                contig_link_counts[contig_id] = 0
-                contig_clust_assoc[contig_id] = {}
+            if not contig_id in contig_clust_assoc:
+                contig_clust_assoc[contig_id] = {'links2clusters':0, 'contig_size': 0, 'cluster_ids':{}}
             contig_link_counts[contig_id] += 1
-            contig_clust_assoc[contig_id][clust_id] = cluster_scores[clust_id]
-
-    for contig_id in contig_clust_assoc:
-        contig_clust_assoc[contig_id] = OrderedDict(
-            sorted(iter(contig_clust_assoc[contig_id].items()), key=lambda x: x[1], reverse=True))
-
-    return OrderedDict(sorted(iter(contig_link_counts.items()), key=lambda x: x[1], reverse=False))
+            contig_clust_assoc[contig_id]['links2clusters'] += 1
+            contig_clust_assoc[contig_id]['contig_size'] = int(contig_info[contig_id]['size'])
+            contig_clust_assoc[contig_id]['cluster_ids'][clust_id] = cluster_scores[clust_id]
+    contig_link_counts=sorted(contig_clust_assoc.items(),key=lambda x: (x[1]['links2clusters'], -x[1]['contig_size']), reverse=False)
+    return OrderedDict([(i[0], i[1]['links2clusters']) for i in contig_link_counts])
+    
 
 
 def get_contigs_by_key_value(contig_info, column_key, reasons):
@@ -472,20 +471,19 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
     replicon_contigs = get_contigs_with_value_set(contig_info, 'rep_type(s)')
     relaxase_contigs = get_contigs_with_value_set(contig_info, 'relaxase_type(s)')
 
-    contig_list = list(contig_reference_coverage.keys())
+    #contig_list = list(contig_reference_coverage.keys())
     for contig_id in filtered_contigs:
         if contig_id in contig_reference_coverage:
             del(contig_reference_coverage[contig_id])
         if contig_id in contig_reference_coverage:
             del (contig_reference_coverage[contig_id])
 
-
+    
     cluster_contig_links = get_seq_links(contig_reference_coverage, reference_sequence_meta)
-    contig_link_counts = get_contig_link_counts(reference_hit_coverage, cluster_contig_links)
-    cluster_scores = calc_cluster_scores(reference_hit_coverage)
+    contig_link_counts = get_contig_link_counts(reference_hit_coverage, cluster_contig_links, contig_info)
+    cluster_scores = calc_cluster_scores(reference_hit_coverage) #sort cluster scores in descending order
 
     contig_cluster_scores = {}
-
     for clust_id in cluster_contig_links:
         for contig_id in cluster_contig_links[clust_id]:
             if contig_id in filtered_contigs:
@@ -494,11 +492,11 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
             if not contig_id in contig_cluster_scores:
                 contig_cluster_scores[contig_id] = {}
             contig_cluster_scores[contig_id][clust_id] = float(score)
-
+    
     for contig_id in contig_cluster_scores:
         contig_cluster_scores[contig_id] = OrderedDict(
             sorted(iter(contig_cluster_scores[contig_id].items()), key=lambda x: x[1], reverse=True))
-
+    
     black_list_clusters = {}
     group_membership = {}
     # assign circular contigs with replicon or relaxase first
@@ -521,8 +519,8 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
                                     ref_hit_id]
                         del (contig_reference_coverage[contig_id])
                         break
-
-    cluster_scores = calc_cluster_scores(reference_hit_coverage)
+     
+    cluster_scores = calc_cluster_scores(reference_hit_coverage) #re-sort cluster scores in descending order
 
     # find plasmids well covered by contigs
     high_confidence_references = {}
@@ -533,8 +531,8 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
 
         if coverage > 0.8:
             high_confidence_references[ref_id] = score
-
-    # Assign contigs according to highly coverged plasmids
+    
+    # Assign contigs according to highly coverged plasmid clusters
     high_confidence_references = OrderedDict(
         sorted(iter(high_confidence_references.items()), key=lambda x: x[1], reverse=True))
 
@@ -556,20 +554,21 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
                             reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][
                                 ref_hit_id]
                     del (contig_reference_coverage[contig_id])
-    cluster_scores = calc_cluster_scores(reference_hit_coverage)
-
+    cluster_scores = calc_cluster_scores(reference_hit_coverage) #re-sort cluster scores in descending order
+    
     # Assign low linkage contigs first
+    # Note a given contig can be mapped to MULTIPLE plasmid clusters, so order of contigs presented for mapping matters
     for c_id in contig_link_counts:
         count = contig_link_counts[c_id]
         if count > 5:
             break
         scores = contig_cluster_scores[c_id]
-        for clust_id in scores:
+        for clust_id in scores: 
             score = scores[clust_id]
             if clust_id in black_list_clusters:
                 continue
 
-            for contig_id in cluster_contig_links[clust_id]:
+            for idx, contig_id in enumerate(cluster_contig_links[clust_id]): #debug remove the enumerate
                 if contig_id not in group_membership:
                     group_membership[contig_id] = clust_id
                     # update cluster scores to remove contigs already assigned
@@ -579,8 +578,10 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
                                 reference_hit_coverage[ref_hit_id]['score'] -= contig_reference_coverage[contig_id][
                                     ref_hit_id]
                         del (contig_reference_coverage[contig_id])
+                else: #debug
+                    print(f"Not {contig_id} to cluster {clust_id} assigned as already present in cluster {group_membership[contig_id]}")        
             break
-
+    
     clusters_with_biomarkers = {}
     for clust_id in cluster_contig_links:
         contigs = cluster_contig_links[clust_id]
@@ -620,8 +621,10 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
         if clust_id not in cluster_links:
             cluster_links[clust_id] = []
         cluster_links[clust_id].append(contig_id)
+
     recon_cluster_dists = get_reconstructed_cluster_dists(mash_db, 0.1, cluster_links, out_dir, contig_seqs,
                                                           num_threads)
+
     cluster_md5 = {}
     for clust_id in cluster_contig_links:
         contigs = cluster_contig_links[clust_id]
@@ -712,6 +715,7 @@ def assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_
 
     recon_cluster_dists = get_reconstructed_cluster_dists(mash_db, 0.1, cluster_links, out_dir, contig_seqs,
                                                           num_threads)
+    
     clusters_with_biomarkers = {}
     for clust_id in cluster_links:
         contigs = cluster_links[clust_id]
@@ -1142,7 +1146,7 @@ def main():
 
         if contig_info[id]['circularity_status'] == '':
             contig_info[id]['circularity_status'] = 'not tested'
-
+    
     # Blast reference databases
 
     identify_biomarkers(contig_info, fixed_fasta, tmp_dir, min_length, logging, \
@@ -1279,6 +1283,7 @@ def main():
         contig_blast_df = contig_blast_df[contig_blast_df.sseqid.isin(list(reference_sequence_meta.keys()))]
         contig_blast_df.reset_index(drop=True)
         logging.info("Assigning contigs to plasmid groups")
+        #contig_blast_df.to_csv("contig_blast_df_back.txt", index=False, sep="\t")   #debug   
         contig_info = assign_contigs_to_clusters(contig_blast_df, reference_sequence_meta, contig_info, tmp_dir,
                                                  contig_seqs, mash_db, primary_distance, secondary_distance,
                                                  num_threads)
@@ -1394,7 +1399,7 @@ def main():
             if prefix is not None:
                 mobtyper_report = os.path.join(out_dir, "{}.mobtyper_results.txt".format(prefix))
             build_mobtyper_report(contig_memberships['plasmid'], out_dir, mobtyper_report,contig_seqs, ncbi, lit, ETE3DBTAXAFILE, database_dir)
-
+        results.sort(key = lambda d: d['contig_id']) #sort by contig identifiers
         writeReport(results, MOB_RECON_INFO_HEADER, contig_report)
 
         logging.info("Writting chromosome sequences to {}".format(chromosome_file))
