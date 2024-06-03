@@ -27,7 +27,7 @@ jobs:
       run: |
         sudo apt-get install mash ncbi-blast+ libcurl4-openssl-dev libssl-dev python3-numpy python3-pandas -y
         python -m pip install --upgrade pip
-        pip install pytest Cython
+        pip install pytest Cython setuptools
         if [ -f requirements.txt ]; then 
           pip install -r requirements.txt;
         else
