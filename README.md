@@ -41,15 +41,15 @@ Provides in silico predictions of the replicon family, relaxase type, mate-pair 
 ## Installation ##
 
 ## Requires
-+ Python >= 3.7
-+ ete3 >= 3.1.3 (due to updated taxonomy database init)
-+ pandas >= 0.22.0,<=1.05
++ python >= 3.7
++ ete3 >= 3.1.3,<4 (due to updated taxonomy database initialization code)
++ pandas >= 0.22.0,<=1.5.3
 + biopython >= 1.80,<2
-+ pytables  >= 3.3
-+ pycurl >= 7.43
-+ numpy >= 1.11.1
-+ scipy >= 1.1.0
-+ six >= 1.10
++ pytables  >= 3.3.0,<4
++ pycurl >= 7.43.0,<8
++ numpy >= 1.11.1,<1.23.5
++ scipy >= 1.1.0,<2
++ six >= 1.10,<2
 
 ## Dependencies
 
