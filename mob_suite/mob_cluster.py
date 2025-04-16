@@ -627,7 +627,7 @@ def main():
                                           num_threads)
 
         cluster_assignments = {**mob_cluster_seq_info, **new_seq_info}
-        logging.info('Writting cluster assignments to : {}'.format(tmp_cluster_file))
+        logging.info('Writing cluster assignments to : {}'.format(tmp_cluster_file))
         writeClusterAssignments(tmp_cluster_file, MOB_CLUSTER_INFO_HEADER, cluster_assignments)
         shutil.copy(tmp_ref_fasta_file, update_fasta)
 

@@ -39,7 +39,9 @@ from mob_suite.utils import \
     parseMash, \
     blast_mge, \
     writeMGEresults, \
-    create_biomarker_dataframe
+    create_biomarker_dataframe, \
+    copy_mobility_info_to_mob_recon_report
+
 
 
 def parse_args():
@@ -1287,7 +1289,7 @@ def main():
                                                  contig_seqs, mash_db, primary_distance, secondary_distance,
                                                  num_threads)
 
-    # Triage Novel plasmids with biomarkers but not enough similaririty for valid contig hits
+    # Triage Novel plasmids with biomarkers but not enough similarity for valid contig hits
     for contig_id in contig_info:
         data = contig_info[contig_id]
 
@@ -1384,7 +1386,7 @@ def main():
         results.append(data)
 
     # Write contig report
-    logging.info("Writting contig results to {}".format(contig_report))
+    logging.info("Writing contig results to {}".format(contig_report))
     if len(results) > 0:
 
         if len(contig_memberships['plasmid']) > 0:
@@ -1397,11 +1399,14 @@ def main():
             mobtyper_report = os.path.join(out_dir, "mobtyper_results.txt")
             if prefix is not None:
                 mobtyper_report = os.path.join(out_dir, "{}.mobtyper_results.txt".format(prefix))
-            build_mobtyper_report(contig_memberships['plasmid'], out_dir, mobtyper_report,contig_seqs, ncbi, lit, ETE3DBTAXAFILE, database_dir)
+            mobtyper_report_dict = build_mobtyper_report(contig_memberships['plasmid'], out_dir, mobtyper_report,contig_seqs, ncbi, lit, ETE3DBTAXAFILE, database_dir)
+          
+            results = copy_mobility_info_to_mob_recon_report(mobtyper_report_dict, results)
+
         results.sort(key = lambda d: d['contig_id']) #sort by contig identifiers
         writeReport(results, MOB_RECON_INFO_HEADER, contig_report)
 
-        logging.info("Writting chromosome sequences to {}".format(chromosome_file))
+        logging.info("Writing chromosome sequences to {}".format(chromosome_file))
         chr_fh = open(chromosome_file, 'w')
         for contig_id in contig_memberships['chromosome']:
             if contig_id in contig_seqs:
@@ -1475,7 +1480,7 @@ def main():
 
     biomarker_df = create_biomarker_dataframe(biomarker_params,id_mapping,logging)
     if biomarker_df.empty == False:
-        logging.info(f"Writting plasmid biomarkers report contaning {biomarker_df.shape[0]} biomarkers")
+        logging.info(f"Writing plasmid biomarkers report contaning {biomarker_df.shape[0]} biomarkers")
         biomarker_df.to_csv(os.path.join(out_dir,"biomarkers.blast.txt"),header=True,sep="\t",index=False)
     else:
         logging.warning("Plasmid biomarkers report is empty and will not be reported")

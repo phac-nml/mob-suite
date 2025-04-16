@@ -456,7 +456,7 @@ def ETE3_db_status_check(taxid, lockfilepath, ETE3DBTAXAFILE, logging):
     else:
         logging.info("Creating Lock file {}".format(lockfilepath))
 
-        #some file systems are read-only which will not support lock file writting
+        #some file systems are read-only which will not support lock file writing
         try:
             open(file=lockfilepath, mode="w").close()
         except Exception as e:
@@ -969,7 +969,7 @@ def build_mobtyper_report(plasmid_contig_info, out_dir, outfile, seq_dict, ncbi,
 
         cluster_file = open(os.path.join(out_dir, "plasmid_{}.fasta".format(clust_id)), 'w')
         logging.info(
-            "Writting plasmid sequences to {}".format(os.path.join(out_dir, "plasmid_{}.fasta".format(clust_id))))
+            "Writing plasmid sequences to {}".format(os.path.join(out_dir, "plasmid_{}.fasta".format(clust_id))))
         if clust_id not in mob_typer_results:
             mob_typer_results[clust_id] = {}
         for field in MOB_TYPER_REPORT_HEADER:
@@ -1093,7 +1093,7 @@ def build_mobtyper_report(plasmid_contig_info, out_dir, outfile, seq_dict, ncbi,
         results.append(mob_typer_results[clust_id])
 
     writeReport(results, MOB_TYPER_REPORT_HEADER, outfile)
-    return
+    return mob_typer_results
 
 
 def add_biomarker_results(biomarker_df, df_column_name_biomarker, df_column_name_seqid, contig_info,
@@ -1415,3 +1415,11 @@ def create_biomarker_dataframe(parameters,id_mapping,logging):
         return pd.concat(data_frames)
     else:
         return pd.DataFrame()
+
+
+def copy_mobility_info_to_mob_recon_report(mobtyper_report_dict, mob_recon_results):
+    for primary_cluster in mobtyper_report_dict.keys():
+        for mob_recon_result in mob_recon_results:
+                if mob_recon_result['primary_cluster_id'] == primary_cluster:
+                        mob_recon_result['predicted_mobility'] =  mobtyper_report_dict[primary_cluster]['predicted_mobility']
+    return mob_recon_results                    
