@@ -101,7 +101,7 @@ class detectCircularity:
         blast_df = BlastReader(blast_results_file,logging).df
         blast_df = blast_df.loc[blast_df['length'] >= min_length]
         blast_df = blast_df.reset_index(drop=True)
-        blast_df.to_csv(blast_results_file, sep='\t', header=False, line_terminator='\n', index=False)
+        blast_df.to_csv(blast_results_file, sep='\t', header=False, lineterminator='\n', index=False)
 
     def overhangDetection(self,blast_results_file,logging,min_length=25):
         if os.path.getsize(blast_results_file) == 0:
